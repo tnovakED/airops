@@ -309,6 +309,27 @@
     transform:translateY(100%) scale(1)}
   .modal-bg.folha.show .modal-box{transform:translateY(0) scale(1)}
 
+  /* ---------- painel da viagem (lateral) ----------
+     Mesmo #modal-bg do modal generico, so que colado na borda direita
+     e do tamanho da tela inteira — a viagem em andamento, sempre a
+     mao, sem tirar o operador da base (alertas continuam atras, so
+     escurecidos pelo overlay).
+
+     Mesmo aviso da folha: nenhuma regra de transition aqui de proposito
+     — o painel continua sendo .modal-box, entao herda os .16s da base
+     E o corte de prefers-reduced-motion declarado mais acima. Declarar
+     transition aqui passaria por cima daquele corte sem ninguem perceber. */
+  .modal-bg.lado{align-items:stretch; justify-content:flex-end; padding:0}
+  .modal-bg.lado .modal-box{width:88%; max-width:420px; height:100%; max-height:none;
+    margin:0; border-radius:0; border:none; border-left:1px solid var(--line);
+    /* Sombra pro lado de dentro, nao borda nos quatro lados: e o que
+       faz o painel parecer flutuando sobre a pagina escurecida, em vez
+       de uma caixa encostada torta na borda da tela. */
+    box-shadow:-8px 0 24px rgba(0,0,0,.4);
+    padding-right:calc(16px + env(safe-area-inset-right, 0px));
+    transform:translateX(100%) scale(1)}
+  .modal-bg.lado.show .modal-box{transform:translateX(0) scale(1)}
+
   /* Alca: so sinaliza "isto subiu por cima". Nao arrasta — arrastar
      competiria com o rolar da lista de voos, que e o gesto que o
      operador mais faz aqui. */
@@ -414,6 +435,18 @@
      da folha ela gruda no fim do corpo, que e quem rola. O fundo solido
      e para a lista de voos nao passar por baixo dela. */
   .barra-acao{position:sticky; bottom:74px; margin-top:14px}
+
+  /* Trilho fixo do Operador (nova viagem / malha / minhas viagens):
+     mesmo lugar da .barra-acao (colado acima da barra de abas), so que
+     sempre visivel — nao so ao confirmar um passo. */
+  .op-trilho{position:sticky; bottom:74px; z-index:5; display:flex; gap:10px; margin-top:14px}
+  .op-ico{flex:1; min-height:56px; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--surface2); border:1px solid var(--line); border-radius:10px; color:var(--text)}
+  .op-ico-mais{background:var(--amber); border-color:var(--amber); color:#151005}
+  /* Mesmo azul do chip "A caminho" (st-a_caminho) usado no resto do
+     app pra viagem em andamento — o icone bate com o mesmo estado em
+     qualquer outra tela, sem precisar de cor nova. */
+  .op-ico-viagem{border-color:var(--blue); color:var(--blue)}
   /* Dentro da folha o corpo tem altura fixa: sem o margin-top:auto a
      barra ficaria boiando no meio quando a lista e curta, e com a
      lista longa ela continua grudada embaixo pelo sticky. */
@@ -463,9 +496,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 26/08/2026, 13:18:28
+     Gerado em: 26/08/2026, 15:48:49
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="26/08 13:18";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="26/08 15:48";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -911,6 +944,8 @@
     if (typeof m.classList.add === "function") {
       if (o.folha) m.classList.add("folha");
       else m.classList.remove("folha");
+      if (o.lado) m.classList.add("lado");
+      else m.classList.remove("lado");
     }
     if (m._timerFechar) {
       clearTimeout(m._timerFechar);
@@ -1950,6 +1985,10 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     // phosphor: airplane-takeoff-bold (MIT)
     esteira: `<path d="M116,96v80a12,12,0,0,1-24,0V96a12,12,0,0,1,24,0Zm24,0v80a12,12,0,0,0,24,0V96a12,12,0,0,0-24,0Zm72-32V208a20,20,0,0,1-20,20H180v12a12,12,0,0,1-24,0V228H100v12a12,12,0,0,1-24,0V228H64a20,20,0,0,1-20-20V64A20,20,0,0,1,64,44H84V28A28,28,0,0,1,112,0h32a28,28,0,0,1,28,28V44h20A20,20,0,0,1,212,64ZM108,44h40V28a4,4,0,0,0-4-4H112a4,4,0,0,0-4,4Zm80,24H68V204H188Z"/>`,
     // phosphor: suitcase-rolling-bold (MIT)
+    lista: `<path d="M228,128a12,12,0,0,1-12,12H40a12,12,0,0,1,0-24H216A12,12,0,0,1,228,128ZM40,76H216a12,12,0,0,0,0-24H40a12,12,0,0,0,0,24ZM216,180H40a12,12,0,0,0,0,24H216a12,12,0,0,0,0-24Z"/>`,
+    // phosphor: list-bold (MIT)
+    mais: `<path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"/>`,
+    // phosphor: plus-bold (MIT)
     pacote: `<path d="M223.68,66.15,135.68,18a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32l80.35,44L178.57,92.29l-80.35-44Zm0,88L47.65,76,81.56,57.43l80.35,44Zm88,55.85h0l-80,43.79V133.83l32-17.51V152a8,8,0,0,0,16,0V107.56l32-17.51v85.76Z"/>`,
     // phosphor: package-fill (MIT)
     pousando: `<path d="M256,216a12,12,0,0,1-12,12H104a12,12,0,0,1,0-24H244A12,12,0,0,1,256,216Zm-27.24-24.45L52.14,142.09A44.13,44.13,0,0,1,20,99.72V48A20,20,0,0,1,46.32,29l5.48,1.83a12,12,0,0,1,7.49,7.3L69.2,65.59,92,72.09V48a20,20,0,0,1,26.32-19l5.48,1.83a12,12,0,0,1,7.27,6.74l21.75,51.85,59,16.49A44.12,44.12,0,0,1,244,148.32V180a12,12,0,0,1-15.24,11.55ZM220,148.32a20.05,20.05,0,0,0-14.65-19.27L140.77,111a12,12,0,0,1-7.84-6.91L116,63.71V88a12,12,0,0,1-15.29,11.54L56.71,87a12,12,0,0,1-8-7.46L44,66.48V99.72A20.07,20.07,0,0,0,58.61,119L220,164.18Z"/>`,
@@ -2964,9 +3003,13 @@ Ele sai da lista de boxes dos operadores.`);
   var EQUIPS = [["ESTEIRA", "Esteira"], ["ESCADA", "Escada"], ["CARRETA", "Carreta"]];
   var degrau = (rot, aceso, acao, extra) => `<button class="deg${extra ? " " + extra : ""}${aceso ? " on" : ""}" onclick="${acao}">${rot}</button>`;
   var linhaTrilha = (rotulo, botoes) => `<div class="deg-linha"><span class="deg-rot">${rotulo}</span>${botoes}</div>`;
+  var CARGAS = [["BAG", "BAG"], ["EQUIPAMENTO", "Equipamento"]];
   function trilhaFolha() {
     const o = UI.op;
     const linhas = [];
+    if (o.carga) {
+      linhas.push(linhaTrilha("Levando", CARGAS.map(([v, rot]) => degrau(rot, o.carga === v, `escolherCarga('${v}')`)).join("")));
+    }
     if (o.carga === "EQUIPAMENTO" && o.equipamento) {
       linhas.push(linhaTrilha("Levando", EQUIPS.map(([v, rot]) => degrau(rot, o.equipamento === v, `escolherEquipamento('${v}')`)).join("")));
       if (o.equipamento === "CARRETA" && o.equipQtd)
@@ -3031,25 +3074,40 @@ Ele sai da lista de boxes dos operadores.`);
      ${acao || ""}
    </div>`;
   var botaoSaindo = (n, acao) => `<button class="primary passo-canto" ${n ? "" : "disabled"} onclick="${acao}">Saindo com<br>${n} destino${n === 1 ? "" : "s"}</button>`;
+  function trilhoIcones(vg, n) {
+    const pend = vg ? pendenciasViagem(vg) : 0;
+    const btMais = vg ? `<button class="op-ico op-ico-mais" onclick="abrirNovaFolha()" aria-label="Pegar bags no caminho">${ico("pacote", 26)}</button>` : `<button class="op-ico op-ico-mais" onclick="abrirNovaFolha()" aria-label="Nova viagem">
+         ${ico("mais", 28)}${n ? `<span class="cont">${n}</span>` : ""}
+       </button>`;
+    return `<div class="op-trilho">
+    ${vg ? `<button class="op-ico op-ico-viagem" onclick="abrirPainelViagem()" aria-label="Viagem em andamento">
+      ${ico("carreta", 26)}${pend ? `<span class="cont">${pend}</span>` : ""}
+    </button>` : ""}
+    ${btMais}
+    ${pode("malha_ver") ? `<button class="op-ico" onclick="irPara('voos')" aria-label="Malha">${ico("lista", 24)}</button>` : ""}
+    <button class="op-ico" onclick="irPara('minhas')" aria-label="Minhas viagens">${ico("relogio", 24)}</button>
+  </div>`;
+  }
   function telaOperador() {
     const alertas = alertasNaPagina();
     const ativa = viagemAtiva();
-    if (ativa) return alertas + telaViagemAtiva(ativa);
-    const carga = UI.op.carga;
-    const n = marcadosOp();
-    const btCarga = (v, rot) => `<button class="${carga === v ? "sel" : ""}" onclick="escolherCarga('${v}')">${rot}${carga === v && n ? ` <span class="cont">${n}</span>` : ""}</button>`;
-    const retomar = n ? `<p class="note" style="margin-top:10px">Saindo de <b style="color:var(--text)">${esc(UI.op.origem)}</b> \xB7 ${n} destino${n === 1 ? "" : "s"} marcado${n === 1 ? "" : "s"} \u2014 toque em ${carga === "BAG" ? "BAG" : "Equipamento"} para continuar.</p>` : `<p class="note" style="margin-top:10px">Toque para escolher de onde voc\xEA est\xE1 saindo.</p>`;
-    return alertas + `
-    <div class="board-title"><h2>O que voc\xEA est\xE1 levando?</h2></div>
-    <div class="origem-grid" style="grid-template-columns:1fr 1fr">
-      ${btCarga("BAG", "BAG")}${btCarga("EQUIPAMENTO", "Equipamento")}
-    </div>
-    ${retomar}
-    ${seletorJanela()}`;
+    const n = ativa ? 0 : marcadosOp();
+    const retomar = n ? `<p class="note" style="margin-top:10px">Saindo de <b style="color:var(--text)">${esc(UI.op.origem)}</b> \xB7 ${n} destino${n === 1 ? "" : "s"} marcado${n === 1 ? "" : "s"} \u2014 toque em + para continuar.</p>` : "";
+    return alertas + trilhoIcones(ativa, n) + retomar + seletorJanela();
   }
   function escolherCarga(v) {
     if (UI.op.carga !== v)
       UI.op = { carga: v, origem: null, boxOrigem: null, vooOrigemId: null, sel: [] };
+    UI.modalVivo = { tipo: "op" };
+    bus.render();
+  }
+  function abrirNovaFolha() {
+    if (viagemAtiva()) {
+      UI.pu = { box: null, vooId: null, sel: [] };
+      UI.modalVivo = { tipo: "viagem" };
+      bus.render();
+      return;
+    }
     UI.modalVivo = { tipo: "op" };
     bus.render();
   }
@@ -3063,15 +3121,20 @@ Ele sai da lista de boxes dos operadores.`);
     bus.render();
   }
   function folhaOperador() {
-    if (!UI.op.carga) return "";
     return `<button class="ghost folha-x" onclick="fecharFolhaOp()" aria-label="Fechar">\u2715</button>
     <div class="folha-alca" aria-hidden="true"></div>
-    <div class="folha-cabeca"><span class="folha-carga">${esc(UI.op.carga)}</span></div>
+    <div class="folha-cabeca"><span class="folha-carga">${UI.op.carga ? esc(UI.op.carga) : "Nova viagem"}</span></div>
     ${trilhaFolha()}
     <div class="folha-corpo">${corpoFolha()}</div>`;
   }
   function corpoFolha() {
     const o = UI.op;
+    if (!o.carga) return `
+    <h2 class="folha-pergunta">O QUE VOC\xCA EST\xC1 LEVANDO?</h2>
+    <div class="origem-grid">
+      <button onclick="escolherCarga('BAG')">BAG</button>
+      <button onclick="escolherCarga('EQUIPAMENTO')">Equipamento</button>
+    </div>`;
     if (o.carga === "EQUIPAMENTO" && !o.equipamento) return `
     <h2 class="folha-pergunta">QUAL EQUIPAMENTO?</h2>
     <div class="origem-grid">
@@ -3161,7 +3224,8 @@ Ele sai da lista de boxes dos operadores.`);
     bus.render();
   }
   function atualizarFolhaOperador() {
-    if (!UI.op.carga || viagemAtiva()) {
+    var _a;
+    if (((_a = UI.modalVivo) == null ? void 0 : _a.tipo) !== "op" || viagemAtiva()) {
       fecharModal();
       return;
     }
@@ -3391,8 +3455,8 @@ Ele sai da lista de boxes dos operadores.`);
     }
     await registrarLocais(linhas, UI.op.vooOrigemId, "a_caminho");
     UI.op = { origem: null, sel: [] };
-    UI.modalVivo = null;
     fecharModal();
+    UI.modalVivo = { tipo: "viagem" };
     bus.recarregar();
   }
   async function registrarLocais(linhas, vooOrigemId, status) {
@@ -3484,7 +3548,7 @@ Ele sai da lista de boxes dos operadores.`);
   </div>`;
   }
   var podeCancelar = (vg) => !destinosDe(vg.id).some((d) => d.status === "a_caminho");
-  function telaViagemAtiva(vg) {
+  function conteudoPainelViagem(vg) {
     if (UI.pu) return telaColeta(vg);
     const ds = destinosDe(vg.id);
     return `
@@ -3494,6 +3558,32 @@ Ele sai da lista de boxes dos operadores.`);
     ${TRIAGENS.map((via) => cartaoTriagem(via, ds.filter((d) => naTriagem(d) && d.entrega_via === via), vg)).join("")}
     <button onclick="UI.pu={box:null,vooId:null,sel:[]};render()">+ Pegar bags no caminho</button>
     ${podeCancelar(vg) ? `<button class="ghost" style="margin-top:8px" onclick="cancelarViagem(${vg.id})">Cancelar viagem</button>` : ""}`;
+  }
+  function pendenciasViagem(vg) {
+    const ds = destinosDe(vg.id);
+    const diretas = ds.filter((d) => !naTriagem(d) && d.status !== "entregue").length;
+    const triagens = TRIAGENS.filter((via) => ds.some((d) => naTriagem(d) && d.entrega_via === via && d.status !== "entregue")).length;
+    return diretas + triagens;
+  }
+  function painelTravado() {
+    return !!UI.pu && totalDestinos(UI.pu) > 0;
+  }
+  function atualizarPainelViagem() {
+    const vg = viagemAtiva();
+    if (!vg) {
+      fecharModal();
+      return;
+    }
+    abrirModal(conteudoPainelViagem(vg), { lado: true, travado: painelTravado() });
+  }
+  function abrirPainelViagem() {
+    UI.modalVivo = { tipo: "viagem" };
+    bus.render();
+  }
+  function fecharPainelViagem() {
+    UI.modalVivo = null;
+    fecharModal();
+    bus.render();
   }
   function telaColeta(vg) {
     if (!UI.pu.vooId) {
@@ -3727,6 +3817,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     UI.alerta = { lugar: null, sel: [] };
     await pegarProntas(levando);
     for (const p of sobra) await devolverProntaDb(p.id);
+    UI.modalVivo = { tipo: "viagem" };
     bus.recarregar();
   }
   function listaDoLugar(g) {
@@ -4223,6 +4314,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     if (!m) return;
     if (m.tipo === "india") atualizarPontoIndia(m.vooId);
     else if (m.tipo === "op") atualizarFolhaOperador();
+    else if (m.tipo === "viagem") atualizarPainelViagem();
   }
   var CHAVE_ABA = "rampa_aba";
   function abaGuardada() {
@@ -4466,6 +4558,9 @@ Sair mesmo assim?`
     abrirFolhaOp,
     fecharFolhaOp,
     trocarBoxOp,
+    abrirNovaFolha,
+    abrirPainelViagem,
+    fecharPainelViagem,
     escolherCarga,
     escolherEquipamento,
     escolherEquipQtd,
