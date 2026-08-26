@@ -463,9 +463,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 26/08/2026, 09:23:20
+     Gerado em: 26/08/2026, 11:47:34
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="26/08 09:23";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="26/08 11:47";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2771,16 +2771,54 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     </div>
   </div>`;
   }
+  var BOX_BASES_COM_LETRA = [4, 9];
+  function ordemBox(box) {
+    const s = String(box == null ? "" : box).trim().toUpperCase();
+    if (/^\d+$/.test(s)) {
+      const n = parseInt(s, 10);
+      return n + BOX_BASES_COM_LETRA.filter((b) => b < n).length;
+    }
+    const m = s.match(/^(\d+)A$/);
+    if (m && BOX_BASES_COM_LETRA.includes(parseInt(m[1], 10))) return ordemBox(m[1]) + 1;
+    return null;
+  }
+  function classificarConexaoDelta(v, pd) {
+    const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
+    const o1 = ordemBox(v.box), o2 = ordemBox(vSaida == null ? void 0 : vSaida.box);
+    if (o1 == null || o2 == null) return { tipo: null, vSaida };
+    const dist = Math.abs(o1 - o2);
+    if (dist === 0) return { tipo: "tst", vSaida };
+    if (dist <= 2) return { tipo: "pp", vSaida };
+    return { tipo: null, vSaida };
+  }
+  var SELO_DELTA = {
+    tst: {
+      texto: "TST",
+      classe: "st-entregue",
+      titulo: "Bagagem tr\xE2nsito \u2014 mesmo box, n\xE3o precisa mover."
+    },
+    pp: {
+      texto: "PP",
+      classe: "st-solicitada",
+      titulo: "Porta a porta \u2014 box a poucos passos, d\xE1 pra levar na m\xE3o ou de carreta."
+    }
+  };
   function abrirPontoDelta(vooId) {
     UI.modalVivo = null;
     const v = voo(vooId) || {};
     const lista = D.deltas.filter((pd) => pd.voo_id === vooId);
-    const linhas = lista.length ? lista.map((pd) => `
+    const linhas = lista.length ? lista.map((pd) => {
+      const { tipo, vSaida } = classificarConexaoDelta(v, pd);
+      const selo = SELO_DELTA[tipo];
+      return `
     <div class="pt-linha">
       ${vooRotulo2(comoSaida(pd.destino, pd.voo_saida_numero), "saida", { box: false })}
       <span class="grow"></span>
+      ${selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : ""}
+      ${tipo === "pp" ? `<button class="small ok" onclick="solicitarPPDelta(${vooId},${vSaida.id})">Solicitar</button>` : ""}
       <span class="mono" style="color:var(--amber)">${pd.bag_qtd}</span>
-    </div>`).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
+    </div>`;
+    }).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
     const descarga = !pode("descarga_ok") ? "" : v.descarga_ok_em ? `<p class="note" style="margin-top:12px">Descarga confirmada ${hora(v.descarga_ok_em)} por ${esc(nomeDe(v.descarga_ok_por))}.</p>` : `<div style="margin-top:12px"><button class="ok" onclick="marcarDescargaDelta(${vooId})">Descarrega OK</button>
          <p class="note" style="margin-top:6px">Confirma que o voo foi descarregado \u2014 ele sai da grade de boxes dos operadores.</p></div>`;
     abrirModal(`<h3>Delta \xB7 ${vooRotulo2(v, "chegada", { box: false })}</h3>${linhas}${descarga}
@@ -2800,6 +2838,17 @@ Ele sai da lista de boxes dos operadores.`);
     }
     await bus.recarregar();
     abrirPontoDelta(vooId);
+  }
+  async function solicitarPPDelta(vooChegadaId, vooSaidaId) {
+    const v = voo(vooChegadaId);
+    if (!v) return;
+    const { error } = await sinalizarProntaDb("BOX", vooSaidaId, v.box, null);
+    if (error) {
+      await erro(error);
+      return;
+    }
+    await bus.recarregar();
+    abrirPontoDelta(vooChegadaId);
   }
   function conteudoPontoIndiaOC(vooId) {
     const v = voo(vooId) || {};
@@ -4442,6 +4491,7 @@ Sair mesmo assim?`
     solicitarBagIndia,
     cancelarBagIndia,
     marcarDescargaDelta,
+    solicitarPPDelta,
     // painel de acessos
     alternarAcesso
   });
