@@ -463,9 +463,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 26/08/2026, 11:47:34
+     Gerado em: 26/08/2026, 13:18:28
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="26/08 11:47";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="26/08 13:18";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2593,7 +2593,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   init_modal();
   init_bus();
   var comoChegada = (apt, num) => ({ origem: apt, voo_chegada: num });
-  var comoSaida = (apt, num) => ({ destino: apt, numero: num });
+  var comoSaida = (apt, num, box) => ({ destino: apt, numero: num, box });
   function vooChegadaConexao(numero) {
     return D.voos.find((v) => v.voo_chegada === numero || !v.voo_chegada && v.numero === numero);
   }
@@ -2782,11 +2782,14 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     if (m && BOX_BASES_COM_LETRA.includes(parseInt(m[1], 10))) return ordemBox(m[1]) + 1;
     return null;
   }
+  function distanciaBox(boxA, boxB) {
+    const o1 = ordemBox(boxA), o2 = ordemBox(boxB);
+    return o1 == null || o2 == null ? null : Math.abs(o1 - o2);
+  }
   function classificarConexaoDelta(v, pd) {
     const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
-    const o1 = ordemBox(v.box), o2 = ordemBox(vSaida == null ? void 0 : vSaida.box);
-    if (o1 == null || o2 == null) return { tipo: null, vSaida };
-    const dist = Math.abs(o1 - o2);
+    const dist = distanciaBox(v.box, vSaida == null ? void 0 : vSaida.box);
+    if (dist == null) return { tipo: null, vSaida };
     if (dist === 0) return { tipo: "tst", vSaida };
     if (dist <= 2) return { tipo: "pp", vSaida };
     return { tipo: null, vSaida };
@@ -2812,10 +2815,10 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       const selo = SELO_DELTA[tipo];
       return `
     <div class="pt-linha">
-      ${vooRotulo2(comoSaida(pd.destino, pd.voo_saida_numero), "saida", { box: false })}
+      ${vooRotulo2(comoSaida(pd.destino, pd.voo_saida_numero, vSaida == null ? void 0 : vSaida.box), "saida", { box: tipo === "pp" })}
       <span class="grow"></span>
       ${selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : ""}
-      ${tipo === "pp" ? `<button class="small ok" onclick="solicitarPPDelta(${vooId},${vSaida.id})">Solicitar</button>` : ""}
+      ${tipo === "pp" ? `<button class="small ok" onclick="solicitarPPDelta(${vooId},${vSaida.id})">S.OP</button>` : ""}
       <span class="mono" style="color:var(--amber)">${pd.bag_qtd}</span>
     </div>`;
     }).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
@@ -2854,6 +2857,7 @@ Ele sai da lista de boxes dos operadores.`);
     const v = voo(vooId) || {};
     const lista = D.indias.filter((pi) => pi.voo_id === vooId).slice().sort((a, b) => duracaoMin(a.rct) - duracaoMin(b.rct));
     const linhas = lista.length ? lista.map((pi) => {
+      var _a;
       const sit = situacaoConexao(pi);
       const indo = aCaminhoDaConexao(pi);
       const pedido = pedidoAtivoDaConexao(pi);
@@ -2862,9 +2866,11 @@ Ele sai da lista de boxes dos operadores.`);
       const lbl = vooRotulo2(comoChegada(pi.origem, pi.voo_chegada_numero), "chegada", { box: false });
       const bl = sit.entregue ? null : ondeEstaoAsBags(pi, sit.vc);
       const txtLocal = bl && ROTULO_LOCAL[bl.status] ? ROTULO_LOCAL[bl.status](bl) : null;
+      const transito = distanciaBox(v.box, (_a = sit.vc) == null ? void 0 : _a.box) === 0;
       return `<div class="pt-linha">
       ${lbl}${marca}${bagsACaminho(pi) ? ICONE_COLETADO : ""}
       ${txtLocal ? `<span class="chip ${bl.status === "na_carreta" ? "st-a_caminho" : "st-aceita"}">${esc(txtLocal)}</span>` : ""}
+      ${transito ? `<span class="chip st-entregue" title="Bagagem tr\xE2nsito \u2014 mesmo box, n\xE3o precisa mover.">TST</span>` : ""}
       <span class="note">RCT ${esc(pi.rct || "\u2014")}</span>
       <span class="grow"></span>
       ${prdTag(pi)}
