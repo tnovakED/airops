@@ -18,6 +18,7 @@
     --blue:#4DA3FF; --green:#35D07F; --orange:#FF8A3D; --red:#FF5D5D;
     --text:#EAF0FA; --muted:#90A0B8;
     --header-h:46px;
+    --barra-h:52px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   /* UMA fonte no app inteiro: SUSE Mono, herdada do body. As tres
@@ -32,7 +33,7 @@
 
   /* ---------- casca ---------- */
   /* Altura do header presa a --header-h (~a do botao Sair) — pedido
-     do Tiago (27/08) pra sobrar tela pro conteudo no celular. .op-topo
+     do Tiago (27/08) pra sobrar tela pro conteudo no celular. .op-barra
      usa a MESMA variavel pra saber onde comecar o proprio sticky, por
      isso os dois tem que continuar lendo dela em vez de um px solto. */
   header.app{display:flex; align-items:center; gap:8px; padding:2px 14px; min-height:var(--header-h);
@@ -44,6 +45,9 @@
   .fila-offline{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border:1px solid var(--amber);
     border-radius:20px; color:var(--amber); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em}
   main{max-width:1024px; margin:0 auto; padding:14px 12px 90px}
+  /* Operador nao tem nav fixo embaixo (subiu pro topo, .op-barra) --
+     sem isto sobrava um vao de 90px reservado a toa. */
+  main.sem-nav-baixo{padding-bottom:14px}
 
   /* ---------- board (assinatura FIDS) ---------- */
   .board-title{display:flex; align-items:baseline; gap:10px; margin:18px 0 8px}
@@ -423,25 +427,44 @@
      e para a lista de voos nao passar por baixo dela. */
   .barra-acao{position:sticky; bottom:74px; margin-top:14px}
 
-  /* Bloco fixo do topo: acoes (Malha/Historico/+), janela de tempo e,
-     com viagem ativa, o cartao azul — todos juntos, presos logo
-     abaixo do header (--header-h). Pedido do Tiago (27/08): sobrar
-     mais tela pro alerta, que e o que rola por baixo disto. */
-  .op-topo{position:sticky; top:var(--header-h); z-index:6; background:var(--bg);
-    padding-top:10px; margin:0 0 6px; border-bottom:1px solid var(--line)}
+  /* Barra fixa do Operador — sobe pro topo, colada no cabecalho, no
+     lugar do nav.tabs de baixo (decisao do Tiago, 27/08). Ordem:
+     relogio, Malha, Historico, Turno, +. Botoes de texto crescem
+     (flex:1); o relogio e o "+" tem largura propria. */
+  .op-barra{position:sticky; top:var(--header-h); z-index:9; display:flex; gap:8px;
+    padding:8px 12px; background:var(--surface); border-bottom:1px solid var(--line);
+    min-height:var(--barra-h)}
+  .op-barra button{flex:1; min-height:36px; font-size:15px}
+  .op-barra-relogio{flex:0 0 auto; width:44px; display:inline-flex;
+    align-items:center; justify-content:center; padding:0}
+  .op-barra-relogio.on{background:var(--amber); color:#151005; border-color:var(--amber)}
+  .op-barra-mais{flex:0 0 auto; width:auto; padding:0 18px;
+    background:var(--amber); border-color:var(--amber); color:#151005}
 
-  /* Barra de acoes do Operador (Malha / Historico / +), em TEXTO —
-     mockup do Tiago, 27/08. */
-  .op-acoes{display:flex; gap:10px}
-  .op-acao{flex:1; min-height:56px}
-  .op-acao-mais{background:var(--amber); border-color:var(--amber); color:#151005}
+  /* Dropdown do relogio: flutua por cima do conteudo (nao empurra
+     nada) e fecha ao escolher um horario ou ao tocar fora — o backdrop
+     transparente e quem captura esse toque fora. Entrada suave via
+     @keyframes: dispara sozinho quando o elemento entra no DOM (uma
+     transition precisaria de um segundo frame pra animar, que o
+     innerHTML trocado de uma vez nao da). */
+  .janela-backdrop{position:fixed; inset:0; z-index:8}
+  .janela-drop{position:absolute; top:100%; left:12px; z-index:9; margin-top:4px;
+    background:var(--surface2); border:1px solid var(--line); border-radius:12px;
+    padding:10px; display:flex; gap:6px; flex-wrap:wrap; width:200px;
+    animation:cairJanela .16s ease-out}
+  .janela-drop button{flex:0 0 auto; width:auto; min-height:38px; padding:4px 16px}
+  .janela-drop button.on{background:var(--amber); color:#151005; border-color:var(--amber)}
+  .janela-drop .note{flex-basis:100%; margin:4px 0 0}
+  @keyframes cairJanela{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:translateY(0)}}
+  @media (prefers-reduced-motion: reduce){ .janela-drop{animation:none} }
 
-  /* Painel reduzido da viagem ativa: dentro do .op-topo (que ja e
-     sticky), alinhado a direita, sempre visivel enquanto ha viagem em
-     andamento. Mesmo azul do chip "A caminho" (st-a_caminho) usado no
-     resto do app — bate com o mesmo estado em qualquer outra tela,
-     sem precisar de cor nova. */
-  .op-viagem-reduzido{margin:10px 0 0 auto;
+  /* Painel reduzido da viagem ativa: preso logo abaixo da .op-barra
+     (as duas sticky, uma embaixo da outra), alinhado a direita, sempre
+     visivel enquanto ha viagem em andamento. Mesmo azul do chip
+     "A caminho" (st-a_caminho) usado no resto do app — bate com o
+     mesmo estado em qualquer outra tela, sem precisar de cor nova. */
+  .op-viagem-reduzido{position:sticky; top:calc(var(--header-h) + var(--barra-h));
+    z-index:6; margin:10px 0 10px auto;
     display:flex; align-items:center; gap:8px; width:fit-content; min-height:56px;
     background:var(--surface2); border:2px solid var(--blue); color:var(--blue);
     border-radius:999px; padding:8px 16px}
@@ -505,9 +528,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 27/08/2026, 14:40:40
+     Gerado em: 27/08/2026, 15:41:24
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="27/08 14:40";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="27/08 15:41";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -560,6 +583,8 @@
         op: { origem: null, boxOrigem: null, vooOrigemId: null, sel: [] },
         janela: null,
         // horas da janela do operador (null = ainda nao lida do localStorage)
+        janelaAberta: false,
+        // dropdown da janela, na barra do Operador (render.js)
         pu: null,
         // coleta no caminho
         tri: { setor: null, box: null },
@@ -7384,13 +7409,41 @@ Ele sai da lista de boxes dos operadores.`);
      ${acao || ""}
    </div>`;
   var botaoSaindo = (n, acao) => `<button class="primary passo-canto" ${n ? "" : "disabled"} onclick="${acao}">Saindo com<br>${n} destino${n === 1 ? "" : "s"}</button>`;
-  function trilhoAcoes(vg, n) {
-    return `<div class="op-acoes">
-    ${pode("malha_ver") ? `<button class="op-acao" onclick="irPara('voos')">Malha</button>` : ""}
-    <button class="op-acao" onclick="irPara('minhas')">Hist\xF3rico</button>
-    <button class="op-acao op-acao-mais" onclick="abrirNovaFolha()"
+  function barraOperador(abas) {
+    const tem = (k) => abas.includes(k);
+    const vg = viagemAtiva();
+    const n = vg ? 0 : marcadosOp();
+    return `<nav class="op-barra">
+    <button class="op-barra-relogio${UI.janelaAberta ? " on" : ""}"
+      onclick="toggleJanelaBarra()" aria-label="Janela de tempo">${ico("relogio", 20)}</button>
+    ${tem("voos") ? `<button class="${UI.tab === "voos" ? "on" : ""}" onclick="irPara('voos')">Malha</button>` : ""}
+    ${tem("minhas") ? `<button class="${UI.tab === "minhas" ? "on" : ""}" onclick="irPara('minhas')">Hist\xF3rico</button>` : ""}
+    <button class="${UI.tab === "levar" ? "on" : ""}" onclick="irPara('levar')">Turno</button>
+    <button class="op-barra-mais" onclick="abrirNovaFolha()"
       aria-label="${vg ? "Pegar bags no caminho" : "Nova viagem"}">+${n ? ` <span class="cont">${n}</span>` : ""}</button>
-  </div>`;
+    ${UI.janelaAberta ? janelaDropdown() : ""}
+  </nav>`;
+  }
+  function janelaDropdown() {
+    const j = janelaAtual();
+    return `<div class="janela-backdrop" onclick="fecharJanelaBarra()"></div>
+    <div class="janela-drop">
+      ${JANELAS.map((h) => `<button class="${j === h ? "on" : ""}" onclick="escolherJanelaBarra(${h})">${h}h</button>`).join("")}
+      <p class="note">${rotuloJanela(j)}</p>
+    </div>`;
+  }
+  function toggleJanelaBarra() {
+    UI.janelaAberta = !UI.janelaAberta;
+    bus.render();
+  }
+  function fecharJanelaBarra() {
+    UI.janelaAberta = false;
+    bus.render();
+  }
+  function escolherJanelaBarra(h) {
+    definirJanela(h);
+    UI.janelaAberta = false;
+    bus.render();
   }
   function urgenciaDoVoo(vooId) {
     const v = vooId != null ? voo(vooId) : null;
@@ -7430,8 +7483,7 @@ Ele sai da lista de boxes dos operadores.`);
     const ativa = viagemAtiva();
     const n = ativa ? 0 : marcadosOp();
     const retomar = n ? `<p class="note" style="margin-top:10px">Saindo de <b style="color:var(--text)">${esc(UI.op.origem)}</b> \xB7 ${n} destino${n === 1 ? "" : "s"} marcado${n === 1 ? "" : "s"} \u2014 toque em + para continuar.</p>` : "";
-    const topo = `<div class="op-topo">${trilhoAcoes(ativa, n)}${seletorJanela()}${ativa ? painelReduzido(ativa) : ""}</div>`;
-    return topo + retomar + alertas;
+    return (ativa ? painelReduzido(ativa) : "") + retomar + alertas;
   }
   function escolherCarga(v) {
     if (UI.op.carga !== v)
@@ -8605,7 +8657,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       return [...ABAS_ANTIGAS[S.me.perfil] || []];
     }
     const temLevar = S.ferramentas.some((f) => f.id === "levar");
-    const abas = temLevar ? ["levar", "inicio"] : ["inicio"];
+    const abas = temLevar ? ["levar"] : ["inicio"];
     for (const f of S.ferramentas) {
       const aba = FERRAMENTA_ABA[f.id];
       if (aba && !abas.includes(aba)) abas.push(aba);
@@ -8648,16 +8700,19 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     if (!S.me) return;
     const abas = abasDoUsuario();
     if (!abas.includes(UI.tab)) UI.tab = abas[0];
+    const temLevar = S.ferramentas.some((f) => f.id === "levar");
+    const nav = temLevar ? barraOperador(abas) : `<nav class="tabs">${abas.map(
+      (k) => `<button class="${UI.tab === k ? "on" : ""}" onclick="irPara('${k}')">${ABA_TITULO[k] || k}</button>`
+    ).join("")}</nav>`;
     app().innerHTML = `
     <header class="app"><h1>Rampa Ops</h1>
       ${UI.filaOffline.length ? `<span class="fila-offline">Fila offline: ${UI.filaOffline.length} pendente${UI.filaOffline.length === 1 ? "" : "s"}</span>` : ""}
       <div class="who"><b>${esc(S.me.nome)}</b><span>${esc(S.me.perfil)} \xB7 v${esc(window.RAMPA_BUILD || "dev")}</span></div>
       <button class="small ghost" style="width:auto" onclick="sair()">Sair</button>
     </header>
-    <main id="main"></main>
-    <nav class="tabs">${abas.map(
-      (k) => `<button class="${UI.tab === k ? "on" : ""}" onclick="irPara('${k}')">${ABA_TITULO[k] || k}</button>`
-    ).join("")}</nav>`;
+    ${temLevar ? nav : ""}
+    <main id="main" class="${temLevar ? "sem-nav-baixo" : ""}"></main>
+    ${temLevar ? "" : nav}`;
     document.getElementById("main").innerHTML = conteudo(UI.tab);
     atualizarModalVivo();
     religarAnimacoes();
@@ -8920,6 +8975,9 @@ Sair mesmo assim?`
     confirmarVooOrigem,
     escolherOrigemColeta,
     confirmarVooColeta,
+    toggleJanelaBarra,
+    fecharJanelaBarra,
+    escolherJanelaBarra,
     aceitarSolicitacao,
     pegarSolicitacao,
     // OC
