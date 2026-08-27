@@ -17,6 +17,7 @@
     --amber:#fabb25; --amber-dim:#b58a1c;
     --blue:#4DA3FF; --green:#35D07F; --orange:#FF8A3D; --red:#FF5D5D;
     --text:#EAF0FA; --muted:#90A0B8;
+    --header-h:46px;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   /* UMA fonte no app inteiro: SUSE Mono, herdada do body. As tres
@@ -30,12 +31,16 @@
   .mono{font-family:'SUSE Mono',monospace}
 
   /* ---------- casca ---------- */
-  header.app{display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--surface);
-    border-bottom:2px solid var(--amber); position:sticky; top:0; z-index:10}
-  header.app h1{font-size:22px; color:var(--amber)}
-  header.app .who{margin-left:auto; text-align:right; line-height:1.2}
-  header.app .who b{display:block; font-size:14px}
-  header.app .who span{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em}
+  /* Altura do header presa a --header-h (~a do botao Sair) — pedido
+     do Tiago (27/08) pra sobrar tela pro conteudo no celular. .op-topo
+     usa a MESMA variavel pra saber onde comecar o proprio sticky, por
+     isso os dois tem que continuar lendo dela em vez de um px solto. */
+  header.app{display:flex; align-items:center; gap:8px; padding:2px 14px; min-height:var(--header-h);
+    background:var(--surface); border-bottom:2px solid var(--amber); position:sticky; top:0; z-index:10}
+  header.app h1{font-size:14px; color:var(--amber)}
+  header.app .who{margin-left:auto; text-align:right; line-height:1.1}
+  header.app .who b{display:block; font-size:11px}
+  header.app .who span{font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em}
   .fila-offline{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border:1px solid var(--amber);
     border-radius:20px; color:var(--amber); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em}
   main{max-width:1024px; margin:0 auto; padding:14px 12px 90px}
@@ -418,24 +423,39 @@
      e para a lista de voos nao passar por baixo dela. */
   .barra-acao{position:sticky; bottom:74px; margin-top:14px}
 
+  /* Bloco fixo do topo: acoes (Malha/Historico/+), janela de tempo e,
+     com viagem ativa, o cartao azul — todos juntos, presos logo
+     abaixo do header (--header-h). Pedido do Tiago (27/08): sobrar
+     mais tela pro alerta, que e o que rola por baixo disto. */
+  .op-topo{position:sticky; top:var(--header-h); z-index:6; background:var(--bg);
+    padding-top:10px; margin:0 0 6px; border-bottom:1px solid var(--line)}
+
   /* Barra de acoes do Operador (Malha / Historico / +), em TEXTO —
-     mockup do Tiago, 27/08. Mesmo lugar da .barra-acao (colado acima
-     da barra de abas), so que sempre visivel — nao so ao confirmar um
-     passo. */
-  .op-acoes{position:sticky; bottom:74px; z-index:5; display:flex; gap:10px; margin-top:14px}
+     mockup do Tiago, 27/08. */
+  .op-acoes{display:flex; gap:10px}
   .op-acao{flex:1; min-height:56px}
   .op-acao-mais{background:var(--amber); border-color:var(--amber); color:#151005}
 
-  /* Painel reduzido da viagem ativa: flutua no canto superior direito
-     do conteudo (sticky, sobe com a pagina), sempre visivel enquanto
-     ha viagem em andamento. Mesmo azul do chip "A caminho"
-     (st-a_caminho) usado no resto do app — bate com o mesmo estado em
-     qualquer outra tela, sem precisar de cor nova. */
-  .op-viagem-reduzido{position:sticky; top:8px; z-index:8; margin:0 0 10px auto;
+  /* Painel reduzido da viagem ativa: dentro do .op-topo (que ja e
+     sticky), alinhado a direita, sempre visivel enquanto ha viagem em
+     andamento. Mesmo azul do chip "A caminho" (st-a_caminho) usado no
+     resto do app — bate com o mesmo estado em qualquer outra tela,
+     sem precisar de cor nova. */
+  .op-viagem-reduzido{margin:10px 0 0 auto;
     display:flex; align-items:center; gap:8px; width:fit-content; min-height:56px;
     background:var(--surface2); border:2px solid var(--blue); color:var(--blue);
     border-radius:999px; padding:8px 16px}
   .op-paradas{display:flex; gap:4px}
+
+  /* Timer da linha do alerta: quanto falta pro voo de destino sair.
+     Escala pedida pelo Tiago (27/08) — 40min ainda da folga (azul),
+     25min aperta (laranja), 15min e hora de ir (amarelo); abaixo
+     disso (ou ja partido) e o mesmo vermelho do "MAIS URGENTE". */
+  .op-timer{font-weight:700; font-size:.85em}
+  .op-timer.timer-azul{color:var(--blue)}
+  .op-timer.timer-laranja{color:var(--orange)}
+  .op-timer.timer-amarelo{color:var(--amber)}
+  .op-timer.timer-vermelho{color:var(--red)}
   /* Dentro da folha o corpo tem altura fixa: sem o margin-top:auto a
      barra ficaria boiando no meio quando a lista e curta, e com a
      lista longa ela continua grudada embaixo pelo sticky. */
@@ -485,9 +505,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 27/08/2026, 10:15:01
+     Gerado em: 27/08/2026, 13:08:38
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="27/08 10:15";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="27/08 13:08";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -7369,16 +7389,25 @@ Ele sai da lista de boxes dos operadores.`);
       aria-label="${vg ? "Pegar bags no caminho" : "Nova viagem"}">+${n ? ` <span class="cont">${n}</span>` : ""}</button>
   </div>`;
   }
+  function urgenciaDoVoo(vooId) {
+    const v = vooId != null ? voo(vooId) : null;
+    const m = v ? minutosDe(v.saida) : null;
+    return m == null ? 99999 : m;
+  }
   function paradasDaViagem(vg) {
     const ds = destinosDe(vg.id).filter((d) => d.status !== "entregue");
     const paradas = [];
     for (const d of ds) {
+      const urg = urgenciaDoVoo(d.voo_destino_id);
       if (naTriagem(d)) {
-        if (!paradas.some((p) => p.via === d.entrega_via)) paradas.push({ via: d.entrega_via });
+        const ja = paradas.find((p) => p.via === d.entrega_via);
+        if (!ja) paradas.push({ via: d.entrega_via, urg });
+        else if (urg < ja.urg) ja.urg = urg;
       } else {
-        paradas.push({ destino: d });
+        paradas.push({ destino: d, urg });
       }
     }
+    paradas.sort((a, b) => a.urg - b.urg);
     return paradas;
   }
   function painelReduzido(vg) {
@@ -7398,7 +7427,8 @@ Ele sai da lista de boxes dos operadores.`);
     const ativa = viagemAtiva();
     const n = ativa ? 0 : marcadosOp();
     const retomar = n ? `<p class="note" style="margin-top:10px">Saindo de <b style="color:var(--text)">${esc(UI.op.origem)}</b> \xB7 ${n} destino${n === 1 ? "" : "s"} marcado${n === 1 ? "" : "s"} \u2014 toque em + para continuar.</p>` : "";
-    return (ativa ? painelReduzido(ativa) : "") + alertas + trilhoAcoes(ativa, n) + retomar + seletorJanela();
+    const topo = `<div class="op-topo">${trilhoAcoes(ativa, n)}${seletorJanela()}${ativa ? painelReduzido(ativa) : ""}</div>`;
+    return topo + retomar + alertas;
   }
   function escolherCarga(v) {
     if (UI.op.carga !== v)
@@ -7856,10 +7886,11 @@ Ele sai da lista de boxes dos operadores.`);
   function conteudoPainelViagem(vg) {
     if (UI.pu) return telaColeta(vg);
     const ds = destinosDe(vg.id);
+    const diretos = ds.filter((d) => !naTriagem(d)).sort((a, b) => urgenciaDoVoo(a.voo_destino_id) - urgenciaDoVoo(b.voo_destino_id));
     return `
     <div class="board-title"><h2>Viagem em andamento</h2><span class="chip st-a_caminho">A caminho</span></div>
     <div class="card">${cabecalhoOrigem(vg)}</div>
-    ${ds.filter((d) => !naTriagem(d)).map((d) => cartaoDestino(d, vg)).join("")}
+    ${diretos.map((d) => cartaoDestino(d, vg)).join("")}
     ${TRIAGENS.map((via) => cartaoTriagem(via, ds.filter((d) => naTriagem(d) && d.entrega_via === via), vg)).join("")}
     <button onclick="UI.pu={box:null,vooId:null,sel:[]};render()">+ Pegar bags no caminho</button>
     ${podeCancelar(vg) ? `<button class="ghost" style="margin-top:8px" onclick="cancelarViagem(${vg.id})">Cancelar viagem</button>` : ""}`;
@@ -8036,9 +8067,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     }).join("");
   }
   function urgenciaDaPronta(p) {
-    const v = voo(p.voo_destino_id);
-    const m = v ? minutosDe(v.saida) : null;
-    return m == null ? 99999 : m;
+    return urgenciaDoVoo(p.voo_destino_id);
   }
   function prontasNotificaveis() {
     const calado = viagemAtiva() ? UI.deixadas : [];
@@ -8096,12 +8125,26 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     UI.modalVivo = { tipo: "viagem" };
     bus.recarregar();
   }
+  function corTimer(min) {
+    if (min >= 40) return "timer-azul";
+    if (min >= 25) return "timer-laranja";
+    if (min >= 15) return "timer-amarelo";
+    return "timer-vermelho";
+  }
+  function timerAlerta(v) {
+    const alvo = minutosDe(v.saida);
+    if (alvo == null) return "";
+    const restam = alvo - agoraMin();
+    const txt = restam <= 0 ? "partiu" : `${restam}min`;
+    return ` <span class="op-timer ${corTimer(restam)}">${esc(txt)}</span>`;
+  }
   function linhaSolicitacao(p) {
     const v = voo(p.voo_destino_id) || {};
     const minha = p.status === "ciente" && p.ciente_por === S.me.id;
     const acao = minha ? `<button class="small ok" onclick="pegarSolicitacao(${p.id})">${ico("mala-check", 16)} Pegar</button>` : `<button class="small primary" onclick="aceitarSolicitacao(${p.id})">${ico("mala-duvida", 16)} Aceitar</button>`;
+    const origemBox = p.setor === "BOX" && p.box ? `<span class="voo voo-chegada"><span class="voo-box">${esc(p.box)}</span></span><span class="voo-seta">${ico("seta", 14)}</span>` : "";
     return `<div class="list-line alerta-linha">
-    <span class="grow">${vooRotulo2(v, "saida")}${v.saida ? ` <span class="voo-hora">${esc(v.saida)}</span>` : ""}</span>
+    <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${origemBox}${vooRotulo2(v, "saida")}${timerAlerta(v)}</span>
     ${acao}
   </div>`;
   }
