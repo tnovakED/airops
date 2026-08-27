@@ -505,9 +505,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 27/08/2026, 13:08:38
+     Gerado em: 27/08/2026, 13:25:33
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="27/08 13:08";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="27/08 13:25";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -7443,6 +7443,7 @@ Ele sai da lista de boxes dos operadores.`);
       bus.render();
       return;
     }
+    if (!marcadosOp()) UI.op = { sel: [] };
     UI.modalVivo = { tipo: "op" };
     bus.render();
   }
