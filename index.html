@@ -136,9 +136,9 @@
   .voo-partiu{color:var(--amber); display:inline-flex; align-items:center; gap:4px}
 
   /* ---------- alerta de serviço solicitado ----------
-     A linha do voo ocupa a largura toda: é o dado que o operador lê
-     de relance, e disputar espaço com o botão fazia ela quebrar no
-     meio do número. O botão desce para o rodapé, sozinho à direita. */
+     Cada demanda aparece direto na lista, com o proprio Aceitar do
+     lado — decisao do Tiago (26/08): aceitar uma bag ja e pega-la, sem
+     passo de abrir o lugar e marcar o que coube depois de chegar. */
   .card.alerta{border-color:var(--orange)}
 
   /* O primeiro da fila e o que sai antes. A borda vermelha e a faixa
@@ -148,30 +148,6 @@
   .alerta-topo{display:flex; align-items:center; gap:6px; padding:0 0 8px;
     font-size:12px; font-weight:600; letter-spacing:.09em; color:var(--red)}
 
-  /* Uma linha so. O tamanho encolhe com a largura da tela em vez de
-     quebrar: quebrar partia o numero do voo no meio, que e justamente
-     o dado que o operador le de relance. Tudo dentro usa `em`, entao
-     sigla, placa, seta e horario escalam juntos.
-     Num celular de 360px sobram ~332px depois do padding do cartao; a
-     linha completa no pior caso (placa TCX, 3 letras) mede ~381px a
-     21px e cai para ~300px com 4.6vw. Em tela larga volta aos 21px. */
-  .alerta-voo{display:flex; align-items:center; gap:6px; flex-wrap:nowrap;
-    font-size:clamp(15px, 4.6vw, 21px); padding:2px 0 10px}
-
-  /* Filho DIRETO de proposito: vooRotulo(...,{hora:true}) emite o
-     horario DENTRO do .voo (e o que telaViagensCCO e telaOC usam).
-     Aqui ele e irmao, e so aqui deve ancorar na direita. */
-  .alerta-voo > .voo-hora{margin-left:auto; font-size:.72em}
-
-  .alerta-pe{display:flex; align-items:center; gap:10px}
-  .alerta-pe .note{font-size:13px}
-  .alerta-pe button{flex:0 0 auto; min-height:44px; padding:6px 22px; font-size:17px}
-
-  /* Aceito por este operador: o verde diz "e seu", sem prometer nada
-     sobre o conteudo — o que tem la ele descobre chegando la. */
-  .card.alerta.meu{border-color:var(--green)}
-  .alerta-topo.meu{color:var(--green)}
-
   /* O LUGAR e o dado lido de relance, de luva e sob sol. Encolhe com
      a largura em vez de quebrar: "BOX 20" partido no meio nao e
      endereco. */
@@ -179,16 +155,16 @@
   .lugar{font-size:clamp(34px,10.5vw,44px); font-weight:600; line-height:.95;
     letter-spacing:.02em; color:var(--text); flex:0 0 auto}
   .card.alerta.urgente .lugar{color:var(--red)}
-  .card.alerta.meu .lugar{color:var(--green)}
   .lugar-n{margin-left:auto; font-size:13px; color:var(--muted); text-align:right;
     letter-spacing:.04em; flex:0 0 auto}
-  .mais{font-size:12.5px; color:var(--muted); padding:0 0 8px; margin:0}
 
-  /* Alvo de dedo com luva: a linha inteira marca, nao so o quadrado. */
-  .alerta-lista{border-top:1px solid var(--line); margin:4px 0 0; padding-top:2px}
-  .alerta-linha{cursor:pointer}
-  .alerta-linha .marca{flex:0 0 auto; color:var(--muted); display:inline-flex}
-  .alerta-linha.marcada .marca{color:var(--amber)}
+  /* Lista sempre visivel, uma linha por demanda com o Aceitar do lado
+     (list-line ja da o layout — grow+botao). Rola depois de umas
+     poucas linhas pra o cartao nao crescer sem fim quando um lugar
+     tem muita bag esperando. */
+  .alerta-lista{border-top:1px solid var(--line); margin:4px 0 0; padding-top:2px;
+    max-height:220px; overflow-y:auto}
+  .alerta-linha button{flex:0 0 auto}
 
   /* ---------- icones (Phosphor, MIT) ---------- */
   .ico{display:inline-block; vertical-align:-.15em}
@@ -496,9 +472,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 26/08/2026, 15:48:49
+     Gerado em: 26/08/2026, 17:02:43
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="26/08 15:48";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="26/08 17:02";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -555,13 +531,6 @@
         // coleta no caminho
         tri: { setor: null, box: null },
         // triagem
-        // Cartao de alerta aberto e o que ja foi marcado dentro dele.
-        //
-        // Mora AQUI e nao nos checkboxes do DOM porque a pagina e
-        // redesenhada a cada evento de tempo real: marcacao no DOM seria
-        // apagada no meio da selecao, sem erro e sem aviso. E o mesmo
-        // problema que fez existir o renderSeguro().
-        alerta: { lugar: null, sel: [] },
         // O que ele viu no lugar e nao levou, nesta viagem.
         //
         // Fica quieto na tela DELE enquanto a viagem esta aberta: com a
@@ -2449,17 +2418,11 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       throw e;
     }
   }
-  async function cientePronta(id) {
-    return sb.from("prontas").update({ status: "ciente", ciente_por: S.me.id, ciente_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", id);
-  }
   async function baixarPronta(id) {
     return sb.from("prontas").update({ status: "coletada", coletada_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", id);
   }
   async function cancelarProntaDb(id) {
     return sb.from("prontas").update({ status: "cancelada" }).eq("id", id);
-  }
-  async function devolverProntaDb(id) {
-    return sb.from("prontas").update({ status: "pronta", ciente_por: null, ciente_em: null }).eq("id", id);
   }
   async function marcarProntaEntregueDb(pontoIndiaId) {
     return sb.from("prontas").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("ponto_india_id", pontoIndiaId).eq("status", "coletada");
@@ -3757,12 +3720,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     }
     const gs = [];
     for (const [lugar, ps] of mapa)
-      gs.push({
-        lugar,
-        ps,
-        urg: urgenciaDaPronta(ps[0]),
-        meu: ps.some((p) => p.status === "ciente")
-      });
+      gs.push({ lugar, ps, urg: urgenciaDaPronta(ps[0]) });
     gs.sort((a, b) => a.urg - b.urg);
     return gs;
   }
@@ -3773,91 +3731,32 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
       <span class="flip">${lista.length}</span></div>
     ${corpoDoAlerta()}`;
   }
-  function abrirLugar(lugar) {
-    UI.alerta = { lugar, sel: [] };
-    bus.render();
-  }
-  function fecharLugar() {
-    UI.alerta = { lugar: null, sel: [] };
-    bus.render();
-  }
-  function marcarDemanda(id) {
-    const s = UI.alerta.sel, i = s.indexOf(id);
-    if (i >= 0) s.splice(i, 1);
-    else s.push(id);
-    bus.render();
-  }
-  function marcarTodasDoLugar(lugar) {
-    const g = gruposDeAlerta().find((x) => x.lugar === lugar);
-    if (!g) return;
-    const ids = g.ps.map((p) => p.id);
-    UI.alerta.sel = UI.alerta.sel.length === ids.length ? [] : ids;
-    bus.render();
-  }
-  function repartirDoLugar(lugar) {
-    const g = gruposDeAlerta().find((x) => x.lugar === lugar);
-    if (!g) return { levando: [], sobra: [] };
-    const sel = UI.alerta.sel;
-    return {
-      levando: g.ps.filter((p) => sel.indexOf(p.id) >= 0),
-      sobra: g.ps.filter((p) => sel.indexOf(p.id) < 0)
-    };
-  }
-  async function aceitarLugar(lugar) {
-    const g = gruposDeAlerta().find((x) => x.lugar === lugar);
-    if (!g) return;
-    for (const p of g.ps) if (p.status === "pronta") await cientePronta(p.id);
-    bus.recarregar();
-  }
-  async function pegarDoLugar(lugar) {
-    const { levando, sobra } = repartirDoLugar(lugar);
-    if (!levando.length) return;
-    if (!viagemAtiva()) UI.deixadas = [];
-    UI.deixadas = UI.deixadas.concat(sobra.map((p) => p.id));
-    UI.alerta = { lugar: null, sel: [] };
-    await pegarProntas(levando);
-    for (const p of sobra) await devolverProntaDb(p.id);
+  async function aceitarSolicitacao(id) {
+    const p = D.prontas.find((x) => x.id === id);
+    if ((p == null ? void 0 : p.status) !== "pronta") return;
+    await pegarProntas([p]);
     UI.modalVivo = { tipo: "viagem" };
     bus.recarregar();
   }
-  function listaDoLugar(g) {
-    const linhas = g.ps.map((p) => {
-      const v = voo(p.voo_destino_id) || {};
-      const marcado = UI.alerta.sel.indexOf(p.id) >= 0;
-      return `<div class="list-line alerta-linha${marcado ? " marcada" : ""}" onclick="marcarDemanda(${p.id})">
-      <span class="marca">${ico(marcado ? "quadradoMarcado" : "quadrado", 22)}</span>
-      <span class="grow">${vooRotulo2(v, "saida")}</span>
-      ${v.saida ? `<span class="voo-hora">${esc(v.saida)}</span>` : ""}
-    </div>`;
-    }).join("");
-    const n = UI.alerta.sel.length;
-    return `<div class="alerta-lista">${linhas}</div>
-    <div class="row" style="margin-top:10px">
-      <button class="ghost small" onclick="marcarTodasDoLugar('${esc(g.lugar)}')">${n === g.ps.length ? "Limpar" : "Marcar todas"}</button>
-      <button class="ok" ${n ? "" : "disabled"} onclick="pegarDoLugar('${esc(g.lugar)}')">Peguei \xB7 ${n} voo${n === 1 ? "" : "s"}</button>
-    </div>`;
+  function linhaSolicitacao(p) {
+    const v = voo(p.voo_destino_id) || {};
+    return `<div class="list-line alerta-linha">
+    <span class="grow">${vooRotulo2(v, "saida")}${v.saida ? ` <span class="voo-hora">${esc(v.saida)}</span>` : ""}</span>
+    <button class="small ok" onclick="aceitarSolicitacao(${p.id})">Aceitar</button>
+  </div>`;
   }
   function cartaoLugar(g, destaque) {
-    const p0 = g.ps[0];
-    const v0 = voo(p0.voo_destino_id) || {};
+    const v0 = voo(g.ps[0].voo_destino_id) || {};
     const n = g.ps.length;
-    const classe = "card alerta" + (g.meu ? " meu" : destaque ? " urgente" : "");
-    const faixa = g.meu ? `<div class="alerta-topo meu">${ico("check", 14)} VOC\xCA ACEITOU \xB7 A CAMINHO</div>` : destaque ? `<div class="alerta-topo">${ico("alerta", 14)} MAIS URGENTE</div>` : "";
-    const abertoAqui = UI.alerta.lugar === g.lugar;
-    const miolo = abertoAqui ? listaDoLugar(g) : `
-    <div class="alerta-voo">${vooRotulo2(v0, "saida")}${v0.saida ? ` <span class="voo-hora">${esc(v0.saida)}</span>` : ""}</div>
-    ${n > 1 ? `<p class="mais">e mais ${n - 1} voo${n - 1 === 1 ? "" : "s"} neste lugar</p>` : ""}
-    <div class="alerta-pe">
-      <p class="note grow">${g.meu ? "chegou? marque o que coube" : "toque para assumir este lugar"}</p>
-      ${g.meu ? `<button class="small ok" onclick="abrirLugar('${esc(g.lugar)}')">Peguei</button>` : `<button class="small primary" onclick="aceitarLugar('${esc(g.lugar)}')">Aceitar</button>`}
-    </div>`;
+    const classe = "card alerta" + (destaque ? " urgente" : "");
+    const faixa = destaque ? `<div class="alerta-topo">${ico("alerta", 14)} MAIS URGENTE</div>` : "";
     return `<div class="${classe}">
     ${faixa}
-    <div class="lugar-linha"${abertoAqui ? ` onclick="fecharLugar()"` : ""}>
+    <div class="lugar-linha">
       <span class="lugar">${esc(g.lugar)}</span>
-      <span class="lugar-n">${abertoAqui ? "fechar &times;" : `${n} voo${n === 1 ? "" : "s"}${v0.saida ? `<br>sai ${esc(v0.saida)}` : ""}`}</span>
+      <span class="lugar-n">${n} voo${n === 1 ? "" : "s"}${v0.saida ? `<br>sai ${esc(v0.saida)}` : ""}</span>
     </div>
-    ${miolo}
+    <div class="alerta-lista">${g.ps.map(linhaSolicitacao).join("")}</div>
   </div>`;
   }
   function corpoDoAlerta() {
@@ -4253,7 +4152,8 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     if (!S.ferramentas.length) {
       return [...ABAS_ANTIGAS[S.me.perfil] || []];
     }
-    const abas = ["inicio"];
+    const temLevar = S.ferramentas.some((f) => f.id === "levar");
+    const abas = temLevar ? ["levar", "inicio"] : ["inicio"];
     for (const f of S.ferramentas) {
       const aba = FERRAMENTA_ABA[f.id];
       if (aba && !abas.includes(aba)) abas.push(aba);
@@ -4564,12 +4464,7 @@ Sair mesmo assim?`
     escolherCarga,
     escolherEquipamento,
     escolherEquipQtd,
-    abrirLugar,
-    fecharLugar,
-    marcarDemanda,
-    marcarTodasDoLugar,
-    aceitarLugar,
-    pegarDoLugar,
+    aceitarSolicitacao,
     // OC
     assumirVoo: assumirVoo2,
     soltarVoo: soltarVoo2,
