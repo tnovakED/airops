@@ -557,9 +557,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/08/2026, 16:44:00
+     Gerado em: 28/08/2026, 17:00:49
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 16:44";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 17:00";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -8013,22 +8013,30 @@ Ele sai da lista de boxes dos operadores.`);
     return itens;
   }
   function cartaoDestinoGrupo(ds, vg) {
-    const linha = (d) => {
-      const bx = d.origem_box || vg.box_origem;
-      return `<div class="list-line" style="padding:6px 0">
-      ${bx ? `<span class="voo voo-chegada"><span class="voo-box">${esc(bx)}</span></span>` : ""}
-      <span class="grow"></span>
-      <input id="qtd-grupo-${d.id}" type="number" inputmode="numeric" min="0" placeholder="qtd" style="width:90px">
-    </div>`;
-    };
     return `
       <div class="card">
         <div class="list-line" style="border:none;padding:0">
           <span class="grow">${rotuloDestinoCompacto(ds[0], vg)}</span>
+          <button class="ok" style="width:auto" onclick="abrirEntregaGrupo([${ds.map((d) => d.id).join(",")}],${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
         </div>
-        ${ds.map(linha).join("")}
-        <button class="ok" style="margin-top:8px" onclick="confirmarEntregaGrupo([${ds.map((d) => d.id).join(",")}],${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
       </div>`;
+  }
+  function abrirEntregaGrupo(ids, vgId) {
+    const vg = D.viagens.find((x) => x.id === vgId) || {};
+    const linhas = ids.map((id) => {
+      const d = D.destinos.find((x) => x.id === id);
+      const bx = (d == null ? void 0 : d.origem_box) || vg.box_origem;
+      return `<div class="list-line">
+      ${bx ? `<span class="voo voo-chegada"><span class="voo-box">${esc(bx)}</span></span>` : ""}
+      <span class="grow"></span>
+      <input id="qtd-grupo-${id}" type="number" inputmode="numeric" min="0" placeholder="qtd" style="width:90px">
+    </div>`;
+    }).join("");
+    abrirModal(`<h3>Quantas bags em cada box?</h3>${linhas}
+    <div class="modal-acoes" style="margin-top:12px">
+      <button onclick="fecharModal()">Cancelar</button>
+      <button class="primary" onclick="confirmarEntregaGrupo([${ids.join(",")}],${vgId})">Confirmar</button>
+    </div>`);
   }
   function cartaoTriagem(via, ds, vg) {
     if (!ds.length) return "";
@@ -9200,6 +9208,7 @@ Sair mesmo assim?`
     entregar,
     confirmarEntrega,
     cancelarViagem,
+    abrirEntregaGrupo,
     confirmarEntregaGrupo,
     abrirEntregasFeitas,
     entregarTriagem,
