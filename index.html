@@ -171,13 +171,15 @@
     max-height:220px; overflow-y:auto}
   .alerta-linha button{flex:0 0 auto}
 
-  /* Botao de acao da linha (Aceitar/Cancelar/Ver voos) so-icone, redondo —
-     44px bate com o minimo de alvo de toque dentro de alerta. A cor vem de
+  /* Botao de acao da linha (Aceitar/Cancelar/Ver voos) so-icone, quadrado —
+     52px folga acima do minimo de alvo de toque dentro de alerta (pedido
+     do Tiago, 28/08: maior e quadrado, no padrao dos outros botoes do
+     app — border-radius:12px, ver "button" acima). A cor vem de
      .primary/.ok/.ghost (ja existentes), aqui so forma e tamanho. Zera o
      margin-right que "button .ico" da pra icone+texto — aqui o icone e
      sozinho, centralizado. */
-  .alerta-acao{flex:0 0 auto; width:44px; height:44px; min-height:44px; padding:0;
-    border-radius:50%; display:flex; align-items:center; justify-content:center}
+  .alerta-acao{flex:0 0 auto; width:52px; height:52px; min-height:52px; padding:0;
+    border-radius:12px; display:flex; align-items:center; justify-content:center}
   .alerta-acao .ico{margin-right:0}
 
   /* Contagem de urgentes DA LINHA (um lugar pode ter varios voos
@@ -252,6 +254,12 @@
   .err{color:var(--red); font-size:14px; margin-top:8px; min-height:18px}
   .note{font-size:13px; color:var(--muted)}
   .list-line{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line)}
+  /* Card de alerta: linha mais compacta, pra otimizar espaco (pedido do
+     Tiago, 28/08) — a divisao entre voos (border-bottom, herdado de
+     .list-line acima) fica mais colada, sem o respiro padrao das outras
+     listas do app. Escopado a .alerta-lista pra nao mexer em telas fora
+     do alerta. */
+  .alerta-lista .list-line{padding:6px 0}
   .list-line:last-child{border-bottom:none}
   .grow{flex:1}
   .hide{display:none}
@@ -432,18 +440,33 @@
   .barra-acao{position:sticky; bottom:74px; margin-top:14px}
 
   /* Barra fixa do Operador — sobe pro topo, colada no cabecalho, no
-     lugar do nav.tabs de baixo (decisao do Tiago, 27/08). Ordem:
-     relogio, Malha, Historico, Turno, +. Botoes de texto crescem
-     (flex:1); o relogio e o "+" tem largura propria. */
+     lugar do nav.tabs de baixo (decisao do Tiago, 27/08). Ordem: icone
+     de abrir/fechar, relogio, Malha, Historico, Turno, +. Malha/
+     Historico/Turno sao so-icone agora (28/08) — cresce igual (flex:1),
+     so muda o que tem dentro; o relogio, o "+" e o icone de abrir/
+     fechar tem largura propria. */
   .op-barra{position:sticky; top:var(--header-h); z-index:9; display:flex; gap:8px;
     padding:8px 12px; background:var(--surface); border-bottom:1px solid var(--line);
-    min-height:var(--barra-h)}
-  .op-barra button{flex:1; min-height:36px; font-size:15px}
-  .op-barra-relogio{flex:0 0 auto; width:44px; display:inline-flex;
-    align-items:center; justify-content:center; padding:0}
+    min-height:var(--barra-h); overflow:hidden; max-height:80px;
+    transition:max-height .16s ease}
+  .op-barra button{flex:1; min-height:36px; font-size:15px;
+    display:inline-flex; align-items:center; justify-content:center}
+  .op-barra-relogio{flex:0 0 auto; width:44px; padding:0}
   .op-barra-relogio.on{background:var(--amber); color:#151005; border-color:var(--amber)}
   .op-barra-mais{flex:0 0 auto; width:auto; padding:0 18px;
     background:var(--amber); border-color:var(--amber); color:#151005}
+  .op-barra-abrir{flex:0 0 auto; width:32px; padding:0}
+
+  /* Recolhida: so o icone de abrir fica visivel, o resto some (pedido
+     do Tiago, 28/08) — o operador escolhe esconder pra ganhar tela.
+     toggleBarraOperador() (telaOperador.js) e quem anima a transicao de
+     verdade, com o mesmo truque de requestAnimationFrame duplo que
+     revelar() usa nos popups — render() recria este <nav> do zero a
+     cada chamada, entao uma classe trocada na hora do render nao tem
+     "de onde" transicionar sozinha. */
+  .op-barra.fechada{max-height:44px}
+  .op-barra.fechada > *:not(.op-barra-abrir){display:none}
+  @media (prefers-reduced-motion: reduce){ .op-barra{transition:none} }
 
   /* Dropdown do relogio: flutua por cima do conteudo (nao empurra
      nada) e fecha ao escolher um horario ou ao tocar fora — o backdrop
@@ -532,9 +555,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/08/2026, 14:41:24
+     Gerado em: 28/08/2026, 15:56:03
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 14:41";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 15:56";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -589,6 +612,8 @@
         // horas da janela do operador (null = ainda nao lida do localStorage)
         janelaAberta: false,
         // dropdown da janela, na barra do Operador (render.js)
+        barraFechada: false,
+        // menu do topo (relogio/Malha/Historico/Turno/+) recolhido? comeca aberto
         pu: null,
         // coleta no caminho
         tri: { setor: null, box: null },
@@ -2015,21 +2040,21 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     carreta: "0 -960 960 960",
     esteira: "0 -960 960 960",
     pacote: "0 -960 960 960",
-    bagagens: "0 -960 960 960",
     "mala-duvida": "0 -960 960 960",
     "mala-check": "0 -960 960 960",
     alerta: "0 -960 960 960",
     vervoos: "0 -960 960 960",
     cancelar: "0 -960 960 960",
-    aceite: "0 -960 960 960"
+    aceite: "0 -960 960 960",
+    malha: "0 -960 960 960",
+    historico: "0 -960 960 960",
+    turno: "0 -960 960 960"
   };
   var P = {
     "mala-check": `<path d="m696-150 141.33-142-28.66-28.67L696-207.33 638-266l-28.67 29.33L696-150Zm-337.33-46.67v-406h-57.34v406h57.34ZM481.33-130h-180q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-406q0-27 19.83-46.83t46.83-19.83h267.34v-144h-16q-27 0-46.84-19.84Q486-853 486-880h149.33v392.67q-17.33 6-34.16 14.66-16.84 8.67-32.5 20.67v-150.67H425.33v406h37.34q1.66 18 6.33 34.34Q473.67-146 481.33-130Zm380.84-245.5q57.16 57.17 57.16 138.83 0 81.67-57.16 138.84Q805-40.67 723.33-40.67q-81.66 0-138.83-57.16-57.17-57.17-57.17-138.84 0-81.66 57.17-138.83 57.17-57.17 138.83-57.17 81.67 0 138.84 57.17ZM392-400Zm-33.33 203.33v-406 406Zm66.66 0v-406 406Z"/>`,
     // material symbols: carry_on_bag_checked (Apache 2.0) — selo "Pegar" (ja reservado)
     "mala-duvida": `<path d="M400.67-720h144q0-30-21-50t-51-20q-30 0-51 19.83-21 19.84-21 50.17Zm-131.34 66.67h-50.66V-320h50.66v-333.33ZM73.33-120v-66.67H472q3.67 19.34 8.67 35 5 15.67 12.66 31.67h-420Zm246-533.33V-320h162q-5.66 16-8.66 32.67-3 16.66-4.67 34H218.67q-27 0-46.84-19.84Q152-293 152-320v-333.33q0-27 19.83-46.84Q191.67-720 218.67-720h132.66q0-51.33 35.41-85.67 35.42-34.33 86-34.33 50.59 0 85.93 34.33Q594-771.33 594-720h132.67q27 0 46.83 19.83 19.83 19.84 19.83 46.84V-492q-18.33-4.67-33.16-6.33-14.84-1.67-33.5-1.67v-153.33H676V-494q-14.67 3-26.67 6.5-12 3.5-23.33 8.17v-174H319.33Zm550.5 276.83q56.84 56.83 56.84 139.83 0 83-56.84 139.84Q813-40 730-40q-83 0-139.83-56.83-56.84-56.84-56.84-139.84t56.84-139.83Q647-433.33 730-433.33q83 0 139.83 56.83ZM750.17-114.57q7.83-7.91 7.83-19.5 0-11.6-7.91-19.43-7.9-7.83-19.5-7.83-11.59 0-19.42 7.9-7.84 7.91-7.84 19.5 0 11.6 7.91 19.43 7.9 7.83 19.5 7.83 11.59 0 19.43-7.9Zm-20.98-246.1q-24.86 0-45.02 14.17Q664-332.33 656-307.68l34.67 15.01Q693-306 703.83-315.33q10.84-9.34 25.8-9.34 16.04 0 25.2 8 9.17 8 9.17 24 0 11-6.67 19.17-6.66 8.17-14.66 16.17-7.34 6.66-14.5 13.33-7.17 6.67-12.17 14.67-3.67 6.66-4.83 12.86Q710-210.27 710-202v15.33h38.67v-10.63q0-11.7 6.33-21.2t14.82-17.77q14.85-12.4 23.85-24.4 9-12 9-32 0-30.81-20.53-49.4-20.54-18.6-52.95-18.6ZM269.33-653.33h50-50Zm0 0h-50.66 50.66Zm50 0H626 319.33Zm306.67 0h50-50Zm50 0h50.67H676Z"/>`,
     // material symbols: checked_bag_question (Apache 2.0) — selo "Aceitar" (ainda ninguem confirmou)
-    bagagens: `<path d="M266.67-80v-43.33q-27.67 0-47.17-19.59Q200-162.5 200-190v-463.33q0-27.5 19.58-47.09Q239.17-720 266.67-720h96.66v-123.33q0-15 10.84-25.84Q385-880 400-880h160q15 0 25.83 10.83 10.84 10.84 10.84 25.84V-720h96.66q27.5 0 47.09 19.58Q760-680.83 760-653.33V-190q0 27.5-19.58 47.08-19.59 19.59-47.09 19.59V-80h-66.66v-43.33H333.33V-80h-66.66ZM430-720h100v-93.33H430V-720Zm160.83 223.5q54.5-13.17 102.5-42.83v-114H266.67v114q48 29.66 102.5 42.83 54.5 13.17 110.83 13.17t110.83-13.17ZM446.67-373.33v-41.34q-48-3.66-93.34-16Q308-443 266.67-466v276h426.66v-276q-41.33 23-86.66 35.33-45.34 12.34-93.34 16v41.34h-66.66Zm33.33 0Zm0-110Zm0 17.33Z"/>`,
-    // material symbols: travel_luggage_and_bags (Apache 2.0) — titulo da secao de alerta
     carreta: `<path d="M150-599.33q-13.32 0-22.33-9.84-9-9.83-9-23.5 0-13.66 9-23.5Q136.68-666 150-666h139.33q27.78 0 47.56 19.5T360-599.33H150Zm83.25 372.66q52.75 0 89.75-36.92t37-89.66Q360-406 323.08-443t-89.67-37q-52.74 0-89.74 36.92-37 36.92-37 89.67 0 52.74 36.92 89.74 36.92 37 89.66 37Zm599.58-20.38q20.5-20.38 20.5-49.5t-20.38-49.62q-20.38-20.5-49.5-20.5t-49.62 20.39q-20.5 20.38-20.5 49.5 0 29.11 20.39 49.61 20.38 20.5 49.5 20.5 29.11 0 49.61-20.38Zm-599.42-39.62q-27.74 0-47.24-19.42-19.5-19.42-19.5-47.16 0-27.75 19.42-47.25t47.16-19.5q27.75 0 47.25 19.42t19.5 47.17q0 27.74-19.42 47.24-19.42 19.5-47.17 19.5Zm573.26-145q21.33 5 35.33 11.84 14 6.83 31.33 21.16v-254q0-28.33-19.16-47.5-19.17-19.16-47.5-19.16H541.33l-46.66-47.34 60-60L533.33-848 392-706.67l22 22L473.33-744 520-698.24V-598q0 38.78-26.83 66.39Q466.33-504 427.33-504h-73q19 15 30 29.67 11 14.66 23.67 37h19.33q65.34 0 112.34-47.67t47-113v-54.67h220v221ZM649-320q6-23.67 13.17-37.5 7.16-13.83 21.16-29.83H424q2.67 19.66 2.67 33.66 0 14-2.67 33.67h225Zm134.67 160q-57 0-97-39.44t-40-95.23q0-57.44 40.61-98.05t98.05-40.61q55.79 0 95.23 40.02Q920-353.29 920-296.67q0 57.34-39.67 97Q840.67-160 783.67-160ZM232-160q-80.33 0-136.17-56.55Q40-273.1 40-353.33q0-80.24 56.5-136.79t136.76-56.55q80.27 0 136.84 56.57 56.57 56.57 56.57 136.84 0 80.26-56.5 136.76Q313.67-160 232-160Zm393.67-360Z"/>`,
     // material symbols: agriculture (Apache 2.0) — trator = Operador; icone da viagem ativa e do S.OP
     check: `<path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z"/>`,
@@ -2066,8 +2091,14 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     // material symbols: manage_search (Apache 2.0) — botao "Ver voos" do BOX ja aceito
     cancelar: `<path d="m332-285.33 148-148 148 148L674.67-332l-148-148 148-148L628-674.67l-148 148-148-148L285.33-628l148 148-148 148L332-285.33ZM480-80q-82.33 0-155.33-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.67T80-480q0-83 31.5-156t85.83-127q54.34-54 127.34-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82.33-31.5 155.33-31.5 73-85.5 127.34Q709-143 636-111.5T480-80Zm0-66.67q139.33 0 236.33-97.33t97-236q0-139.33-97-236.33t-236.33-97q-138.67 0-236 97-97.33 97-97.33 236.33 0 138.67 97.33 236 97.33 97.33 236 97.33ZM480-480Z"/>`,
     // material symbols: cancel (Apache 2.0) — desfazer aceite do BOX
-    aceite: `<path d="M379.33-244 154-469.33 201.67-517l177.66 177.67 378.34-378.34L805.33-670l-426 426Z"/>`
+    aceite: `<path d="M379.33-244 154-469.33 201.67-517l177.66 177.67 378.34-378.34L805.33-670l-426 426Z"/>`,
     // material symbols: check (Apache 2.0) — botao "Aceitar" do BOX
+    malha: `<path d="M233.33-161.33 80-315.33l46.67-46L200-290v-470.67h66.67V-290l72.66-71.33 46.67 46-152.67 154Zm252.67-38V-266h394v66.67H486Zm0-247.34v-66.66h394v66.66H486ZM486-694v-66.67h394V-694H486Z"/>`,
+    // material symbols: list_arrow (Apache 2.0) — botao Malha, so-icone, na barra do topo
+    historico: `<path d="M186.67-120q-27.5 0-47.09-19.58Q120-159.17 120-186.67v-586.66q0-27.5 19.58-47.09Q159.17-840 186.67-840h192.66q7.67-35.33 35.84-57.67Q443.33-920 480-920t64.83 22.33Q573-875.33 580.67-840h192.66q27.5 0 47.09 19.58Q840-800.83 840-773.33v586.66q0 27.5-19.58 47.09Q800.83-120 773.33-120H186.67Zm0-66.67h586.66v-586.66H186.67v586.66ZM280-280h275.33v-66.67H280V-280Zm0-166.67h400v-66.66H280v66.66Zm0-166.66h400V-680H280v66.67ZM503.5-804.5q9.83-9.83 9.83-23.5t-9.83-23.5q-9.83-9.83-23.5-9.83t-23.5 9.83q-9.83 9.83-9.83 23.5t9.83 23.5q9.83 9.83 23.5 9.83t23.5-9.83ZM186.67-186.67v-586.66 586.66Z"/>`,
+    // material symbols: assignment (Apache 2.0) — botao Historico, so-icone, na barra do topo
+    turno: `<path d="M446.67-520h66.66v-200h-66.66v200ZM480-373.33q13.67 0 23.5-9.84 9.83-9.83 9.83-23.5 0-13.66-9.83-23.5Q493.67-440 480-440t-23.5 9.83q-9.83 9.84-9.83 23.5 0 13.67 9.83 23.5 9.83 9.84 23.5 9.84ZM480-168q129.33-118 191.33-214.17 62-96.16 62-169.83 0-115-73.5-188.17-73.5-73.16-179.83-73.16-106.33 0-179.83 73.16Q226.67-667 226.67-552q0 73.67 63 169.83Q352.67-286 480-168Zm0 88Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z"/>`
+    // material symbols: fmd_bad (Apache 2.0) — botao Turno, so-icone, na barra do topo
   };
   function ico(nome, tam) {
     const d = P[nome];
@@ -7442,16 +7473,29 @@ Ele sai da lista de boxes dos operadores.`);
     const tem = (k) => abas.includes(k);
     const vg = viagemAtiva();
     const n = vg ? 0 : marcadosOp();
-    return `<nav class="op-barra">
+    return `<nav class="op-barra${UI.barraFechada ? " fechada" : ""}">
+    <button class="op-barra-abrir" onclick="toggleBarraOperador()"
+      aria-label="${UI.barraFechada ? "Abrir menu" : "Esconder menu"}">${ico("lista", 18)}</button>
     <button class="op-barra-relogio${UI.janelaAberta ? " on" : ""}"
       onclick="toggleJanelaBarra()" aria-label="Janela de tempo">${ico("relogio", 20)}</button>
-    ${tem("voos") ? `<button class="${UI.tab === "voos" ? "on" : ""}" onclick="irPara('voos')">Malha</button>` : ""}
-    ${tem("minhas") ? `<button class="${UI.tab === "minhas" ? "on" : ""}" onclick="irPara('minhas')">Hist\xF3rico</button>` : ""}
-    <button class="${UI.tab === "levar" ? "on" : ""}" onclick="irPara('levar')">Turno</button>
-    <button class="op-barra-mais" onclick="abrirNovaFolha()"
+    ${tem("voos") ? `<button class="${UI.tab === "voos" ? "on" : ""}" onclick="irPara('voos')" aria-label="Malha">${ico("malha", 20)}</button>` : ""}
+    ${tem("minhas") ? `<button class="${UI.tab === "minhas" ? "on" : ""}" onclick="irPara('minhas')" aria-label="Hist\xF3rico">${ico("historico", 20)}</button>` : ""}
+    <button class="${UI.tab === "levar" ? "on" : ""}" onclick="irPara('levar')" aria-label="Turno">${ico("turno", 20)}</button>
+    <button class="op-barra-mais${vg ? " ghost" : ""}" onclick="abrirNovaFolha()"
       aria-label="${vg ? "Pegar bags no caminho" : "Nova viagem"}">+${n ? ` <span class="cont">${n}</span>` : ""}</button>
     ${UI.janelaAberta ? janelaDropdown() : ""}
   </nav>`;
+  }
+  function toggleBarraOperador() {
+    if (!UI.barraFechada) UI.janelaAberta = false;
+    const alvo = !UI.barraFechada;
+    bus.render();
+    const nav = document.querySelector(".op-barra");
+    if (nav) {
+      nav.classList.toggle("fechada", !alvo);
+      proximoQuadro(() => proximoQuadro(() => nav.classList.toggle("fechada", alvo)));
+    }
+    UI.barraFechada = alvo;
   }
   function janelaDropdown() {
     const j = janelaAtual();
@@ -7495,9 +7539,21 @@ Ele sai da lista de boxes dos operadores.`);
     paradas.sort((a, b) => a.urg - b.urg);
     return paradas;
   }
+  function boxDaParada(p) {
+    if (p.via) return p.via;
+    const d = p.destino;
+    if (d && !d.setor_destino && chegouNoVoo(d)) {
+      const v = voo(d.voo_destino_id) || {};
+      return v.box || null;
+    }
+    return null;
+  }
   function painelReduzido(vg) {
     const paradas = paradasDaViagem(vg);
-    const placas = paradas.map((_, i) => `<span class="voo-box op-parada${i === 0 ? " op-proxima" : ""}">${i + 1}</span>`).join("");
+    const placas = paradas.map((p, i) => {
+      const bx = boxDaParada(p);
+      return `<span class="voo-box op-parada${i === 0 ? " op-proxima" : ""}">${bx ? esc(bx) : i + 1}</span>`;
+    }).join("");
     return `<button class="op-viagem-reduzido" onclick="abrirPainelViagem()"
       aria-label="Viagem em andamento \u2014 ${paradas.length} parada${paradas.length === 1 ? "" : "s"}">
     ${ico("carreta", 22)}<span class="op-paradas">${placas}</span>
@@ -7523,9 +7579,7 @@ Ele sai da lista de boxes dos operadores.`);
   }
   function abrirNovaFolha() {
     if (viagemAtiva()) {
-      UI.pu = { origem: null, box: null, vooId: null, sel: [] };
-      UI.modalVivo = { tipo: "viagem" };
-      bus.render();
+      aviso('Acesse a viagem e use "+ Pegar bags no caminho".');
       return;
     }
     if (!marcadosOp()) UI.op = { sel: [] };
@@ -8130,6 +8184,7 @@ Destino: ${esc(inf.num)}`);
     const vg = D.viagens.find((x) => x.id === vgId) || {};
     await entregarDestino(destId, vgId, qtd);
     await depoisDaEntrega(d, vg, qtd);
+    UI.modalVivo = { tipo: "viagem" };
     bus.recarregar();
   }
   async function depoisDaEntrega(d, vg, qtd) {
@@ -8214,8 +8269,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     }
     const gs = [];
     for (const tipo of TIPOS_ALERTA) {
-      const ps = porTipo.get(tipo);
-      if (!(ps == null ? void 0 : ps.length)) continue;
+      const ps = porTipo.get(tipo) || [];
       const porLugar = /* @__PURE__ */ new Map();
       for (const p of ps) {
         const lugar = lugarDaPronta(p);
@@ -8229,11 +8283,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     return gs;
   }
   function alertasNaPagina() {
-    const lista = prontasNotificaveis();
-    if (!lista.length) return "";
-    return `<div class="board-title"><h2>${ico("bagagens", 18)} Servi\xE7o solicitado</h2>
-      <span class="flip">${lista.length}</span></div>
-    ${corpoDoAlerta()}`;
+    return corpoDoAlerta();
   }
   async function aceitarSolicitacao(id) {
     const p = D.prontas.find((x) => x.id === id);
@@ -9120,6 +9170,7 @@ Sair mesmo assim?`
     toggleJanelaBarra,
     fecharJanelaBarra,
     escolherJanelaBarra,
+    toggleBarraOperador,
     aceitarSolicitacao,
     pegarSolicitacao,
     aceitarBox,
