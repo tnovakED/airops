@@ -214,6 +214,10 @@
   .cont{display:inline-flex; align-items:center; justify-content:center;
     flex:0 0 auto; width:30px; height:30px; border-radius:50%;
     background:#000; color:#fff; font-weight:600; font-size:17px; line-height:1}
+  /* Aba de secao (card BOX) com algo abaixo de 15min: mesmo vermelho
+     do timer da linha (corTimer) e da faixa MAIS URGENTE — sinaliza
+     sem abrir a aba. */
+  .cont.cont-urg{background:var(--red); color:#000}
   .dcode{font-weight:600; font-size:21px; color:var(--text)}
   .dhora{font-weight:500; font-size:15px; color:var(--muted); margin-top:6px}
   .linha-c{display:flex; align-items:center; gap:9px; justify-content:center; flex-wrap:wrap}
@@ -528,9 +532,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/08/2026, 09:56:22
+     Gerado em: 28/08/2026, 11:04:33
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 09:56";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 11:04";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -589,6 +593,8 @@
         // coleta no caminho
         tri: { setor: null, box: null },
         // triagem
+        alertaSecao: null,
+        // aba de secao ativa no card BOX do alerta (null = todas)
         // O que ele viu no lugar e nao levou, nesta viagem.
         //
         // Fica quieto na tela DELE enquanto a viagem esta aberta: com a
@@ -2664,6 +2670,36 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     return sb.from("ponto_india").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), entregue_por: S.me.id }).eq("id", id);
   }
 
+  // src/utils/patio.js
+  var BOX_BASES_COM_LETRA = [4, 9];
+  function ordemBox(box) {
+    const s = String(box == null ? "" : box).trim().toUpperCase();
+    if (/^\d+$/.test(s)) {
+      const n = parseInt(s, 10);
+      return n + BOX_BASES_COM_LETRA.filter((b) => b < n).length;
+    }
+    const m = s.match(/^(\d+)A$/);
+    if (m && BOX_BASES_COM_LETRA.includes(parseInt(m[1], 10))) return ordemBox(m[1]) + 1;
+    return null;
+  }
+  function distanciaBox(boxA, boxB) {
+    const o1 = ordemBox(boxA), o2 = ordemBox(boxB);
+    return o1 == null || o2 == null ? null : Math.abs(o1 - o2);
+  }
+  var SECOES_BOX = [
+    { nome: "01-04", de: "1", ate: "4" },
+    { nome: "4A-8", de: "4A", ate: "8" },
+    { nome: "9-12", de: "9", ate: "12" },
+    { nome: "13-16", de: "13", ate: "16" },
+    { nome: "17-22", de: "17", ate: "22" }
+  ];
+  function secaoDoBox(box) {
+    const o = ordemBox(box);
+    if (o == null) return null;
+    const s = SECOES_BOX.find((s2) => o >= ordemBox(s2.de) && o <= ordemBox(s2.ate));
+    return s ? s.nome : null;
+  }
+
   // src/ui/screens/telaPontos.js
   init_modal();
   init_bus();
@@ -2845,21 +2881,6 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       <div><label>\xCDndia</label><button class="primary" onclick="abrirPontoIndiaOC(${v.id})">${indiaLbl}</button></div>
     </div>
   </div>`;
-  }
-  var BOX_BASES_COM_LETRA = [4, 9];
-  function ordemBox(box) {
-    const s = String(box == null ? "" : box).trim().toUpperCase();
-    if (/^\d+$/.test(s)) {
-      const n = parseInt(s, 10);
-      return n + BOX_BASES_COM_LETRA.filter((b) => b < n).length;
-    }
-    const m = s.match(/^(\d+)A$/);
-    if (m && BOX_BASES_COM_LETRA.includes(parseInt(m[1], 10))) return ordemBox(m[1]) + 1;
-    return null;
-  }
-  function distanciaBox(boxA, boxB) {
-    const o1 = ordemBox(boxA), o2 = ordemBox(boxB);
-    return o1 == null || o2 == null ? null : Math.abs(o1 - o2);
   }
   function classificarConexaoDelta(v, pd) {
     const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
@@ -8186,7 +8207,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
         if (!porLugar.has(lugar)) porLugar.set(lugar, []);
         porLugar.get(lugar).push(p);
       }
-      const sub = [...porLugar.values()].map((sps) => ({ lugar: lugarDaPronta(sps[0]), ps: sps, urg: urgenciaDaPronta(sps[0]) }));
+      const sub = [...porLugar.values()].map((sps) => ({ lugar: lugarDaPronta(sps[0]), box: sps[0].box, ps: sps, urg: urgenciaDaPronta(sps[0]) }));
       sub.sort((a, b) => a.urg - b.urg);
       gs.push({ tipo, sub, urg: sub[0].urg });
     }
@@ -8240,14 +8261,39 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     ${acao}
   </div>`;
   }
+  function escolherSecaoBox(nome) {
+    UI.alertaSecao = UI.alertaSecao === nome ? null : nome;
+    bus.render();
+  }
+  function boxFiltrado(g) {
+    const comSublugar = g.sub.length > 1;
+    const corpoSublugar = (s) => comSublugar ? `<div class="sublugar-tit">${esc(s.lugar)}</div>${s.ps.map(linhaSolicitacao).join("")}` : s.ps.map(linhaSolicitacao).join("");
+    const porSecao = /* @__PURE__ */ new Map();
+    for (const s of g.sub) {
+      const nome = secaoDoBox(s.box);
+      if (!porSecao.has(nome)) porSecao.set(nome, []);
+      porSecao.get(nome).push(s);
+    }
+    if (porSecao.size <= 1) return { abas: "", sub: g.sub, corpoSublugar };
+    const secoes = [...porSecao.entries()].map(([nome, subs]) => ({ nome, subs, urg: subs[0].urg }));
+    secoes.sort((a, b) => a.urg - b.urg);
+    const ativa = secoes.some((s) => s.nome === UI.alertaSecao) ? UI.alertaSecao : null;
+    const abas = `<div class="deg-linha">${secoes.map((sec) => {
+      const qtd = sec.subs.reduce((a, s) => a + s.ps.length, 0);
+      const urgente = corTimer(sec.urg - agoraMin()) === "timer-vermelho";
+      const rot = `${sec.nome} <span class="cont${urgente ? " cont-urg" : ""}">${qtd}</span>`;
+      return degrau(rot, ativa === sec.nome, `escolherSecaoBox('${sec.nome}')`);
+    }).join("")}</div>`;
+    const visiveis = ativa ? secoes.filter((s) => s.nome === ativa) : secoes;
+    return { abas, sub: visiveis.flatMap((s) => s.subs), corpoSublugar };
+  }
   function cartaoTipo(g, destaque) {
-    const totalVoos = g.sub.reduce((a, s) => a + s.ps.length, 0);
-    const v0 = voo(g.sub[0].ps[0].voo_destino_id) || {};
+    const { abas, sub, corpoSublugar } = boxFiltrado(g);
+    const totalVoos = sub.reduce((a, s) => a + s.ps.length, 0);
+    const v0 = voo(sub[0].ps[0].voo_destino_id) || {};
     const classe = "card alerta" + (destaque ? " urgente" : "");
     const faixa = destaque ? `<div class="alerta-topo">${ico("sirene", 14)} MAIS URGENTE</div>` : "";
-    const corpo = g.sub.length > 1 ? g.sub.map(
-      (s) => `<div class="sublugar-tit">${esc(s.lugar)}</div>${s.ps.map(linhaSolicitacao).join("")}`
-    ).join("") : g.sub[0].ps.map(linhaSolicitacao).join("");
+    const corpo = abas + sub.map(corpoSublugar).join("");
     return `<div class="${classe}">
     ${faixa}
     <div class="lugar-linha">
@@ -8974,6 +9020,7 @@ Sair mesmo assim?`
     escolherJanelaBarra,
     aceitarSolicitacao,
     pegarSolicitacao,
+    escolherSecaoBox,
     // OC
     assumirVoo: assumirVoo2,
     soltarVoo: soltarVoo2,
