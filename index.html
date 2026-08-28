@@ -441,14 +441,15 @@
 
   /* Barra fixa do Operador — sobe pro topo, colada no cabecalho, no
      lugar do nav.tabs de baixo (decisao do Tiago, 27/08). Ordem: icone
-     de abrir/fechar, relogio, Malha, Historico, Turno, +. Malha/
-     Historico/Turno sao so-icone agora (28/08) — cresce igual (flex:1),
-     so muda o que tem dentro; o relogio, o "+" e o icone de abrir/
-     fechar tem largura propria. */
+     de esconder, relogio, Malha, Historico, Turno, +. Malha/Historico/
+     Turno sao so-icone (28/08) — cresce igual (flex:1), so muda o que
+     tem dentro; o relogio, o "+" e o icone de esconder tem largura
+     propria. Entrada suave via @keyframes: dispara sozinho quando o
+     elemento entra no DOM (render() recria a barra do zero a cada
+     chamada), sem precisar de transition nem de segundo quadro. */
   .op-barra{position:sticky; top:var(--header-h); z-index:9; display:flex; gap:8px;
     padding:8px 12px; background:var(--surface); border-bottom:1px solid var(--line);
-    min-height:var(--barra-h); overflow:hidden; max-height:80px;
-    transition:max-height .16s ease}
+    min-height:var(--barra-h); animation:barraDesce .16s ease}
   .op-barra button{flex:1; min-height:36px; font-size:15px;
     display:inline-flex; align-items:center; justify-content:center}
   .op-barra-relogio{flex:0 0 auto; width:44px; padding:0}
@@ -456,17 +457,18 @@
   .op-barra-mais{flex:0 0 auto; width:auto; padding:0 18px;
     background:var(--amber); border-color:var(--amber); color:#151005}
   .op-barra-abrir{flex:0 0 auto; width:32px; padding:0}
+  @keyframes barraDesce{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:translateY(0)}}
 
-  /* Recolhida: so o icone de abrir fica visivel, o resto some (pedido
-     do Tiago, 28/08) — o operador escolhe esconder pra ganhar tela.
-     toggleBarraOperador() (telaOperador.js) e quem anima a transicao de
-     verdade, com o mesmo truque de requestAnimationFrame duplo que
-     revelar() usa nos popups — render() recria este <nav> do zero a
-     cada chamada, entao uma classe trocada na hora do render nao tem
-     "de onde" transicionar sozinha. */
-  .op-barra.fechada{max-height:44px}
-  .op-barra.fechada > *:not(.op-barra-abrir){display:none}
-  @media (prefers-reduced-motion: reduce){ .op-barra{transition:none} }
+  /* Recolhida: some da tela por completo — nao reserva faixa nenhuma
+     (pedido do Tiago, 28/08) — vira so um circulo flutuando por cima do
+     conteudo. position:fixed, entao a posicao dele no HTML nao importa
+     pro layout. */
+  .op-barra-flutuante{position:fixed; top:calc(var(--header-h) + 8px); left:12px; z-index:9;
+    width:40px; height:40px; border-radius:50%; padding:0; display:inline-flex;
+    align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,.5);
+    animation:flutuaEntra .16s ease}
+  @keyframes flutuaEntra{from{opacity:0; transform:scale(.8)} to{opacity:1; transform:scale(1)}}
+  @media (prefers-reduced-motion: reduce){ .op-barra, .op-barra-flutuante{animation:none} }
 
   /* Dropdown do relogio: flutua por cima do conteudo (nao empurra
      nada) e fecha ao escolher um horario ou ao tocar fora — o backdrop
@@ -555,9 +557,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/08/2026, 15:56:03
+     Gerado em: 28/08/2026, 16:44:00
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 15:56";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 16:44";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -7470,12 +7472,14 @@ Ele sai da lista de boxes dos operadores.`);
    </div>`;
   var botaoSaindo = (n, acao) => `<button class="primary passo-canto" ${n ? "" : "disabled"} onclick="${acao}">Saindo com<br>${n} destino${n === 1 ? "" : "s"}</button>`;
   function barraOperador(abas) {
+    if (UI.barraFechada) {
+      return `<button class="op-barra-flutuante" onclick="toggleBarraOperador()" aria-label="Abrir menu">${ico("lista", 18)}</button>`;
+    }
     const tem = (k) => abas.includes(k);
     const vg = viagemAtiva();
     const n = vg ? 0 : marcadosOp();
-    return `<nav class="op-barra${UI.barraFechada ? " fechada" : ""}">
-    <button class="op-barra-abrir" onclick="toggleBarraOperador()"
-      aria-label="${UI.barraFechada ? "Abrir menu" : "Esconder menu"}">${ico("lista", 18)}</button>
+    return `<nav class="op-barra">
+    <button class="op-barra-abrir" onclick="toggleBarraOperador()" aria-label="Esconder menu">${ico("lista", 18)}</button>
     <button class="op-barra-relogio${UI.janelaAberta ? " on" : ""}"
       onclick="toggleJanelaBarra()" aria-label="Janela de tempo">${ico("relogio", 20)}</button>
     ${tem("voos") ? `<button class="${UI.tab === "voos" ? "on" : ""}" onclick="irPara('voos')" aria-label="Malha">${ico("malha", 20)}</button>` : ""}
@@ -7488,14 +7492,8 @@ Ele sai da lista de boxes dos operadores.`);
   }
   function toggleBarraOperador() {
     if (!UI.barraFechada) UI.janelaAberta = false;
-    const alvo = !UI.barraFechada;
+    UI.barraFechada = !UI.barraFechada;
     bus.render();
-    const nav = document.querySelector(".op-barra");
-    if (nav) {
-      nav.classList.toggle("fechada", !alvo);
-      proximoQuadro(() => proximoQuadro(() => nav.classList.toggle("fechada", alvo)));
-    }
-    UI.barraFechada = alvo;
   }
   function janelaDropdown() {
     const j = janelaAtual();
@@ -7984,7 +7982,7 @@ Ele sai da lista de boxes dos operadores.`);
     const v = voo(d.voo_destino_id) || {};
     if (!chegouNoVoo(d))
       return vooRotulo2(v, "saida", { box: false }) + ` <span class="voo-seta">${ico("seta", 16)}</span> ` + setorRotulo(d.entrega_via);
-    return vooRotulo2(v, "saida");
+    return vooRotulo2(v, "saida", { aviao: true });
   }
   var TRIAGENS = ["TCX", "TLC"];
   var naTriagem = (d) => TRIAGENS.indexOf(d.entrega_via) >= 0 && !!d.voo_destino_id;
@@ -7993,14 +7991,47 @@ Ele sai da lista de boxes dos operadores.`);
       <div class="card">
         <div class="list-line" style="border:none;padding:0">
           <span class="grow">${rotuloDestinoCompacto(d, vg)}</span>
-          ${d.status === "entregue" ? `<span class="chip st-entregue">Entregue</span>` : `<button class="ok" style="width:auto" onclick="entregar(${d.id},${vg.id})">Entreguei</button>`}
+          <button class="ok" style="width:auto" onclick="entregar(${d.id},${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
         </div>
         ${d.origem_box ? `<div class="note" style="margin-top:4px">coletada no box ${esc(d.origem_box)}${d.origem_voo_id ? " do voo " + esc((voo(d.origem_voo_id) || {}).voo_chegada || (voo(d.origem_voo_id) || {}).numero || "?") : ""}</div>` : ""}
       </div>`;
   }
+  function gruposDiretos(ds) {
+    const porVoo = /* @__PURE__ */ new Map();
+    const itens = [];
+    for (const d of ds) {
+      if (d.setor_destino || !chegouNoVoo(d)) {
+        itens.push({ solo: d, urg: urgenciaDoVoo(d.voo_destino_id) });
+        continue;
+      }
+      if (!porVoo.has(d.voo_destino_id)) porVoo.set(d.voo_destino_id, []);
+      porVoo.get(d.voo_destino_id).push(d);
+    }
+    for (const grupo of porVoo.values())
+      itens.push({ grupo, urg: urgenciaDoVoo(grupo[0].voo_destino_id) });
+    itens.sort((a, b) => a.urg - b.urg);
+    return itens;
+  }
+  function cartaoDestinoGrupo(ds, vg) {
+    const linha = (d) => {
+      const bx = d.origem_box || vg.box_origem;
+      return `<div class="list-line" style="padding:6px 0">
+      ${bx ? `<span class="voo voo-chegada"><span class="voo-box">${esc(bx)}</span></span>` : ""}
+      <span class="grow"></span>
+      <input id="qtd-grupo-${d.id}" type="number" inputmode="numeric" min="0" placeholder="qtd" style="width:90px">
+    </div>`;
+    };
+    return `
+      <div class="card">
+        <div class="list-line" style="border:none;padding:0">
+          <span class="grow">${rotuloDestinoCompacto(ds[0], vg)}</span>
+        </div>
+        ${ds.map(linha).join("")}
+        <button class="ok" style="margin-top:8px" onclick="confirmarEntregaGrupo([${ds.map((d) => d.id).join(",")}],${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
+      </div>`;
+  }
   function cartaoTriagem(via, ds, vg) {
     if (!ds.length) return "";
-    const pend = ds.filter((d) => d.status !== "entregue");
     const linha = (d) => {
       const bx = d.origem_box || vg.box_origem;
       return `<div class="list-line" style="padding:6px 0">
@@ -8009,14 +8040,13 @@ Ele sai da lista de boxes dos operadores.`);
         ${vooRotulo2(d.voo_destino_id ? voo(d.voo_destino_id) || {} : {}, "saida", { box: false })}
         <span class="voo voo-larga"><span class="voo-box">${esc(via)}</span></span>
       </span>
-      ${d.status === "entregue" ? `<span class="ok-verde">${ico("check", 18)}</span>` : ""}
     </div>`;
     };
     return `
       <div class="card">
         <div class="list-line" style="border:none;padding:0">
           <span class="grow">${setorRotulo(via)} <span class="note">\xB7 ${ds.length} voo${ds.length === 1 ? "" : "s"}</span></span>
-          ${pend.length ? `<button class="ok" style="width:auto" onclick="entregarTriagem('${via}',${vg.id})">ENTREGUEI</button>` : `<span class="chip st-entregue">Entregue</span>`}
+          <button class="ok" style="width:auto" onclick="entregarTriagem('${via}',${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
         </div>
         ${ds.map(linha).join("")}
       </div>`;
@@ -8034,14 +8064,43 @@ Ele sai da lista de boxes dos operadores.`);
   function conteudoPainelViagem(vg) {
     if (UI.pu) return telaColeta(vg);
     const ds = destinosDe(vg.id);
-    const diretos = ds.filter((d) => !naTriagem(d)).sort((a, b) => urgenciaDoVoo(a.voo_destino_id) - urgenciaDoVoo(b.voo_destino_id));
+    const diretosPendentes = ds.filter((d) => !naTriagem(d) && d.status !== "entregue");
+    const feitas = ds.filter((d) => d.status === "entregue");
     return `
     <div class="board-title"><h2>Viagem em andamento</h2><span class="chip st-a_caminho">A caminho</span></div>
     <div class="card">${cabecalhoOrigem(vg)}</div>
-    ${diretos.map((d) => cartaoDestino(d, vg)).join("")}
-    ${TRIAGENS.map((via) => cartaoTriagem(via, ds.filter((d) => naTriagem(d) && d.entrega_via === via), vg)).join("")}
+    ${gruposDiretos(diretosPendentes).map((x) => x.solo ? cartaoDestino(x.solo, vg) : cartaoDestinoGrupo(x.grupo, vg)).join("")}
+    ${TRIAGENS.map((via) => cartaoTriagem(via, ds.filter((d) => naTriagem(d) && d.entrega_via === via && d.status !== "entregue"), vg)).join("")}
+    ${feitas.length ? `<button class="ghost" style="margin-top:8px" onclick="abrirEntregasFeitas(${vg.id})">${ico("aceite", 16)} Ver entregas feitas (${feitas.length})</button>` : ""}
     <button onclick="UI.pu={origem:null,box:null,vooId:null,sel:[]};render()">+ Pegar bags no caminho</button>
     ${podeCancelar(vg) ? `<button class="ghost" style="margin-top:8px" onclick="cancelarViagem(${vg.id})">Cancelar viagem</button>` : ""}`;
+  }
+  function abrirEntregasFeitas(vgId) {
+    const vg = D.viagens.find((x) => x.id === vgId);
+    if (!vg) return;
+    const feitas = destinosDe(vg.id).filter((d) => d.status === "entregue");
+    const linhas = feitas.length ? feitas.map((d) => `<div class="list-line">
+      <span class="grow">${rotuloDestinoCompacto(d, vg)}</span>
+      ${ico("aceite", 16)}
+    </div>`).join("") : `<p class="note">Nada entregue ainda.</p>`;
+    abrirModal(`<h3>Entregas feitas</h3>${linhas}
+    <div class="modal-acoes" style="margin-top:12px"><button class="ghost" onclick="fecharModal()">Fechar</button></div>`);
+  }
+  async function confirmarEntregaGrupo(ids, vgId) {
+    const ok = await confirmar(`TEM CERTEZA da ENTREGA?
+
+${ids.length} bag${ids.length === 1 ? "" : "s"}`);
+    if (!ok) return;
+    const vg = D.viagens.find((x) => x.id === vgId) || {};
+    for (const id of ids) {
+      const campo = $(`qtd-grupo-${id}`);
+      const qtd = qtdDigitada(campo ? campo.value : "");
+      const d = D.destinos.find((x) => x.id === id);
+      await entregarDestino(id, vgId, qtd);
+      await depoisDaEntrega(d, vg, qtd);
+    }
+    UI.modalVivo = { tipo: "viagem" };
+    bus.recarregar();
   }
   function painelTravado() {
     return !!UI.pu && contarMarcados(UI.pu) > 0;
@@ -9141,6 +9200,8 @@ Sair mesmo assim?`
     entregar,
     confirmarEntrega,
     cancelarViagem,
+    confirmarEntregaGrupo,
+    abrirEntregasFeitas,
     entregarTriagem,
     mudarJanela,
     opAbrirVia,
