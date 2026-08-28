@@ -94,7 +94,10 @@
   .voo-setor{color:var(--muted)}
   .voo-apt{font-size:.82em; letter-spacing:.06em; opacity:.75}
   .voo-num{font-size:1em}
-  .voo-sep{opacity:.35; margin:0 -2px}
+  /* zero espaco visivel ao redor do hifen: cancela o gap:6px do .voo
+     por completo (pedido do Tiago, 28/08) — so o traco fica, colado no
+     aeroporto e no numero dos dois lados. */
+  .voo-sep{opacity:.35; margin:0 -6px}
   /* o hifen antes da placa some: a borda do quadrado ja separa */
   .voo-sep:has(+.voo-box){display:none}
 
@@ -158,20 +161,21 @@
     font-size:12px; font-weight:600; letter-spacing:.09em; color:var(--red)}
 
   /* O LUGAR e o dado lido de relance, de luva e sob sol. Encolhe com
-     a largura em vez de quebrar: "BOX 20" partido no meio nao e
-     endereco. */
-  .lugar-linha{display:flex; align-items:baseline; gap:10px; padding:2px 0 6px}
+     a largura em vez de quebrar: "BOX" partido no meio nao e endereco.
+     Fica fixo a direita (pedido do Tiago, 28/08) — as abas de secao
+     (.deg-linha, quando existem) ocupam o espaco a esquerda e quebram
+     linha sozinhas conforme crescem, sem empurrar o LUGAR pra baixo. */
+  .lugar-linha{display:flex; align-items:flex-start; gap:10px; padding:0 0 2px}
+  .lugar-linha .deg-linha{flex:1 1 auto; margin-top:0}
   .lugar{font-size:clamp(34px,10.5vw,44px); font-weight:600; line-height:.95;
-    letter-spacing:.02em; color:var(--text); flex:0 0 auto}
+    letter-spacing:.02em; color:var(--text); flex:0 0 auto; margin-left:auto}
   .card.alerta.urgente .lugar{color:var(--red)}
-  .lugar-n{margin-left:auto; font-size:13px; color:var(--muted); text-align:right;
-    letter-spacing:.04em; flex:0 0 auto}
 
   /* Lista sempre visivel, uma linha por demanda com o Aceitar do lado
      (list-line ja da o layout — grow+botao). Rola depois de umas
      poucas linhas pra o cartao nao crescer sem fim quando um lugar
-     tem muita bag esperando. */
-  .alerta-lista{border-top:1px solid var(--line); margin:4px 0 0; padding-top:2px;
+     tem muita bag esperando. Colada no cabecalho, sem respiro extra. */
+  .alerta-lista{border-top:1px solid var(--line); margin:0; padding-top:2px;
     max-height:220px; overflow-y:auto}
   .alerta-linha button{flex:0 0 auto}
 
@@ -214,10 +218,6 @@
   .cont{display:inline-flex; align-items:center; justify-content:center;
     flex:0 0 auto; width:30px; height:30px; border-radius:50%;
     background:#000; color:#fff; font-weight:600; font-size:17px; line-height:1}
-  /* Aba de secao (card BOX) com algo abaixo de 15min: mesmo vermelho
-     do timer da linha (corTimer) e da faixa MAIS URGENTE — sinaliza
-     sem abrir a aba. */
-  .cont.cont-urg{background:var(--red); color:#000}
   .dcode{font-weight:600; font-size:21px; color:var(--text)}
   .dhora{font-weight:500; font-size:15px; color:var(--muted); margin-top:6px}
   .linha-c{display:flex; align-items:center; gap:9px; justify-content:center; flex-wrap:wrap}
@@ -532,9 +532,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/08/2026, 11:04:33
+     Gerado em: 28/08/2026, 11:43:14
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 11:04";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 11:43";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -7492,6 +7492,7 @@ Ele sai da lista de boxes dos operadores.`);
   function religarAnimacoes() {
     const proxima = document.querySelector(".op-proxima");
     if (proxima) piscar(proxima);
+    document.querySelectorAll(".aba-urgente").forEach(piscar);
   }
   function telaOperador() {
     const alertas = alertasNaPagina();
@@ -8266,39 +8267,34 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     bus.render();
   }
   function boxFiltrado(g) {
-    const comSublugar = g.sub.length > 1;
-    const corpoSublugar = (s) => comSublugar ? `<div class="sublugar-tit">${esc(s.lugar)}</div>${s.ps.map(linhaSolicitacao).join("")}` : s.ps.map(linhaSolicitacao).join("");
+    const linhas = (s) => s.ps.map(linhaSolicitacao).join("");
     const porSecao = /* @__PURE__ */ new Map();
     for (const s of g.sub) {
       const nome = secaoDoBox(s.box);
       if (!porSecao.has(nome)) porSecao.set(nome, []);
       porSecao.get(nome).push(s);
     }
-    if (porSecao.size <= 1) return { abas: "", sub: g.sub, corpoSublugar };
+    if (porSecao.size <= 1) return { abas: "", corpo: g.sub.map(linhas).join("") };
     const secoes = [...porSecao.entries()].map(([nome, subs]) => ({ nome, subs, urg: subs[0].urg }));
     secoes.sort((a, b) => a.urg - b.urg);
     const ativa = secoes.some((s) => s.nome === UI.alertaSecao) ? UI.alertaSecao : null;
     const abas = `<div class="deg-linha">${secoes.map((sec) => {
-      const qtd = sec.subs.reduce((a, s) => a + s.ps.length, 0);
       const urgente = corTimer(sec.urg - agoraMin()) === "timer-vermelho";
-      const rot = `${sec.nome} <span class="cont${urgente ? " cont-urg" : ""}">${qtd}</span>`;
-      return degrau(rot, ativa === sec.nome, `escolherSecaoBox('${sec.nome}')`);
+      return degrau(sec.nome, ativa === sec.nome, `escolherSecaoBox('${sec.nome}')`, urgente ? "aba-urgente" : null);
     }).join("")}</div>`;
     const visiveis = ativa ? secoes.filter((s) => s.nome === ativa) : secoes;
-    return { abas, sub: visiveis.flatMap((s) => s.subs), corpoSublugar };
+    const subVisivel = visiveis.flatMap((s) => s.subs);
+    return { abas, corpo: subVisivel.map(linhas).join("") };
   }
   function cartaoTipo(g, destaque) {
-    const { abas, sub, corpoSublugar } = boxFiltrado(g);
-    const totalVoos = sub.reduce((a, s) => a + s.ps.length, 0);
-    const v0 = voo(sub[0].ps[0].voo_destino_id) || {};
+    const { abas, corpo } = boxFiltrado(g);
     const classe = "card alerta" + (destaque ? " urgente" : "");
     const faixa = destaque ? `<div class="alerta-topo">${ico("sirene", 14)} MAIS URGENTE</div>` : "";
-    const corpo = abas + sub.map(corpoSublugar).join("");
     return `<div class="${classe}">
     ${faixa}
     <div class="lugar-linha">
+      ${abas}
       <span class="lugar">${esc(g.tipo)}</span>
-      <span class="lugar-n">${totalVoos} voo${totalVoos === 1 ? "" : "s"}${v0.saida ? `<br>sai ${esc(v0.saida)}` : ""}</span>
     </div>
     <div class="alerta-lista">${corpo}</div>
   </div>`;
