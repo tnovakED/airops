@@ -528,9 +528,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 27/08/2026, 15:41:24
+     Gerado em: 28/08/2026, 09:56:22
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="27/08 15:41";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 09:56";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2521,8 +2521,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const li = linhas.findIndex((l) => l.trim().length > 0);
     if (li < 0) return { erro: "Arquivo vazio." };
     const m = linhas[li].trim().match(/^(\d+)\s+([A-Za-z]{2,4})/);
-    if (!m) return { erro: `N\xE3o reconheci o voo de sa\xEDda na 1\xAA linha ("${linhas[li].trim()}").` };
-    const vooSaida = m[1];
+    const vooCabecalho = m ? m[1] : null;
     const conexoes = [];
     for (const l of linhas.slice(li + 1)) {
       if (!l.includes("|")) continue;
@@ -2540,15 +2539,14 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
         bag_qtd: /^\d+$/.test(bag) ? parseInt(bag, 10) : 0
       });
     }
-    return { vooSaida, conexoes };
+    return { vooCabecalho, conexoes };
   }
   function processarPontoDelta(texto) {
     const linhas = texto.split(/\r?\n/);
     const li = linhas.findIndex((l) => l.trim().length > 0);
     if (li < 0) return { erro: "Arquivo vazio." };
     const m = linhas[li].trim().match(/^(\d+)\s+([A-Za-z]{2,4})/);
-    if (!m) return { erro: `N\xE3o reconheci o voo de chegada na 1\xAA linha ("${linhas[li].trim()}").` };
-    const vooChegada = m[1];
+    const vooCabecalho = m ? m[1] : null;
     const conexoes = [];
     for (const l of linhas.slice(li + 1)) {
       if (!l.includes("|")) continue;
@@ -2562,12 +2560,17 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
         bag_qtd: /^\d+$/.test(bag) ? parseInt(bag, 10) : 0
       });
     }
-    return { vooChegada, conexoes };
+    return { vooCabecalho, conexoes };
+  }
+  async function reconciliarPontoIndiaDb(dia, vooId, conexoes) {
+    return sb.rpc("reconciliar_ponto_india", { p_data: dia, p_voo_id: vooId, p_conexoes: conexoes });
+  }
+  async function reconciliarPontoDeltaDb(dia, vooId, conexoes) {
+    return sb.rpc("reconciliar_ponto_delta", { p_data: dia, p_voo_id: vooId, p_conexoes: conexoes });
   }
   async function importarArquivosPontos(arquivos, dia) {
     dia = dia || hoje();
     const log = [];
-    const gravarIndia = [], gravarDelta = [];
     for (const f of arquivos) {
       let texto;
       try {
@@ -2581,76 +2584,67 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
         log.push(`${f.name}: n\xE3o consegui ler o arquivo.`);
         continue;
       }
-      const ehIndia = /^i0*\d+/i.test(f.name);
-      const ehDelta = /^d0*\d+/i.test(f.name);
-      if (!ehIndia && !ehDelta) {
+      const mIndia = f.name.match(/^i0*(\d+)/i);
+      const mDelta = f.name.match(/^d0*(\d+)/i);
+      if (!mIndia && !mDelta) {
         log.push(`${f.name}: nome n\xE3o reconhecido \u2014 use i<numero>.txt (\xCDndia) ou d<numero>.txt (Delta).`);
         continue;
       }
-      const carimbo = (/* @__PURE__ */ new Date()).toISOString();
-      if (ehIndia) {
+      const vooNome = (mIndia || mDelta)[1];
+      if (mIndia) {
         const r = processarPontoIndia(texto);
         if (r.erro) {
           log.push(`${f.name}: ${r.erro}`);
           continue;
         }
-        const alvo = D.voos.find((v) => v.data === dia && v.numero === r.vooSaida);
+        if (r.vooCabecalho && r.vooCabecalho !== vooNome) {
+          log.push(`${f.name}: aviso \u2014 nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho do conte\xFAdo diz ${r.vooCabecalho}. Confira se o arquivo foi extra\xEDdo certo.`);
+        }
+        const alvo = D.voos.find((v) => v.data === dia && v.numero === vooNome);
         if (!alvo) {
-          log.push(`${f.name}: voo de sa\xEDda ${r.vooSaida} n\xE3o est\xE1 na malha de ${dia} \u2014 importe a malha antes.`);
+          log.push(`${f.name}: voo de sa\xEDda ${vooNome} n\xE3o est\xE1 na malha de ${dia} \u2014 importe a malha antes.`);
           continue;
         }
         if (!r.conexoes.length) {
           log.push(`${f.name}: nenhuma conex\xE3o reconhecida no arquivo.`);
           continue;
         }
-        r.conexoes.forEach((c) => gravarIndia.push({
-          data: dia,
-          voo_id: alvo.id,
-          voo_chegada_numero: c.voo_chegada_numero,
-          origem: c.origem,
-          sta: c.sta,
-          eta: c.eta,
-          rct: c.rct,
-          pax: c.pax,
-          bag_qtd: c.bag_qtd,
-          importada_em: carimbo
-        }));
+        const { data, error } = await reconciliarPontoIndiaDb(dia, alvo.id, r.conexoes);
+        if (error) {
+          log.push(`Erro ao gravar \xCDndia (${f.name}): ${error.message}`);
+          continue;
+        }
         const totalBag = r.conexoes.reduce((a, c) => a + (c.bag_qtd || 0), 0);
-        log.push(`${f.name}: \xCDndia \xB7 voo ${r.vooSaida} \u2014 ${r.conexoes.length} conex\xF5es, ${totalBag} bags.`);
+        log.push(`${f.name}: \xCDndia \xB7 voo ${vooNome} \u2014 ${data.total} conex\xF5es (${data.adicionadas} novas, ${data.removidas} removidas, ${data.mantidas} mantidas), ${totalBag} bags.`);
+        if (data.bloqueadas > 0) {
+          log.push(`${f.name}: aviso \u2014 ${data.bloqueadas} conex\xE3o(\xF5es) sumiu(ram) do arquivo mas j\xE1 tem bag em andamento; n\xE3o foi(ram) removida(s). Confira manualmente.`);
+        }
       } else {
         const r = processarPontoDelta(texto);
         if (r.erro) {
           log.push(`${f.name}: ${r.erro}`);
           continue;
         }
-        const alvo = D.voos.find((v) => v.data === dia && v.voo_chegada === r.vooChegada);
+        if (r.vooCabecalho && r.vooCabecalho !== vooNome) {
+          log.push(`${f.name}: aviso \u2014 nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho do conte\xFAdo diz ${r.vooCabecalho}. Confira se o arquivo foi extra\xEDdo certo.`);
+        }
+        const alvo = D.voos.find((v) => v.data === dia && v.voo_chegada === vooNome);
         if (!alvo) {
-          log.push(`${f.name}: voo de chegada ${r.vooChegada} n\xE3o est\xE1 na malha de ${dia} \u2014 importe a malha antes.`);
+          log.push(`${f.name}: voo de chegada ${vooNome} n\xE3o est\xE1 na malha de ${dia} \u2014 importe a malha antes.`);
           continue;
         }
         if (!r.conexoes.length) {
           log.push(`${f.name}: nenhuma conex\xE3o reconhecida no arquivo.`);
           continue;
         }
-        r.conexoes.forEach((c) => gravarDelta.push({
-          data: dia,
-          voo_id: alvo.id,
-          voo_saida_numero: c.voo_saida_numero,
-          destino: c.destino,
-          bag_qtd: c.bag_qtd,
-          importada_em: carimbo
-        }));
+        const { data, error } = await reconciliarPontoDeltaDb(dia, alvo.id, r.conexoes);
+        if (error) {
+          log.push(`Erro ao gravar Delta (${f.name}): ${error.message}`);
+          continue;
+        }
         const totalBag = r.conexoes.reduce((a, c) => a + (c.bag_qtd || 0), 0);
-        log.push(`${f.name}: Delta \xB7 voo ${r.vooChegada} \u2014 ${r.conexoes.length} conex\xF5es, ${totalBag} bags.`);
+        log.push(`${f.name}: Delta \xB7 voo ${vooNome} \u2014 ${data.total} conex\xF5es (${data.adicionadas} novas, ${data.removidas} removidas, ${data.mantidas} mantidas), ${totalBag} bags.`);
       }
-    }
-    if (gravarIndia.length) {
-      const { error } = await sb.from("ponto_india").upsert(gravarIndia, { onConflict: "data,voo_id,voo_chegada_numero,origem" });
-      if (error) log.push("Erro ao gravar \xCDndia: " + error.message);
-    }
-    if (gravarDelta.length) {
-      const { error } = await sb.from("ponto_delta").upsert(gravarDelta, { onConflict: "data,voo_id,voo_saida_numero,destino" });
-      if (error) log.push("Erro ao gravar Delta: " + error.message);
     }
     return log.join("\n");
   }
@@ -7892,7 +7886,7 @@ Ele sai da lista de boxes dos operadores.`);
   }
   function rotuloEsteira(d, vg) {
     const vo = vooDeOrigem(d, vg);
-    return vooRotulo2(vo || {}, "chegada", { box: false }) + ` <span class="voo voo-chegada">p/ E-${esc((vo == null ? void 0 : vo.esteira) || "?")}</span>`;
+    return vooRotulo2(vo || {}, "chegada", { placa: "E-" + ((vo == null ? void 0 : vo.esteira) || "?") });
   }
   function rotuloDestinoCompacto(d, vg) {
     if (d.setor_destino === "ESTEIRA") return rotuloEsteira(d, vg);
