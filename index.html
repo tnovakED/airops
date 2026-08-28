@@ -179,6 +179,18 @@
     max-height:220px; overflow-y:auto}
   .alerta-linha button{flex:0 0 auto}
 
+  /* Botao de acao da linha (Aceitar/Pegar) so-icone, redondo — 44px bate
+     com o minimo de alvo de toque dentro de alerta. A cor vem de .primary/
+     .ok (ja existentes), aqui so forma e tamanho. */
+  .alerta-acao{flex:0 0 auto; width:44px; height:44px; min-height:44px; padding:0;
+    border-radius:50%; display:flex; align-items:center; justify-content:center}
+
+  /* Selo "N urgentes" do cartao inteiro (todas as secoes, nao so a aba
+     ativa) — fica entre o cabecalho fixo e a lista, so quando ha alguem
+     em timer-vermelho. */
+  .alerta-urgentes{display:flex; align-items:center; gap:6px; padding:4px 0 6px;
+    color:var(--red); font-weight:600; font-size:.85em}
+
   /* So o cartao BOX tem mais de um endereco de verdade (varios boxes)
      — o subtitulo separa cada um dentro do mesmo cartao. */
   .sublugar-tit{font-size:13px; font-weight:700; color:var(--muted);
@@ -532,9 +544,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/08/2026, 11:43:14
+     Gerado em: 28/08/2026, 13:24:18
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 11:43";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 13:24";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -8245,6 +8257,13 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     if (min >= 15) return "timer-amarelo";
     return "timer-vermelho";
   }
+  function contarUrgentes(ps) {
+    return ps.filter((p) => {
+      const v = voo(p.voo_destino_id) || {};
+      const alvo = minutosDe(v.saida);
+      return alvo != null && corTimer(alvo - agoraMin()) === "timer-vermelho";
+    }).length;
+  }
   function timerAlerta(v) {
     const alvo = minutosDe(v.saida);
     if (alvo == null) return "";
@@ -8255,10 +8274,10 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   function linhaSolicitacao(p) {
     const v = voo(p.voo_destino_id) || {};
     const minha = p.status === "ciente" && p.ciente_por === S.me.id;
-    const acao = minha ? `<button class="small ok" onclick="pegarSolicitacao(${p.id})">${ico("mala-check", 16)} Pegar</button>` : `<button class="small primary" onclick="aceitarSolicitacao(${p.id})">${ico("mala-duvida", 16)} Aceitar</button>`;
+    const acao = minha ? `<button class="alerta-acao ok" onclick="pegarSolicitacao(${p.id})" aria-label="Pegar">${ico("mala-check", 20)}</button>` : `<button class="alerta-acao primary" onclick="aceitarSolicitacao(${p.id})" aria-label="Aceitar">${ico("mala-duvida", 20)}</button>`;
     const origemBox = p.setor === "BOX" && p.box ? `<span class="voo voo-chegada"><span class="voo-box">${esc(p.box)}</span></span><span class="voo-seta">${ico("seta", 14)}</span>` : "";
     return `<div class="list-line alerta-linha">
-    <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${origemBox}${vooRotulo2(v, "saida")}${timerAlerta(v)}</span>
+    <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${origemBox}${vooRotulo2(v, "saida", { aviao: true })}${timerAlerta(v)}</span>
     ${acao}
   </div>`;
   }
@@ -8290,12 +8309,15 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     const { abas, corpo } = boxFiltrado(g);
     const classe = "card alerta" + (destaque ? " urgente" : "");
     const faixa = destaque ? `<div class="alerta-topo">${ico("sirene", 14)} MAIS URGENTE</div>` : "";
+    const urgentes = contarUrgentes(g.sub.flatMap((s) => s.ps));
+    const selo = urgentes > 0 ? `<div class="alerta-urgentes">${ico("sirene", 14)} ${urgentes} urgente${urgentes === 1 ? "" : "s"}</div>` : "";
     return `<div class="${classe}">
     ${faixa}
     <div class="lugar-linha">
       ${abas}
       <span class="lugar">${esc(g.tipo)}</span>
     </div>
+    ${selo}
     <div class="alerta-lista">${corpo}</div>
   </div>`;
   }
