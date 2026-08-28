@@ -179,23 +179,24 @@
     max-height:220px; overflow-y:auto}
   .alerta-linha button{flex:0 0 auto}
 
-  /* Botao de acao da linha (Aceitar/Pegar) so-icone, redondo — 44px bate
-     com o minimo de alvo de toque dentro de alerta. A cor vem de .primary/
-     .ok (ja existentes), aqui so forma e tamanho. */
+  /* Botao de acao da linha (Aceitar/Cancelar/Ver voos) so-icone, redondo —
+     44px bate com o minimo de alvo de toque dentro de alerta. A cor vem de
+     .primary/.ok/.ghost (ja existentes), aqui so forma e tamanho. Zera o
+     margin-right que "button .ico" da pra icone+texto — aqui o icone e
+     sozinho, centralizado. */
   .alerta-acao{flex:0 0 auto; width:44px; height:44px; min-height:44px; padding:0;
     border-radius:50%; display:flex; align-items:center; justify-content:center}
+  .alerta-acao .ico{margin-right:0}
 
-  /* Selo "N urgentes" do cartao inteiro (todas as secoes, nao so a aba
-     ativa) — fica entre o cabecalho fixo e a lista, so quando ha alguem
-     em timer-vermelho. */
-  .alerta-urgentes{display:flex; align-items:center; gap:6px; padding:4px 0 6px;
+  /* Rotulo "BOX N" dentro da linha (uma linha por lugar agora, nao mais
+     por voo — o box de cada lugar mora aqui em vez de subtitulo solto). */
+  .linha-lugar-rot{font-size:13px; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.06em}
+
+  /* Contagem de urgentes DA LINHA (um lugar pode ter varios voos
+     pendentes; quantos deles estao em timer-vermelho). */
+  .alerta-urgentes{display:flex; align-items:center; gap:4px;
     color:var(--red); font-weight:600; font-size:.85em}
-
-  /* So o cartao BOX tem mais de um endereco de verdade (varios boxes)
-     — o subtitulo separa cada um dentro do mesmo cartao. */
-  .sublugar-tit{font-size:13px; font-weight:700; color:var(--muted);
-    text-transform:uppercase; letter-spacing:.06em; margin:10px 0 2px}
-  .sublugar-tit:first-child{margin-top:0}
 
   /* ---------- icones (Phosphor + Material Symbols) ---------- */
   .ico{display:inline-block; vertical-align:-.15em}
@@ -544,9 +545,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/08/2026, 13:24:18
+     Gerado em: 28/08/2026, 14:05:47
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 13:24";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 14:05";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -607,6 +608,8 @@
         // triagem
         alertaSecao: null,
         // aba de secao ativa no card BOX do alerta (null = todas)
+        escolhaBox: null,
+        // popover "ver voos" do card BOX: {tipo, box, sel:[]}
         // O que ele viu no lugar e nao levou, nesta viagem.
         //
         // Fica quieto na tela DELE enquanto a viagem esta aberta: com a
@@ -2028,7 +2031,11 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     bagagens: "0 -960 960 960",
     sirene: "0 -960 960 960",
     "mala-duvida": "0 -960 960 960",
-    "mala-check": "0 -960 960 960"
+    "mala-check": "0 -960 960 960",
+    alerta: "0 -960 960 960",
+    vervoos: "0 -960 960 960",
+    cancelar: "0 -960 960 960",
+    aceite: "0 -960 960 960"
   };
   var P = {
     "mala-check": `<path d="m696-150 141.33-142-28.66-28.67L696-207.33 638-266l-28.67 29.33L696-150Zm-337.33-46.67v-406h-57.34v406h57.34ZM481.33-130h-180q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-406q0-27 19.83-46.83t46.83-19.83h267.34v-144h-16q-27 0-46.84-19.84Q486-853 486-880h149.33v392.67q-17.33 6-34.16 14.66-16.84 8.67-32.5 20.67v-150.67H425.33v406h37.34q1.66 18 6.33 34.34Q473.67-146 481.33-130Zm380.84-245.5q57.16 57.17 57.16 138.83 0 81.67-57.16 138.84Q805-40.67 723.33-40.67q-81.66 0-138.83-57.16-57.17-57.17-57.17-138.84 0-81.66 57.17-138.83 57.17-57.17 138.83-57.17 81.67 0 138.84 57.17ZM392-400Zm-33.33 203.33v-406 406Zm66.66 0v-406 406Z"/>`,
@@ -2067,8 +2074,16 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     // phosphor: bell-ringing-fill (MIT)
     sirene: `<path d="M146.67-186.67h666.66v-96.66H146.67v96.66Zm178-252.66h66.66v-122q0-36.85 25.84-63.1Q443-650.67 480-650.67v-66.66q-64.67 0-110 45.82-45.33 45.83-45.33 110.18v122Zm155.33 156ZM268.67-350h422.66v-211.67q0-87.84-61.5-149.75T480-773.33q-88.33 0-149.83 61.91-61.5 61.91-61.5 149.75V-350Zm-122 230q-27.5 0-47.09-19.58Q80-159.17 80-186.67v-96.66q0-27.5 19.58-47.09Q119.17-350 146.67-350H202v-211.33Q202-677 283.17-758.5 364.33-840 480-840q115.67 0 196.83 81.5Q758-677 758-561.33V-350h55.33q27.5 0 47.09 19.58Q880-310.83 880-283.33v96.66q0 27.5-19.58 47.09Q840.83-120 813.33-120H146.67ZM480-350Z"/>`,
     // material symbols: siren (Apache 2.0) — faixa "MAIS URGENTE"
-    x: `<path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/>`
+    x: `<path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/>`,
     // phosphor: x-bold (MIT)
+    alerta: `<path d="M480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Zm0-421.33ZM160-200v-66.67h80v-296q0-83.66 49.67-149.5Q339.33-778 420-796v-24q0-25 17.5-42.5T480-880q23.61 0 40.14 15.5t19.19 37.83v4.34q-11.66 20.66-18 43.33-6.33 22.67-7.33 46.67-8.67-2-16.69-2.84-8.02-.83-17.31-.83-72 0-122.67 50.67-50.66 50.66-50.66 122.66v296h346.66v-275q16 4.67 32.84 6.84Q703-532.67 720-534v267.33h80V-200H160Zm467-446.41q-33-33.08-33-80.34Q594-774 627.08-807t80.33-33q47.26 0 80.26 33.08 33 33.08 33 80.33 0 47.26-33.08 80.26-33.08 33-80.34 33-47.25 0-80.25-33.08Z"/>`,
+    // material symbols: notifications_unread (Apache 2.0) — contagem de urgentes na linha do BOX
+    vervoos: `<path d="M80-200v-66.67h400V-200H80Zm0-206.67v-66.66h200v66.66H80Zm0-206.66V-680h200v66.67H80ZM833.33-200l-158-158Q650-339 620.5-329.5T560-320q-83 0-141.5-58.5T360-520q0-83 58.5-141.5T560-720q83 0 141.5 58.5T760-520q0 31-9.5 60.5T722-404.67l158 158L833.33-200ZM559.84-386.67q55.49 0 94.49-38.84 39-38.84 39-94.33 0-55.49-38.84-94.49-38.84-39-94.33-39-55.49 0-94.49 38.84-39 38.84-39 94.33 0 55.49 38.84 94.49 38.84 39 94.33 39Z"/>`,
+    // material symbols: manage_search (Apache 2.0) — botao "Ver voos" do BOX ja aceito
+    cancelar: `<path d="m332-285.33 148-148 148 148L674.67-332l-148-148 148-148L628-674.67l-148 148-148-148L285.33-628l148 148-148 148L332-285.33ZM480-80q-82.33 0-155.33-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.67T80-480q0-83 31.5-156t85.83-127q54.34-54 127.34-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82.33-31.5 155.33-31.5 73-85.5 127.34Q709-143 636-111.5T480-80Zm0-66.67q139.33 0 236.33-97.33t97-236q0-139.33-97-236.33t-236.33-97q-138.67 0-236 97-97.33 97-97.33 236.33 0 138.67 97.33 236 97.33 97.33 236 97.33ZM480-480Z"/>`,
+    // material symbols: cancel (Apache 2.0) — desfazer aceite do BOX
+    aceite: `<path d="M379.33-244 154-469.33 201.67-517l177.66 177.67 378.34-378.34L805.33-670l-426 426Z"/>`
+    // material symbols: check (Apache 2.0) — botao "Aceitar" do BOX
   };
   function ico(nome, tam) {
     const d = P[nome];
@@ -2520,6 +2535,9 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   }
   async function cancelarProntaDb(id) {
     return sb.from("prontas").update({ status: "cancelada" }).eq("id", id);
+  }
+  async function devolverProntaDb(id) {
+    return sb.from("prontas").update({ status: "pronta", ciente_por: null, ciente_em: null }).eq("id", id);
   }
   async function marcarProntaEntregueDb(pontoIndiaId) {
     return sb.from("prontas").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("ponto_india_id", pontoIndiaId).eq("status", "coletada");
@@ -8234,20 +8252,77 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
       <span class="flip">${lista.length}</span></div>
     ${corpoDoAlerta()}`;
   }
-  async function aceitarSolicitacao(id) {
-    const p = D.prontas.find((x) => x.id === id);
-    if ((p == null ? void 0 : p.status) !== "pronta") return;
-    const { error } = await cientePronta(id);
-    if (error) {
-      await erro(error);
-      return;
+  async function aceitarBox(ids) {
+    for (const id of ids) {
+      const p = D.prontas.find((x) => x.id === id);
+      if ((p == null ? void 0 : p.status) !== "pronta") continue;
+      const { error } = await cientePronta(id);
+      if (error) {
+        await erro(error);
+        return;
+      }
     }
     bus.recarregar();
   }
-  async function pegarSolicitacao(id) {
-    const p = D.prontas.find((x) => x.id === id);
-    if ((p == null ? void 0 : p.status) !== "ciente" || p.ciente_por !== S.me.id) return;
-    await pegarProntas([p]);
+  async function cancelarAceiteBox(ids) {
+    if (!ids.length) return;
+    const ok = await confirmar("Desfazer o aceite?\n\nA bag volta a aparecer para os outros operadores.");
+    if (!ok) return;
+    for (const id of ids) {
+      const p = D.prontas.find((x) => x.id === id);
+      if ((p == null ? void 0 : p.status) !== "ciente" || p.ciente_por !== S.me.id) continue;
+      const { error } = await devolverProntaDb(id);
+      if (error) {
+        await erro(error);
+        return;
+      }
+    }
+    bus.recarregar();
+  }
+  function prontasDoLugar(tipo, box) {
+    return D.prontas.filter((p) => p.setor === tipo && (box ? p.box === box : true) && p.status === "ciente" && p.ciente_por === S.me.id);
+  }
+  function abrirEscolhaVoosBox(tipo, box) {
+    UI.escolhaBox = { tipo, box, sel: [] };
+    renderEscolhaVoosBox();
+  }
+  function renderEscolhaVoosBox() {
+    const e = UI.escolhaBox;
+    if (!e) return;
+    const ps = prontasDoLugar(e.tipo, e.box);
+    const linhas = ps.length ? ps.map((p) => {
+      const v = voo(p.voo_destino_id) || {};
+      const marcado = e.sel.includes(p.id);
+      return `<div class="pt-linha" onclick="alternarEscolhaVoo(${p.id})">
+      ${ico(marcado ? "quadradoMarcado" : "quadrado", 20)}
+      <span class="grow">${vooRotulo2(v, "saida", { aviao: true })}${timerAlerta(v)}</span>
+    </div>`;
+    }).join("") : `<p class="note">Nada pendente aqui agora.</p>`;
+    abrirModal(`<h3>${esc(e.tipo)}${e.box ? ` \xB7 BOX ${esc(e.box)}` : ""}</h3>${linhas}
+    <div class="modal-acoes" style="margin-top:12px">
+      <button class="ghost" onclick="fecharEscolhaVoosBox()">Fechar</button>
+      <button class="primary" ${e.sel.length ? "" : "disabled"} onclick="confirmarEscolhaVoosBox()">Adicionar \xE0 viagem${e.sel.length ? ` (${e.sel.length})` : ""}</button>
+    </div>`);
+  }
+  function alternarEscolhaVoo(id) {
+    const e = UI.escolhaBox;
+    if (!e) return;
+    const i = e.sel.indexOf(id);
+    if (i < 0) e.sel.push(id);
+    else e.sel.splice(i, 1);
+    renderEscolhaVoosBox();
+  }
+  function fecharEscolhaVoosBox() {
+    UI.escolhaBox = null;
+    fecharModal();
+  }
+  async function confirmarEscolhaVoosBox() {
+    const e = UI.escolhaBox;
+    if (!(e == null ? void 0 : e.sel.length)) return;
+    const ps = e.sel.map((id) => D.prontas.find((p) => p.id === id)).filter(Boolean);
+    UI.escolhaBox = null;
+    fecharModal();
+    await pegarProntas(ps);
     UI.modalVivo = { tipo: "viagem" };
     bus.recarregar();
   }
@@ -8271,14 +8346,21 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     const txt = restam <= 0 ? "partiu" : `${restam}min`;
     return ` <span class="op-timer ${corTimer(restam)}">${esc(txt)}</span>`;
   }
-  function linhaSolicitacao(p) {
-    const v = voo(p.voo_destino_id) || {};
-    const minha = p.status === "ciente" && p.ciente_por === S.me.id;
-    const acao = minha ? `<button class="alerta-acao ok" onclick="pegarSolicitacao(${p.id})" aria-label="Pegar">${ico("mala-check", 20)}</button>` : `<button class="alerta-acao primary" onclick="aceitarSolicitacao(${p.id})" aria-label="Aceitar">${ico("mala-duvida", 20)}</button>`;
-    const origemBox = p.setor === "BOX" && p.box ? `<span class="voo voo-chegada"><span class="voo-box">${esc(p.box)}</span></span><span class="voo-seta">${ico("seta", 14)}</span>` : "";
+  function linhaLugar(tipo, s) {
+    const podeAceitar = s.ps.some((p) => p.status === "pronta");
+    const podeCancelar2 = s.ps.some((p) => p.status === "ciente");
+    const urgentes = contarUrgentes(s.ps);
+    const idsAceitar = s.ps.filter((p) => p.status === "pronta").map((p) => p.id);
+    const idsCancelar = s.ps.filter((p) => p.status === "ciente").map((p) => p.id);
+    const principal = podeAceitar ? `<button class="alerta-acao primary" onclick="aceitarBox([${idsAceitar.join(",")}])" aria-label="Aceitar">${ico("aceite", 20)}</button>` : `<button class="alerta-acao ok" onclick="abrirEscolhaVoosBox('${tipo}',${s.box ? `'${esc(s.box)}'` : null})" aria-label="Ver voos">${ico("vervoos", 20)}</button>`;
+    const cancelar = `<button class="alerta-acao ghost" ${podeCancelar2 ? "" : "disabled"} onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>`;
     return `<div class="list-line alerta-linha">
-    <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${origemBox}${vooRotulo2(v, "saida", { aviao: true })}${timerAlerta(v)}</span>
-    ${acao}
+    ${ico("pousando", 20)}
+    <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      ${s.box ? `<span class="linha-lugar-rot">BOX ${esc(s.box)}</span>` : ""}
+      ${urgentes > 0 ? `<span class="alerta-urgentes">${ico("alerta", 16)} ${urgentes}</span>` : ""}
+    </span>
+    ${cancelar}${principal}
   </div>`;
   }
   function escolherSecaoBox(nome) {
@@ -8286,7 +8368,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     bus.render();
   }
   function boxFiltrado(g) {
-    const linhas = (s) => s.ps.map(linhaSolicitacao).join("");
+    const linhas = (s) => linhaLugar(g.tipo, s);
     const porSecao = /* @__PURE__ */ new Map();
     for (const s of g.sub) {
       const nome = secaoDoBox(s.box);
@@ -8309,15 +8391,12 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     const { abas, corpo } = boxFiltrado(g);
     const classe = "card alerta" + (destaque ? " urgente" : "");
     const faixa = destaque ? `<div class="alerta-topo">${ico("sirene", 14)} MAIS URGENTE</div>` : "";
-    const urgentes = contarUrgentes(g.sub.flatMap((s) => s.ps));
-    const selo = urgentes > 0 ? `<div class="alerta-urgentes">${ico("sirene", 14)} ${urgentes} urgente${urgentes === 1 ? "" : "s"}</div>` : "";
     return `<div class="${classe}">
     ${faixa}
     <div class="lugar-linha">
       ${abas}
       <span class="lugar">${esc(g.tipo)}</span>
     </div>
-    ${selo}
     <div class="alerta-lista">${corpo}</div>
   </div>`;
   }
@@ -9036,8 +9115,12 @@ Sair mesmo assim?`
     toggleJanelaBarra,
     fecharJanelaBarra,
     escolherJanelaBarra,
-    aceitarSolicitacao,
-    pegarSolicitacao,
+    aceitarBox,
+    cancelarAceiteBox,
+    abrirEscolhaVoosBox,
+    alternarEscolhaVoo,
+    fecharEscolhaVoosBox,
+    confirmarEscolhaVoosBox,
     escolherSecaoBox,
     // OC
     assumirVoo: assumirVoo2,
