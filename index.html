@@ -576,9 +576,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 30/08/2026, 11:04:13
+     Gerado em: 30/08/2026, 11:39:44
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/08 11:04";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/08 11:39";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -897,12 +897,15 @@
   function candidatosDestinoJanela(excluir, h) {
     return voosSaindo(h).filter((v) => !excluir.includes(v.id));
   }
-  function aindaNoBox(v) {
+  function fisicamenteNoBox(v) {
     const tc = minutosDe(v.chegada);
     if (tc !== null && agoraMin() < tc) return true;
     const ts = minutosDe(v.saida);
     if (ts === null) return true;
-    return agoraMin() <= ts || pendenciaDeChegada(v.id);
+    return agoraMin() <= ts;
+  }
+  function aindaNoBox(v) {
+    return fisicamenteNoBox(v) || pendenciaDeChegada(v.id);
   }
   function estadoDescarga(v) {
     if (v.descarga_ok_em) return "ok";
@@ -7475,7 +7478,8 @@ Ele sai da lista de boxes dos operadores.`);
     const fora = /* @__PURE__ */ new Set();
     for (const vs of porBox.values()) {
       if (vs.length < 2) continue;
-      const vivos = vs.filter(aindaNoBox);
+      let vivos = vs.filter(fisicamenteNoBox);
+      if (!vivos.length) vivos = vs.filter(aindaNoBox);
       if (vivos.length) {
         for (const v of vs) if (!vivos.includes(v)) fora.add(v.id);
       }
