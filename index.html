@@ -576,9 +576,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 30/08/2026, 11:39:44
+     Gerado em: 30/08/2026, 16:38:53
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/08 11:39";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/08 16:38";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -7437,34 +7437,47 @@ Ele sai da lista de boxes dos operadores.`);
           [1, 2, 3].map((n) => degrau(n, o.equipQtd === n, `escolherEquipQtd(${n})`, "deg-n")).join("")
         ));
     }
-    if (o.origem) {
-      const v = o.vooOrigemId ? voo(o.vooOrigemId) || {} : null;
+    linhas.push(...trilhaOrigemDestino(o, "op"));
+    if (!linhas.length) return "";
+    return `<div class="folha-trilha">${linhas.join("")}</div>`;
+  }
+  function trilhaOrigemDestino(st, pre) {
+    const linhas = [];
+    const abrirOrigem = pre === "op" ? "abrirFolhaOp" : "escolherOrigemColeta";
+    const abrirVia = pre === "op" ? "opAbrirVia" : "puAbrirVia";
+    const esteiraAcao = pre === "op" ? "opEsteira" : "puEsteira";
+    if (st.origem) {
+      const v = st.vooOrigemId ? voo(st.vooOrigemId) || {} : null;
       linhas.push(linhaTrilha("Origem", ["BOX", "TCX", "TLC"].map((x) => {
-        const rot = x === "BOX" ? v ? `PP ${esc(o.boxOrigem)} \xB7 ${esc(v.voo_chegada || v.numero || "?")}` : "PP" : x;
-        return degrau(rot, o.origem === x, `abrirFolhaOp('${x}')`);
+        const rot = x === "BOX" ? v ? `BOX ${esc(st.boxOrigem)} \xB7 ${esc(v.voo_chegada || v.numero || "?")}` : "BOX" : x;
+        return degrau(rot, st.origem === x, `${abrirOrigem}('${x}')`);
       }).join("")));
     }
-    if (o.origem === "BOX" && o.vooOrigemId) {
-      const g = grupos(o);
-      const vo = voo(o.vooOrigemId) || {};
+    if (st.origem === "BOX" && st.vooOrigemId) {
+      const g = grupos(st);
+      const vo = voo(st.vooOrigemId) || {};
       let bt = VIAS.map((x) => {
         const q = g[x.id].length;
         return degrau(
           q ? `${x.id} <span class="cont">${q}</span>` : x.id,
           q > 0,
-          `opAbrirVia('${x.id}')`,
-          o.via === x.id ? "atual" : ""
+          `${abrirVia}('${x.id}')`,
+          st.via === x.id ? "atual" : ""
         );
       }).join("");
-      if ((o.carga || "BAG") === "BAG")
+      if ((st.carga || "BAG") === "BAG")
         bt += degrau(
           `ESTEIRA${vo.esteira ? " " + esc(vo.esteira) : ""}`,
-          !!o.esteira,
-          "opEsteira()",
-          o.via === "ESTEIRA" ? "atual" : ""
+          !!st.esteira,
+          `${esteiraAcao}()`,
+          st.via === "ESTEIRA" ? "atual" : ""
         );
       linhas.push(linhaTrilha("Destino", bt));
     }
+    return linhas;
+  }
+  function trilhaColeta() {
+    const linhas = trilhaOrigemDestino(UI.pu, "pu");
     if (!linhas.length) return "";
     return `<div class="folha-trilha">${linhas.join("")}</div>`;
   }
@@ -7618,11 +7631,11 @@ Ele sai da lista de boxes dos operadores.`);
   }
   function origemGrid(pre) {
     return `<div class="origem-grid">
-      <button onclick="${pre}('BOX')">PP</button>
+      <button onclick="${pre}('BOX')">BOX</button>
       <button onclick="${pre}('TCX')">TCX</button>
       <button onclick="${pre}('TLC')">TLC</button>
     </div>
-    <p class="note" style="margin-top:10px">PP = direto no box do voo (Ponto Delta) \xB7 TCX = Triagem Conex\xE3o \xB7 TLC = Triagem Local</p>`;
+    <p class="note" style="margin-top:10px">BOX = voc\xEA est\xE1 no box do voo que pousou (Ponto Delta) \xB7 TCX = Triagem Conex\xE3o \xB7 TLC = Triagem Local</p>`;
   }
   function folhaOperador() {
     return `<button class="ghost folha-x" onclick="fecharFolhaOp()" aria-label="Fechar">\u2715</button>
@@ -7651,38 +7664,46 @@ Ele sai da lista de boxes dos operadores.`);
       <button onclick="escolherEquipQtd(2)">2</button>
       <button onclick="escolherEquipQtd(3)">3</button>
     </div>`;
-    if (!o.origem) return `
+    return passosOrigemVia(o, "op", "confirmarSaida()");
+  }
+  function passosOrigemVia(st, pre, acaoConfirmar) {
+    const abrirOrigem = pre === "op" ? "abrirFolhaOp" : "escolherOrigemColeta";
+    const escolherBox = pre === "op" ? "escolherBoxOrigem" : "escolherBoxColeta";
+    const confirmarVoo = pre === "op" ? "confirmarVooOrigem" : "confirmarVooColeta";
+    const esteiraTirar = pre === "op" ? "opEsteiraTirar" : "puEsteiraTirar";
+    const togDestSel = pre === "op" ? "togDest" : "togDestPU";
+    if (!st.origem) return `
     <h2 class="folha-pergunta">ONDE ESTOU?</h2>
-    ${origemGrid("abrirFolhaOp")}`;
-    if (o.origem === "BOX" && !o.vooOrigemId) {
+    ${origemGrid(abrirOrigem)}`;
+    if (st.origem === "BOX" && !st.vooOrigemId) {
       const patio = desempatarBoxes(voosChegando());
-      const noBox = o.boxOrigem ? patio.filter((v) => v.box === o.boxOrigem) : [];
+      const noBox = st.boxOrigem ? patio.filter((v) => v.box === st.boxOrigem) : [];
       const um = noBox.length === 1 ? noBox[0] : null;
-      const acao = um ? `<button class="primary passo-canto" onclick="confirmarVooOrigem(${um.id})">Confirmar<br>${vooRotulo2(um, "chegada", { box: false })}</button>` : "";
-      const nota = !o.boxOrigem ? "Toque no box onde voc\xEA est\xE1." : noBox.length === 0 ? "Nenhum voo da malha neste box." : "";
-      const popover = (b, vs) => b !== o.boxOrigem || vs.length < 2 ? "" : `
+      const acao = um ? `<button class="primary passo-canto" onclick="${confirmarVoo}(${um.id})">Confirmar<br>${vooRotulo2(um, "chegada", { box: false })}</button>` : "";
+      const nota = !st.boxOrigem ? "Toque no box onde voc\xEA est\xE1." : noBox.length === 0 ? "Nenhum voo da malha neste box." : "";
+      const popover = (b, vs) => b !== st.boxOrigem || vs.length < 2 ? "" : `
       <p class="note">Mais de um voo no box ${esc(b)} \u2014 qual \xE9?</p>
-      ${vs.map((v) => `<button onclick="confirmarVooOrigem(${v.id})">${vooRotulo2(v, "chegada", { box: false })}</button>`).join("")}`;
-      return passoCab("EM QUAL BOX?", nota, acao) + gradeBoxes(o.boxOrigem, "escolherBoxOrigem", patio, { compacta: true, popover });
+      ${vs.map((v) => `<button onclick="${confirmarVoo}(${v.id})">${vooRotulo2(v, "chegada", { box: false })}</button>`).join("")}`;
+      return passoCab("EM QUAL BOX?", nota, acao) + gradeBoxes(st.boxOrigem, escolherBox, patio, { compacta: true, popover });
     }
-    if (o.origem === "BOX" && o.via === "ESTEIRA") {
-      const vo = voo(o.vooOrigemId) || {};
-      return passoCab("ESTEIRA", "", botaoSaindo(totalDestinos(o), "confirmarSaida()")) + `<div class="esteira-card">
+    if (st.origem === "BOX" && st.via === "ESTEIRA") {
+      const vo = voo(st.vooOrigemId) || {};
+      return passoCab("ESTEIRA", "", botaoSaindo(totalDestinos(st), acaoConfirmar)) + `<div class="esteira-card">
            <div class="esteira-dest">BAGS para a ${esc(BASE_IATA)}</div>
            <p class="note" style="margin:8px 0 0">Bagagem local do ${vooRotulo2(vo, "chegada", { box: false })} \xB7 sai na esteira ${esc(vo.esteira || "?")}</p>
          </div>
-         <button class="ghost" onclick="opEsteiraTirar()">Tirar a esteira desta viagem</button>`;
+         <button class="ghost" onclick="${esteiraTirar}()">Tirar a esteira desta viagem</button>`;
     }
-    if (o.origem === "BOX") {
-      if (o.via) return telaVoosDaVia(o, "op");
-      return telaVias(o, "QUAIS DESTINOS?", "op", "", "confirmarSaida()");
+    if (st.origem === "BOX") {
+      if (st.via) return telaVoosDaVia(st, pre, acaoConfirmar);
+      return telaVias(st, "QUAIS DESTINOS?", pre, acaoConfirmar);
     }
-    const candidatos = candidatosDestinoJanela([o.vooOrigemId]);
+    const candidatos = candidatosDestinoJanela([st.vooOrigemId]);
     return passoCab(
       "QUAL DESTINO?",
       "Toque em todos os destinos que voc\xEA est\xE1 levando.",
-      botaoSaindo(o.sel.length, "confirmarSaida()")
-    ) + gradeDestinos(candidatos, [], o.sel, "togDest");
+      botaoSaindo(st.sel.length, acaoConfirmar)
+    ) + gradeDestinos(candidatos, [], st.sel, togDestSel);
   }
   var quantosDestinos = (n) => n === 1 ? "o destino j\xE1 marcado" : `os ${n} destinos j\xE1 marcados`;
   async function abrirFolhaOp(origem) {
@@ -7747,11 +7768,11 @@ Ele sai da lista de boxes dos operadores.`);
     const g = grupos(st);
     return VIAS.some((v) => v.id !== via && g[v.id].includes(id));
   }
-  function telaVias(st, titulo, pre, voltar, acaoConfirmar) {
+  function telaVias(st, titulo, pre, acaoConfirmar) {
     const g = grupos(st);
     const n = totalDestinos(st);
     const ehBag = (st.carga || "BAG") === "BAG";
-    const vo = voo(st.vooOrigemId || st.vooId) || {};
+    const vo = voo(st.vooOrigemId) || {};
     const cartaoVia = (v) => {
       const q = g[v.id].length;
       return `<div class="voo-btn ${q ? "sel" : ""}" onclick="${pre}AbrirVia('${v.id}')">
@@ -7760,7 +7781,7 @@ Ele sai da lista de boxes dos operadores.`);
     </div>`;
     };
     const cartaoEsteira = !ehBag ? "" : `
-    <div class="voo-btn ${st.esteira ? "sel" : ""}" onclick="${pre === "op" ? "opEsteira()" : "puTogEsteira()"}">
+    <div class="voo-btn ${st.esteira ? "sel" : ""}" onclick="${pre}Esteira()">
       <div class="linha-c"><span class="dcode">ESTEIRA</span>${st.esteira ? ico("check", 20) : ""}</div>
       <div class="dhora">locais \xB7 esteira ${esc(vo.esteira || "?")}</div>
     </div>`;
@@ -7768,27 +7789,18 @@ Ele sai da lista de boxes dos operadores.`);
       ${VIAS.map(cartaoVia).join("")}
       ${cartaoEsteira}
     </div>`;
-    if (pre === "op")
-      return passoCab(titulo, "Escolha um Destino por vez.", botaoSaindo(n, acaoConfirmar)) + grade;
-    return `
-    <div class="board-title"><h2>${titulo}</h2></div>
-    <p class="note">Para onde v\xE3o as bags? Toque numa op\xE7\xE3o e escolha os voos. D\xE1 para usar mais de uma na mesma viagem.</p>
-    ${grade}
-    <div class="barra-acao">
-      <button class="primary" ${n ? "" : "disabled"} onclick="${acaoConfirmar}">Adicionar com ${n} destino${n === 1 ? "" : "s"}</button>
-      ${voltar ? `<button class="ghost" style="margin-top:8px" onclick="${voltar}">Voltar</button>` : ""}
-    </div>`;
+    return passoCab(titulo, "Escolha um Destino por vez.", botaoSaindo(n, acaoConfirmar)) + grade;
   }
   function conexoesDaVia(st) {
-    const vooOrigem = st.vooOrigemId || st.vooId;
+    const vooOrigem = st.vooOrigemId;
     const livre = (v) => !vooTomado(st, st.via, v.id);
     const conex = candidatosConexao(vooOrigem);
     return conex === null ? candidatosDestinoJanela([vooOrigem]).filter(livre) : conex.filter(livre);
   }
-  function telaVoosDaVia(st, pre) {
+  function telaVoosDaVia(st, pre, acaoConfirmar) {
     const via = st.via;
     const g = grupos(st);
-    const vooOrigem = st.vooOrigemId || st.vooId;
+    const vooOrigem = st.vooOrigemId;
     const vo = voo(vooOrigem) || {};
     const livre = (v) => !vooTomado(st, via, v.id);
     const conex = candidatosConexao(vooOrigem);
@@ -7823,17 +7835,7 @@ Ele sai da lista de boxes dos operadores.`);
          </div>
          ${st.verOutros ? grade(outros) : ""}` : ""}`;
     const rodape = escondidos ? `<p class="note" style="margin-top:8px">${escondidos} voo${escondidos === 1 ? "" : "s"} n\xE3o aparece${escondidos === 1 ? "" : "m"} aqui porque j\xE1 est\xE1${escondidos === 1 ? "" : "\xE3o"} em outra op\xE7\xE3o.</p>` : "";
-    if (pre === "op")
-      return passoCab("QUAIS VOOS?", legenda, botaoSaindo(totalDestinos(st), "confirmarSaida()")) + corpo + rodape;
-    return `
-    <div class="board-title"><h2>${via} \u2014 quais voos?</h2>
-      <button class="small ghost" style="width:auto" onclick="${pre}FecharVia()">voltar</button></div>
-    <p class="note">${legenda}</p>
-    ${corpo}
-    ${rodape}
-    <div class="barra-acao">
-      <button class="primary" onclick="${pre}FecharVia()">Confirmar ${g[via].length} voo${g[via].length === 1 ? "" : "s"} ${via === "PP" ? "direto (PP)" : "na " + via}</button>
-    </div>`;
+    return passoCab("QUAIS VOOS?", legenda, botaoSaindo(totalDestinos(st), acaoConfirmar)) + corpo + rodape;
   }
   function alternarTodosDaVia(st) {
     const lista = conexoesDaVia(st).map((v) => v.id);
@@ -7887,7 +7889,7 @@ Ele sai da lista de boxes dos operadores.`);
   }
   function puAbrirVia(via) {
     grupos(UI.pu);
-    UI.pu.via = via;
+    UI.pu.via = UI.pu.via === via ? null : via;
     UI.pu.verOutros = false;
     bus.render();
   }
@@ -7895,8 +7897,17 @@ Ele sai da lista de boxes dos operadores.`);
     UI.pu.via = null;
     bus.render();
   }
-  function puTogEsteira() {
-    UI.pu.esteira = !UI.pu.esteira;
+  function puEsteira() {
+    const st = UI.pu;
+    if (!st.esteira) {
+      st.esteira = true;
+      st.via = "ESTEIRA";
+    } else st.via = st.via === "ESTEIRA" ? null : "ESTEIRA";
+    bus.render();
+  }
+  function puEsteiraTirar() {
+    UI.pu.esteira = false;
+    UI.pu.via = null;
     bus.render();
   }
   function puVerOutros() {
@@ -7924,7 +7935,6 @@ Ele sai da lista de boxes dos operadores.`);
   }
   function confirmarVooOrigem(id) {
     UI.op.vooOrigemId = id;
-    UI.op.via = "PP";
     bus.render();
   }
   function alternar(lista, id) {
@@ -8093,7 +8103,7 @@ Ele sai da lista de boxes dos operadores.`);
   }
   var podeCancelar = (vg) => !destinosDe(vg.id).some((d) => d.status === "a_caminho");
   function conteudoPainelViagem(vg) {
-    if (UI.pu) return telaColeta(vg);
+    if (UI.pu) return folhaColeta(vg);
     const ds = destinosDe(vg.id);
     const diretosPendentes = ds.filter((d) => !naTriagem(d) && d.status !== "entregue");
     const feitas = ds.filter((d) => d.status === "entregue");
@@ -8103,7 +8113,7 @@ Ele sai da lista de boxes dos operadores.`);
     ${gruposDiretos(diretosPendentes).map((x) => x.solo ? cartaoDestino(x.solo, vg) : cartaoDestinoGrupo(x.grupo, vg)).join("")}
     ${TRIAGENS.map((via) => cartaoTriagem(via, ds.filter((d) => naTriagem(d) && d.entrega_via === via && d.status !== "entregue"), vg)).join("")}
     ${feitas.length ? `<button class="ghost" style="margin-top:8px" onclick="abrirEntregasFeitas(${vg.id})">${ico("aceite", 16)} Ver entregas feitas (${feitas.length})</button>` : ""}
-    <button onclick="UI.pu={origem:null,box:null,vooId:null,sel:[]};render()">+ Pegar bags no caminho</button>
+    <button onclick="UI.pu={origem:null,boxOrigem:null,vooOrigemId:null,sel:[]};render()">+ Pegar bags no caminho</button>
     ${podeCancelar(vg) ? `<button class="ghost" style="margin-top:8px" onclick="cancelarViagem(${vg.id})">Cancelar viagem</button>` : ""}`;
   }
   function abrirEntregasFeitas(vgId) {
@@ -8142,7 +8152,10 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
       fecharModal();
       return;
     }
-    abrirModal(conteudoPainelViagem(vg), { lado: true, travado: painelTravado() });
+    abrirModal(
+      conteudoPainelViagem(vg),
+      UI.pu ? { folha: true, travado: painelTravado() } : { lado: true, travado: painelTravado() }
+    );
   }
   function abrirPainelViagem() {
     UI.modalVivo = { tipo: "viagem" };
@@ -8162,8 +8175,8 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
         "Trocar de onde voc\xEA est\xE1?"
       )) return;
       st.origem = origem;
-      st.box = null;
-      st.vooId = null;
+      st.boxOrigem = null;
+      st.vooOrigemId = null;
       st.sel = [];
       st.g = null;
       st.esteira = false;
@@ -8172,53 +8185,24 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
     bus.render();
   }
   function confirmarVooColeta(id) {
-    UI.pu.vooId = id;
-    UI.pu.via = "PP";
+    UI.pu.vooOrigemId = id;
     bus.render();
   }
-  function telaColeta(vg) {
-    UI.pu.carga = vg.carga || "BAG";
-    if (!UI.pu.origem) return `
-    <div class="board-title"><h2>Pegando bags \u2014 onde voc\xEA est\xE1?</h2></div>
-    ${origemGrid("escolherOrigemColeta")}
-    <button class="ghost" style="margin-top:12px" onclick="UI.pu=null;render()">Voltar para a viagem</button>`;
-    if (UI.pu.origem === "BOX") {
-      if (!UI.pu.vooId) {
-        const patio = desempatarBoxes(voosChegando());
-        const noBox = UI.pu.box ? patio.filter((v) => v.box === UI.pu.box) : [];
-        return `
-      <div class="board-title"><h2>Pegando bags \u2014 em qual box?</h2></div>
-      ${gradeBoxes(UI.pu.box, "escolherBoxColeta", patio)}
-      <div class="card" style="margin-top:12px">
-        ${UI.pu.box ? noBox.length === 1 ? `<p style="margin:0">Voo identificado: ${vooRotulo2(noBox[0], "chegada", { tam: "g", aviao: true })}</p>
-             <div style="margin-top:12px"><button class="primary" onclick="confirmarVooColeta(${noBox[0].id})">Confirmar e escolher destinos</button></div>` : noBox.length > 1 ? `<label>Mais de um voo neste box \u2014 qual \xE9?</label>
-             ${noBox.map((v) => `<button style="margin-top:8px" onclick="confirmarVooColeta(${v.id})">${vooRotulo2(v, "chegada", { box: false })}</button>`).join("")}` : `<p class="note" style="margin:0">Nenhum voo da malha neste box.</p>` : `<p class="note" style="margin:0">Toque no box onde voc\xEA est\xE1 pegando as bags.</p>`}
-      </div>
-      <button class="ghost" onclick="UI.pu.origem=null;render()">Voltar</button>`;
-      }
-      if (UI.pu.via) return telaVoosDaVia(UI.pu, "pu");
-      const vooTxt = esc((voo(UI.pu.vooId) || {}).voo_chegada || (voo(UI.pu.vooId) || {}).numero || "");
-      return telaVias(
-        UI.pu,
-        `Bags do box ${esc(UI.pu.box)} \xB7 voo ${vooTxt}`,
-        "pu",
-        "UI.pu.origem=null;render()",
-        `confirmarColeta(${vg.id})`
-      );
-    }
-    const candidatos = candidatosDestinoJanela([UI.pu.vooId || null]);
-    return `
-    <div class="board-title"><h2>Pegando bags \u2014 qual destino?</h2></div>
-    <p class="note">Toque em todos os destinos que voc\xEA est\xE1 levando.</p>
-    ${gradeDestinos(candidatos, [], UI.pu.sel, "togDestPU")}
-    <div class="barra-acao">
-      <button class="primary" ${UI.pu.sel.length ? "" : "disabled"} onclick="confirmarColeta(${vg.id})">Adicionar com ${UI.pu.sel.length} destino${UI.pu.sel.length === 1 ? "" : "s"}</button>
-      <button class="ghost" style="margin-top:8px" onclick="UI.pu.origem=null;render()">Voltar</button>
-    </div>`;
-  }
   function escolherBoxColeta(b) {
-    UI.pu.box = b;
-    UI.pu.vooId = null;
+    UI.pu.boxOrigem = b;
+    UI.pu.vooOrigemId = null;
+    bus.render();
+  }
+  function folhaColeta(vg) {
+    UI.pu.carga = vg.carga || "BAG";
+    return `<button class="ghost folha-x" onclick="fecharColeta()" aria-label="Fechar">\u2715</button>
+    <div class="folha-alca" aria-hidden="true"></div>
+    <div class="folha-cabeca"><span class="folha-carga">Pegando bags</span></div>
+    ${trilhaColeta()}
+    <div class="folha-corpo">${passosOrigemVia(UI.pu, "pu", `confirmarColeta(${vg.id})`)}</div>`;
+  }
+  function fecharColeta() {
+    UI.pu = null;
     bus.render();
   }
   function togDestPU(id) {
@@ -8227,13 +8211,13 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
     bus.render();
   }
   async function confirmarColeta(vgId) {
-    const linhas = UI.pu.origem === "BOX" ? linhasDosGrupos(UI.pu, vgId, { origem_box: UI.pu.box, origem_voo_id: UI.pu.vooId }) : UI.pu.sel.map((x) => typeof x === "number" ? { viagem_id: vgId, voo_destino_id: x, entrega_via: "VOO" } : { viagem_id: vgId, setor_destino: x, entrega_via: x === "ESTEIRA" ? "ESTEIRA" : x });
+    const linhas = UI.pu.origem === "BOX" ? linhasDosGrupos(UI.pu, vgId, { origem_box: UI.pu.boxOrigem, origem_voo_id: UI.pu.vooOrigemId }) : UI.pu.sel.map((x) => typeof x === "number" ? { viagem_id: vgId, voo_destino_id: x, entrega_via: "VOO" } : { viagem_id: vgId, setor_destino: x, entrega_via: x === "ESTEIRA" ? "ESTEIRA" : x });
     const { error } = await adicionarDestinos(linhas);
     if (error) {
       await erro(error);
       return;
     }
-    await registrarLocais(linhas, UI.pu.vooId, "a_caminho");
+    await registrarLocais(linhas, UI.pu.vooOrigemId, "a_caminho");
     UI.pu = null;
     bus.recarregar();
   }
@@ -9245,15 +9229,17 @@ Sair mesmo assim?`
     opEsteiraTirar,
     puAbrirVia,
     puFecharVia,
-    puTogEsteira,
     puVerOutros,
     puTodosDaVia,
+    puEsteira,
+    puEsteiraTirar,
     abrirFolhaOp,
     fecharFolhaOp,
     trocarBoxOp,
     abrirNovaFolha,
     abrirPainelViagem,
     fecharPainelViagem,
+    fecharColeta,
     escolherCarga,
     escolherEquipamento,
     escolherEquipQtd,
