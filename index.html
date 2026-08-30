@@ -12,11 +12,21 @@
 <link href="https://fonts.googleapis.com/css2?family=SUSE+Mono:wght@300..700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+  /* Paleta clara, trocada em 30/08/2026 (decisao do Tiago — ver
+     docs/decisoes.md e .claude/skills/tela-de-patio/SKILL.md, secao
+     "Cores", que e a fonte da verdade se isto precisar mudar nao vez.
+     Fundo escuro foi testado e descartado: lavava no sol forte do
+     patio. --amber e --blue MANTEM o nome antigo (o resto do app
+     inteiro referencia esses dois tokens) mas agora apontam pra cores
+     da paleta nova, nao mais dourado/azul vivo. */
   :root{
-    --bg:#0B1220; --surface:#131C2B; --surface2:#1A2536; --line:#24324A;
-    --amber:#fabb25; --amber-dim:#b58a1c;
-    --blue:#4DA3FF; --green:#35D07F; --orange:#FF8A3D; --red:#FF5D5D;
-    --text:#EAF0FA; --muted:#90A0B8;
+    --bg:#D9DCD6; --surface:#FFFFFF; --surface2:#EEF1EE; --line:rgba(22,66,91,.18);
+    --amber:#2F6690; --amber-dim:#97B2C7;      /* baltic-blue — era o dourado de marca */
+    --blue:#3A7CA5;                             /* cerulean — era o azul vivo informativo */
+    --accent-light:#81C3D7;                     /* sky-blue-light — fundo de chip/aba selecionada */
+    --amber-mid:#A67C1F;                        /* fora da paleta nova, de proposito — timer "hora de ir" */
+    --green:#1F8A4C; --orange:#C15B1F; --red:#C23B3B; /* status escurecidos p/ nao lavar no fundo claro */
+    --text:#16425B; --muted:rgba(22,66,91,.62); /* yale-blue */
     --header-h:46px;
     --barra-h:52px;
   }
@@ -62,8 +72,8 @@
     font-size:19px; font-weight:600; color:var(--text); background:var(--surface2);
     border:1px solid var(--line); border-radius:12px; min-height:56px; padding:8px 18px; cursor:pointer; width:100%}
   button:active{transform:scale(.985)}
-  button.primary{background:var(--amber); color:#151005; border-color:var(--amber)}
-  button.ok{background:var(--green); color:#04180d; border-color:var(--green)}
+  button.primary{background:var(--amber); color:#fff; border-color:var(--amber)}
+  button.ok{background:var(--green); color:#fff; border-color:var(--green)}
   button.ghost{background:transparent}
   button.small{min-height:42px; font-size:16px; width:auto}
   button:disabled{opacity:.4; cursor:default}
@@ -74,15 +84,16 @@
   label{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; display:block; margin:10px 0 4px}
 
   /* ---------- IDENTIFICACAO DE VOO (padrao do projeto) ----------
-     YYY-XXXX-[BOX] · chegada BRANCO · saida AMBAR.
+     YYY-XXXX-[BOX] · chegada --text (yale-blue) · saida --amber
+     (baltic-blue, era dourado ate 30/08/2026).
      A cor vem do container (.voo-chegada / .voo-saida) e desce por
      currentColor, entao o numero, a placa do box e o icone mudam
      juntos — nao ha como uma tela pintar diferente da outra.
 
      Forma (modelo aprovado pelo Tiago em 21/08/2026): codigo em 24px
-     peso 400, placa do box em quadrado preto de borda 2px e canto 6px,
-     com o numero a .92em. A placa so aparece onde ja aparecia — o
-     rotulo NAO inventa box para quem nao tem.
+     peso 400, placa do box em quadrado de fundo --surface (branco) com
+     borda 2px e canto 6px, com o numero a .92em. A placa so aparece
+     onde ja aparecia — o rotulo NAO inventa box para quem nao tem.
 
      Este bloco e o unico lugar que estiliza numero de voo no projeto.
      Se aparecer um numero de voo com cara diferente em alguma tela, e
@@ -104,7 +115,7 @@
   /* a placa: quadrado de borda com o box no meio, herdando a cor */
   .voo-box{display:inline-flex; align-items:center; justify-content:center;
     min-width:1.9em; height:1.55em; padding:0 .3em; margin-left:1px;
-    border:2px solid currentColor; border-radius:6px; background:#000;
+    border:2px solid currentColor; border-radius:6px; background:var(--surface);
     font-size:.92em; letter-spacing:.02em}
   /* placa VERDE: ONDE a bag esta sendo largada (TCX/TLC). Na mesma
      linha convivem tres coisas — o box de onde ela saiu (branco, cor
@@ -143,8 +154,9 @@
 
   /* Voo que ja decolou e ainda tem bag no chao. Acontece com
      frequencia na operacao, entao NAO e alarme vermelho: seria
-     ruido constante e o operador aprenderia a ignorar. Ambar =
-     "repare nisto", que e o peso certo. */
+     ruido constante e o operador aprenderia a ignorar. --amber =
+     "repare nisto", que e o peso certo (o token continua se chamando
+     amber; a cor por tras dele e que trocou pra azul em 30/08/2026). */
   .voo-partiu{color:var(--amber); display:inline-flex; align-items:center; gap:4px}
 
   /* ---------- alerta de serviço solicitado ----------
@@ -194,32 +206,36 @@
   /* ---------- chips de status ---------- */
   .chip{display:inline-block; text-transform:uppercase; letter-spacing:.07em;
     font-size:14px; font-weight:600; border-radius:999px; padding:3px 12px}
-  .st-a_caminho{background:rgba(77,163,255,.15); color:var(--blue)}
-  .st-entregue,.st-concluida{background:rgba(53,208,127,.15); color:var(--green)}
-  .st-solicitada{background:rgba(255,138,61,.18); color:var(--orange)}
-  .st-aceita{background:rgba(255,197,61,.15); color:var(--amber)}
-  .st-cancelada{background:rgba(255,93,93,.14); color:var(--red)}
+  .st-a_caminho{background:rgba(58,124,165,.15); color:var(--blue)}
+  .st-entregue,.st-concluida{background:rgba(31,138,76,.15); color:var(--green)}
+  .st-solicitada{background:rgba(193,91,31,.18); color:var(--orange)}
+  .st-aceita{background:rgba(47,102,144,.15); color:var(--amber)}
+  .st-cancelada{background:rgba(194,59,59,.14); color:var(--red)}
 
   /* ---------- grade de voos (operador) ---------- */
   .voo-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px}
   .voo-btn{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px; text-align:center; cursor:pointer}
 
   .voo-btn .bx{font-size:13px; color:var(--muted); margin-top:2px}
-  .voo-btn.sel{border-color:var(--amber); background:#1f2612; box-shadow:0 0 0 2px var(--amber) inset; opacity:1}
+  /* fundo claro do "selecionado" (era um dourado escurecido, pensado
+     pra fundo escuro) — no fundo claro vira o chip --accent-light, com
+     texto em --text pra fechar o contraste (--amber sobre sky-blue
+     nao fecha 4.5:1 em corpo pequeno, --text fecha). */
+  .voo-btn.sel{border-color:var(--amber); background:var(--accent-light); box-shadow:0 0 0 2px var(--amber) inset; opacity:1}
   .voo-btn.off{opacity:.4}
   .voo-btn.sel .ord{position:absolute}
   .badge{display:inline-flex; align-items:center; justify-content:center; min-width:44px; height:44px;
-    padding:4px 8px; background:#000; border:2px solid var(--amber); border-radius:6px;
+    padding:4px 8px; background:var(--surface); border:2px solid var(--amber); border-radius:6px;
     font-weight:400; font-size:22px; color:var(--amber)}
   .badge.sm{min-width:34px; height:32px; font-size:17px; border-radius:6px}
 
-  /* CONTAGEM (quantos voos marcados) — circulo preto, numero branco.
-     Nao e placa de box: placa tem borda ambar e diz ONDE; o circulo
-     diz QUANTOS. Formas diferentes para nao se lerem como a mesma
-     coisa na mesma linha. */
+  /* CONTAGEM (quantos voos marcados) — circulo escuro (--text), numero
+     branco. Nao e placa de box: placa tem borda --amber e diz ONDE; o
+     circulo diz QUANTOS. Formas diferentes para nao se lerem como a
+     mesma coisa na mesma linha. */
   .cont{display:inline-flex; align-items:center; justify-content:center;
     flex:0 0 auto; width:30px; height:30px; border-radius:50%;
-    background:#000; color:#fff; font-weight:600; font-size:17px; line-height:1}
+    background:var(--text); color:#fff; font-weight:600; font-size:17px; line-height:1}
   .dcode{font-weight:600; font-size:21px; color:var(--text)}
   .dhora{font-weight:500; font-size:15px; color:var(--muted); margin-top:6px}
   .linha-c{display:flex; align-items:center; gap:9px; justify-content:center; flex-wrap:wrap}
@@ -228,9 +244,9 @@
   /* Na tela de base as duas perguntas ficam LADO A LADO, entao sem
      marca visivel nao da para saber o que ja foi respondido. O .sel
      de cima so vale para .voo-btn — este e o equivalente aqui. */
-  .origem-grid button.sel{border-color:var(--amber); background:#1f2612;
-    color:var(--amber); box-shadow:0 0 0 2px var(--amber) inset}
-  .origem-grid button.sel .badge{background:var(--amber); color:#151005; border-color:var(--amber)}
+  .origem-grid button.sel{border-color:var(--amber); background:var(--accent-light);
+    color:var(--text); box-shadow:0 0 0 2px var(--amber) inset}
+  .origem-grid button.sel .badge{background:var(--amber); color:#fff; border-color:var(--amber)}
 
   /* ---------- tabelas (CCO) ---------- */
   table{width:100%; border-collapse:collapse; font-size:15px}
@@ -245,7 +261,7 @@
   nav.tabs{display:flex; gap:8px; position:fixed; bottom:0; left:0; right:0; background:var(--surface);
     border-top:1px solid var(--line); padding:8px 10px calc(8px + env(safe-area-inset-bottom)); z-index:10}
   nav.tabs button{min-height:50px; font-size:16px}
-  nav.tabs button.on{background:var(--amber); color:#151005; border-color:var(--amber)}
+  nav.tabs button.on{background:var(--amber); color:#fff; border-color:var(--amber)}
 
   /* ---------- login ---------- */
   .login{max-width:380px; margin:10vh auto; padding:0 16px}
@@ -360,7 +376,7 @@
     margin-top:6px}
   .deg{flex:none; width:auto; min-height:38px; padding:0 12px;
     font-size:15px; border-radius:10px}
-  .deg.on{border-color:var(--amber); background:#1f2612; color:var(--amber)}
+  .deg.on{border-color:var(--amber); background:var(--accent-light); color:var(--text)}
   /* Numero de carreta: estreito, senao a linha do equipamento nao cabe
      em 390px e o ultimo cai sozinho na linha de baixo. */
   .deg-n{min-width:38px; padding:0}
@@ -384,13 +400,13 @@
   .bxq.bx-ok .bxq-faixa{background:var(--green)}
   .bxq.bx-ok .bxq-num{opacity:.62}
   .bxq.sel{border-color:var(--amber); background:var(--amber)}
-  .bxq.sel .bxq-num{color:#151005; opacity:1}
-  .bxq.sel .bxq-faixa{background:rgba(0,0,0,.35)}
+  .bxq.sel .bxq-num{color:#fff; opacity:1}
+  .bxq.sel .bxq-faixa{background:rgba(255,255,255,.3)}
   .bxq-pt{position:absolute; top:6px; right:6px; width:9px; height:9px;
     border-radius:50%; background:var(--orange)}
   .bxq-n{position:absolute; top:3px; left:6px;
     font-size:11px; font-weight:600; color:var(--muted)}
-  .bxq.sel .bxq-n{color:#151005}
+  .bxq.sel .bxq-n{color:#fff}
   .bxq-legenda{margin-top:8px}
 
   /* ---------- popover do box com mais de um voo ----------
@@ -453,9 +469,9 @@
   .op-barra button{flex:1; min-height:36px; font-size:15px;
     display:inline-flex; align-items:center; justify-content:center}
   .op-barra-relogio{flex:0 0 auto; width:44px; padding:0}
-  .op-barra-relogio.on{background:var(--amber); color:#151005; border-color:var(--amber)}
+  .op-barra-relogio.on{background:var(--amber); color:#fff; border-color:var(--amber)}
   .op-barra-mais{flex:0 0 auto; width:auto; padding:0 18px;
-    background:var(--amber); border-color:var(--amber); color:#151005}
+    background:var(--amber); border-color:var(--amber); color:#fff}
   .op-barra-abrir{flex:0 0 auto; width:32px; padding:0}
   @keyframes barraDesce{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:translateY(0)}}
 
@@ -482,7 +498,7 @@
     padding:10px; display:flex; gap:6px; flex-wrap:wrap; width:200px;
     animation:cairJanela .16s ease-out}
   .janela-drop button{flex:0 0 auto; width:auto; min-height:38px; padding:4px 16px}
-  .janela-drop button.on{background:var(--amber); color:#151005; border-color:var(--amber)}
+  .janela-drop button.on{background:var(--amber); color:#fff; border-color:var(--amber)}
   .janela-drop .note{flex-basis:100%; margin:4px 0 0}
   @keyframes cairJanela{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:translateY(0)}}
   @media (prefers-reduced-motion: reduce){ .janela-drop{animation:none} }
@@ -502,11 +518,14 @@
   /* Timer da linha do alerta: quanto falta pro voo de destino sair.
      Escala pedida pelo Tiago (27/08) — 40min ainda da folga (azul),
      25min aperta (laranja), 15min e hora de ir (amarelo); abaixo
-     disso (ou ja partido) e o mesmo vermelho do "MAIS URGENTE". */
+     disso (ou ja partido) e o mesmo vermelho do "MAIS URGENTE".
+     "amarelo" usa --amber-mid, nao --amber: desde 30/08/2026 --amber e
+     a cor de marca (um azul), e a escala de 4 cores do timer precisa
+     continuar subindo folga->critico sem se confundir com botao. */
   .op-timer{font-weight:700; font-size:.85em}
   .op-timer.timer-azul{color:var(--blue)}
   .op-timer.timer-laranja{color:var(--orange)}
-  .op-timer.timer-amarelo{color:var(--amber)}
+  .op-timer.timer-amarelo{color:var(--amber-mid)}
   .op-timer.timer-vermelho{color:var(--red)}
   /* Dentro da folha o corpo tem altura fixa: sem o margin-top:auto a
      barra ficaria boiando no meio quando a lista e curta, e com a
@@ -536,7 +555,7 @@
   .ua-chips{display:flex; flex-wrap:wrap; gap:8px}
   .ua-chips button{width:auto; min-height:38px; font-size:15px; padding:4px 14px; border-radius:999px}
   .chip-padrao{background:var(--surface2); color:var(--muted); border-color:var(--line); cursor:default}
-  .chip-extra{background:var(--amber); color:#151005; border-color:var(--amber)}
+  .chip-extra{background:var(--amber); color:#fff; border-color:var(--amber)}
   .chip-off{background:transparent; color:var(--muted); border-color:var(--line)}
   .modal-acoes{display:flex; gap:10px; margin-top:14px}
   .modal-acoes button{flex:1}
@@ -557,9 +576,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/08/2026, 17:00:49
+     Gerado em: 30/08/2026, 10:50:10
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/08 17:00";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/08 10:50";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
