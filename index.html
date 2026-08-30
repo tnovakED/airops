@@ -576,9 +576,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 30/08/2026, 10:50:10
+     Gerado em: 30/08/2026, 11:04:13
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/08 10:50";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/08 11:04";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -8978,8 +8978,8 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     if (!S.me) return;
     const abas = abasDoUsuario();
     if (!abas.includes(UI.tab)) UI.tab = abas[0];
-    const temLevar = S.ferramentas.some((f) => f.id === "levar");
-    const nav = temLevar ? barraOperador(abas) : `<nav class="tabs">${abas.map(
+    const naOperador = UI.tab === "levar";
+    const nav = naOperador ? barraOperador(abas) : `<nav class="tabs">${abas.map(
       (k) => `<button class="${UI.tab === k ? "on" : ""}" onclick="irPara('${k}')">${ABA_TITULO[k] || k}</button>`
     ).join("")}</nav>`;
     app().innerHTML = `
@@ -8988,9 +8988,9 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       <div class="who"><b>${esc(S.me.nome)}</b><span>${esc(S.me.perfil)} \xB7 v${esc(window.RAMPA_BUILD || "dev")}</span></div>
       <button class="small ghost" style="width:auto" onclick="sair()">Sair</button>
     </header>
-    ${temLevar ? nav : ""}
-    <main id="main" class="${temLevar ? "sem-nav-baixo" : ""}"></main>
-    ${temLevar ? "" : nav}`;
+    ${naOperador ? nav : ""}
+    <main id="main" class="${naOperador ? "sem-nav-baixo" : ""}"></main>
+    ${naOperador ? "" : nav}`;
     document.getElementById("main").innerHTML = conteudo(UI.tab);
     atualizarModalVivo();
     religarAnimacoes();
