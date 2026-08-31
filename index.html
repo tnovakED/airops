@@ -215,6 +215,12 @@
     border-radius:12px; display:flex; align-items:center; justify-content:center}
   .alerta-acao .ico{margin-right:0}
 
+  /* Contagem de VOOS (nao bags) do lugar — sempre visivel, tom neutro:
+     e contexto, nao alarme. Convive com .alerta-urgentes (so aparece
+     com timer vermelho) sem competir por atencao. */
+  .alerta-contagem{display:flex; align-items:center; gap:4px;
+    color:var(--muted); font-weight:600; font-size:.85em}
+
   /* Contagem de urgentes DA LINHA (um lugar pode ter varios voos
      pendentes; quantos deles estao em timer-vermelho). */
   .alerta-urgentes{display:flex; align-items:center; gap:4px;
@@ -597,9 +603,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 31/08/2026, 08:45:59
+     Gerado em: 31/08/2026, 09:42:46
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 08:45";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 09:42";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -739,6 +745,10 @@
   });
 
   // src/utils/dom.js
+  function tirarFoco() {
+    var _a, _b;
+    (_b = (_a = document.activeElement) == null ? void 0 : _a.blur) == null ? void 0 : _b.call(_a);
+  }
   function beep() {
     try {
       const c = new (window.AudioContext || window.webkitAudioContext)();
@@ -8085,15 +8095,16 @@ Ele sai da lista de boxes dos operadores.`);
     const linhas = ids.map((id) => {
       const d = D.destinos.find((x) => x.id === id);
       const bx = (d == null ? void 0 : d.origem_box) || vg.box_origem;
+      const vo = vooDeOrigem(d, vg);
       return `<div class="list-line">
-      ${bx ? `<span class="voo voo-chegada"><span class="voo-box">${esc(bx)}</span></span>` : ""}
+      ${bx ? vooRotulo2(vo || {}, "chegada", { aviao: true, placa: bx }) : ""}
       <span class="grow"></span>
       <input id="qtd-grupo-${id}" type="number" inputmode="numeric" min="0" placeholder="qtd" style="width:90px">
     </div>`;
     }).join("");
-    abrirModal(`<h3>Quantas bags em cada box?</h3>${linhas}
+    abrirModal(`<h3>Quantas bags dessa(s) origem(s)?</h3>${linhas}
     <div class="modal-acoes" style="margin-top:12px">
-      <button onclick="fecharModal()">Cancelar</button>
+      <button onclick="cancelarPopoverViagem()">Cancelar</button>
       <button class="primary" onclick="confirmarEntregaGrupo([${ids.join(",")}],${vgId})">Confirmar</button>
     </div>`);
   }
@@ -8167,6 +8178,7 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
       await depoisDaEntrega(d, vg, qtd);
     }
     UI.modalVivo = { tipo: "viagem" };
+    tirarFoco();
     bus.recarregar();
   }
   function painelTravado() {
@@ -8267,7 +8279,7 @@ Destino: ${esc(inf.num)}`);
     <input id="qtdEntrega" type="number" inputmode="numeric" min="0" placeholder="quantidade">
     <p class="note">N\xE3o sabe? Pode confirmar em branco \u2014 a entrega grava do mesmo jeito, s\xF3 sem o n\xFAmero.</p>
     <div class="modal-acoes">
-      <button onclick="fecharModal()">Cancelar</button>
+      <button onclick="cancelarPopoverViagem()">Cancelar</button>
       <button class="primary" onclick="confirmarEntrega(${destId},${vgId})">Confirmar</button>
     </div>`);
   }
@@ -8285,7 +8297,13 @@ Destino: ${esc(inf.num)}`);
     await entregarDestino(destId, vgId, qtd);
     await depoisDaEntrega(d, vg, qtd);
     UI.modalVivo = { tipo: "viagem" };
+    tirarFoco();
     bus.recarregar();
+  }
+  function cancelarPopoverViagem() {
+    fecharModal();
+    UI.modalVivo = { tipo: "viagem" };
+    bus.render();
   }
   async function depoisDaEntrega(d, vg, qtd) {
     const via = d && d.entrega_via || "PP";
@@ -8461,6 +8479,18 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     }
     bus.recarregar();
   }
+  async function cancelarSolicitacao(id) {
+    const ok = await confirmar("Desfazer o aceite?\n\nA bag volta a aparecer para os outros operadores.");
+    if (!ok) return;
+    const p = D.prontas.find((x) => x.id === id);
+    if ((p == null ? void 0 : p.status) !== "ciente" || p.ciente_por !== S.me.id) return;
+    const { error } = await devolverProntaDb(id);
+    if (error) {
+      await erro(error);
+      return;
+    }
+    bus.recarregar();
+  }
   function prontasDoLugar(tipo, box) {
     return D.prontas.filter((p) => p.setor === tipo && (box ? p.box === box : true) && p.status === "ciente" && p.ciente_por === S.me.id);
   }
@@ -8514,6 +8544,9 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     if (min >= 15) return "timer-amarelo";
     return "timer-vermelho";
   }
+  function contarVoosUnicos(ps) {
+    return new Set(ps.map((p) => p.voo_destino_id)).size;
+  }
   function contarUrgentes(ps) {
     return ps.filter((p) => {
       const v = voo(p.voo_destino_id) || {};
@@ -8531,15 +8564,17 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   function linhaSolicitacao(p) {
     const v = voo(p.voo_destino_id) || {};
     const minha = p.status === "ciente" && p.ciente_por === S.me.id;
+    const cancelar = minha ? `<button class="alerta-acao ghost" onclick="cancelarSolicitacao(${p.id})" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
     const acao = minha ? `<button class="alerta-acao ok" onclick="pegarSolicitacao(${p.id})" aria-label="Pegar">${ico("mala-check", 20)}</button>` : `<button class="alerta-acao primary" onclick="aceitarSolicitacao(${p.id})" aria-label="Aceitar">${ico("mala-duvida", 20)}</button>`;
     return `<div class="list-line alerta-linha">
     <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${vooRotulo2(v, "saida", { aviao: true })}${timerAlerta(v)}</span>
-    ${acao}
+    ${cancelar}${acao}
   </div>`;
   }
   function linhaLugar(tipo, s) {
     const podeAceitar = s.ps.some((p) => p.status === "pronta");
     const podeCancelar2 = s.ps.some((p) => p.status === "ciente");
+    const totalVoos = contarVoosUnicos(s.ps);
     const urgentes = contarUrgentes(s.ps);
     const idsAceitar = s.ps.filter((p) => p.status === "pronta").map((p) => p.id);
     const idsCancelar = s.ps.filter((p) => p.status === "ciente").map((p) => p.id);
@@ -8549,6 +8584,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     ${ico("pousando", 20)}
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       ${s.box ? `<span class="voo voo-saida"><span class="voo-box">${esc(s.box)}</span></span>` : ""}
+      <span class="alerta-contagem">${totalVoos} voo${totalVoos === 1 ? "" : "s"}</span>
       ${urgentes > 0 ? `<span class="alerta-urgentes">${ico("alerta", 16)} ${urgentes}</span>` : ""}
     </span>
     ${cancelar}${principal}
@@ -9382,6 +9418,7 @@ Sair mesmo assim?`
     toggleBarraOperador,
     aceitarSolicitacao,
     pegarSolicitacao,
+    cancelarSolicitacao,
     aceitarBox,
     cancelarAceiteBox,
     abrirEscolhaVoosBox,
@@ -9390,6 +9427,7 @@ Sair mesmo assim?`
     confirmarEscolhaVoosBox,
     escolherSecaoBox,
     arrastarCartaoAlerta,
+    cancelarPopoverViagem,
     // OC
     assumirVoo: assumirVoo2,
     soltarVoo: soltarVoo2,
