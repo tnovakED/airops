@@ -618,9 +618,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 31/08/2026, 14:09:39
+     Gerado em: 31/08/2026, 14:38:27
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 14:09";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 14:38";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -8122,8 +8122,9 @@ Ele sai da lista de boxes dos operadores.`);
       const d = D.destinos.find((x) => x.id === id);
       const bx = (d == null ? void 0 : d.origem_box) || vg.box_origem;
       const vo = vooDeOrigem(d, vg);
+      const origemHtml = vo ? vooRotulo2(vo, "chegada", { aviao: true, placa: bx }) : bx ? `${ico("pousando", 18)}<span class="voo voo-chegada"><span class="voo-box">${esc(bx)}</span></span>` : "";
       return `<div class="list-line">
-      ${bx ? vooRotulo2(vo || {}, "chegada", { aviao: true, placa: bx }) : ""}
+      ${origemHtml}
       <span class="grow"></span>
       <input id="qtd-grupo-${id}" type="number" inputmode="numeric" min="0" placeholder="qtd" style="width:90px">
     </div>`;
@@ -8536,8 +8537,10 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
       <span class="grow">${vooRotulo2(v, "saida", { aviao: true, aviaoApos: true })}${timerAlerta(v)}</span>
     </div>`;
     }).join("") : `<p class="note">Nada pendente aqui agora.</p>`;
-    const titulo = e.box ? `${ico("pousando", 20)} ORIGEM <span class="voo voo-saida"><span class="voo-box">${esc(e.box)}</span></span>` : esc(e.tipo);
-    abrirModal(`<h3 style="display:flex;align-items:center;gap:6px">${titulo}</h3>${linhas}
+    const voChegada = e.box ? desempatarBoxes(voosChegando()).find((v) => v.box === e.box) : null;
+    const placaOrigem = voChegada ? vooRotulo2(voChegada, "chegada", { aviao: true, placa: e.box }) : `${ico("pousando", 20)}<span class="voo voo-chegada"><span class="voo-box">${esc(e.box)}</span></span>`;
+    const titulo = e.box ? `Origem: ${placaOrigem}` : esc(e.tipo);
+    abrirModal(`<h3 style="display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px">${titulo}</h3>${linhas}
     <div class="modal-acoes" style="margin-top:12px">
       <button class="ghost" onclick="fecharEscolhaVoosBox()">Fechar</button>
       <button class="primary" ${e.sel.length ? "" : "disabled"} onclick="confirmarEscolhaVoosBox()">Adicionar \xE0 viagem${e.sel.length ? ` (${e.sel.length})` : ""}</button>
