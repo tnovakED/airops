@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0B1220">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>RAMPA OPS</title>
+<title>AIROPS-Modulo_Rampa</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=SUSE+Mono:wght@300..700&display=swap" rel="stylesheet">
@@ -174,6 +174,27 @@
   .lugar-linha .deg-linha{flex:1 1 auto; margin-top:0}
   .lugar{font-size:clamp(34px,10.5vw,44px); font-weight:600; line-height:.95;
     letter-spacing:.02em; color:var(--text); flex:0 0 auto; margin-left:auto}
+
+  /* Alca para arrastar o CARTAO inteiro (BOX/TCX/TLC) e reordenar —
+     decisao do Tiago (31/08). 44px, o minimo de alvo de toque dentro de
+     alerta (ver tela-de-patio). touch-action:none so aqui: o resto do
+     cartao continua rolando a pagina normal, e a .alerta-lista (scroll
+     interno de cada cartao) nem e tocada por isto. */
+  .alerta-handle{flex:0 0 auto; width:44px; height:44px; min-height:44px; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    background:transparent; border:1px solid var(--line); border-radius:8px;
+    color:var(--muted); touch-action:none; cursor:grab}
+
+  /* Os cartoes deslizam (translateY, aplicado via JS em
+     arrastarCartaoAlerta) para abrir espaco conforme o arrastado passa
+     por cima — .arrastando tira a transicao do proprio cartao segurado,
+     que tem que seguir o dedo sem atraso. */
+  .alertas-lista .card.alerta{transition:transform .18s ease}
+  .alertas-lista .card.alerta.arrastando{transition:none; z-index:5;
+    box-shadow:0 4px 14px rgba(22,66,91,.35)}
+  @media (prefers-reduced-motion: reduce){
+    .alertas-lista .card.alerta{transition:none}
+  }
 
   /* Lista sempre visivel, uma linha por demanda com o Aceitar do lado
      (list-line ja da o layout — grow+botao). Rola depois de umas
@@ -576,9 +597,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 30/08/2026, 16:38:53
+     Gerado em: 31/08/2026, 08:45:59
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/08 16:38";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 08:45";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -641,6 +662,8 @@
         // triagem
         alertaSecao: null,
         // aba de secao ativa no card BOX do alerta (null = todas)
+        ordemAlerta: null,
+        // ordem dos 3 cartoes do alerta (BOX/TCX/TLC); null = ainda nao lida do localStorage
         escolhaBox: null,
         // popover "ver voos" do card BOX: {tipo, box, sel:[]}
         // O que ele viu no lugar e nao levou, nesta viagem.
@@ -2072,7 +2095,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     aceite: "0 -960 960 960",
     malha: "0 -960 960 960",
     historico: "0 -960 960 960",
-    turno: "0 -960 960 960"
+    turno: "0 -960 960 960",
+    arrastar: "0 -960 960 960"
   };
   var P = {
     "mala-check": `<path d="m696-150 141.33-142-28.66-28.67L696-207.33 638-266l-28.67 29.33L696-150Zm-337.33-46.67v-406h-57.34v406h57.34ZM481.33-130h-180q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-406q0-27 19.83-46.83t46.83-19.83h267.34v-144h-16q-27 0-46.84-19.84Q486-853 486-880h149.33v392.67q-17.33 6-34.16 14.66-16.84 8.67-32.5 20.67v-150.67H425.33v406h37.34q1.66 18 6.33 34.34Q473.67-146 481.33-130Zm380.84-245.5q57.16 57.17 57.16 138.83 0 81.67-57.16 138.84Q805-40.67 723.33-40.67q-81.66 0-138.83-57.16-57.17-57.17-57.17-138.84 0-81.66 57.17-138.83 57.17-57.17 138.83-57.17 81.67 0 138.84 57.17ZM392-400Zm-33.33 203.33v-406 406Zm66.66 0v-406 406Z"/>`,
@@ -2121,8 +2145,10 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     // material symbols: list_arrow (Apache 2.0) — botao Malha, so-icone, na barra do topo
     historico: `<path d="M186.67-120q-27.5 0-47.09-19.58Q120-159.17 120-186.67v-586.66q0-27.5 19.58-47.09Q159.17-840 186.67-840h192.66q7.67-35.33 35.84-57.67Q443.33-920 480-920t64.83 22.33Q573-875.33 580.67-840h192.66q27.5 0 47.09 19.58Q840-800.83 840-773.33v586.66q0 27.5-19.58 47.09Q800.83-120 773.33-120H186.67Zm0-66.67h586.66v-586.66H186.67v586.66ZM280-280h275.33v-66.67H280V-280Zm0-166.67h400v-66.66H280v66.66Zm0-166.66h400V-680H280v66.67ZM503.5-804.5q9.83-9.83 9.83-23.5t-9.83-23.5q-9.83-9.83-23.5-9.83t-23.5 9.83q-9.83 9.83-9.83 23.5t9.83 23.5q9.83 9.83 23.5 9.83t23.5-9.83ZM186.67-186.67v-586.66 586.66Z"/>`,
     // material symbols: assignment (Apache 2.0) — botao Historico, so-icone, na barra do topo
-    turno: `<path d="M446.67-520h66.66v-200h-66.66v200ZM480-373.33q13.67 0 23.5-9.84 9.83-9.83 9.83-23.5 0-13.66-9.83-23.5Q493.67-440 480-440t-23.5 9.83q-9.83 9.84-9.83 23.5 0 13.67 9.83 23.5 9.83 9.84 23.5 9.84ZM480-168q129.33-118 191.33-214.17 62-96.16 62-169.83 0-115-73.5-188.17-73.5-73.16-179.83-73.16-106.33 0-179.83 73.16Q226.67-667 226.67-552q0 73.67 63 169.83Q352.67-286 480-168Zm0 88Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z"/>`
+    turno: `<path d="M446.67-520h66.66v-200h-66.66v200ZM480-373.33q13.67 0 23.5-9.84 9.83-9.83 9.83-23.5 0-13.66-9.83-23.5Q493.67-440 480-440t-23.5 9.83q-9.83 9.84-9.83 23.5 0 13.67 9.83 23.5 9.83 9.84 23.5 9.84ZM480-168q129.33-118 191.33-214.17 62-96.16 62-169.83 0-115-73.5-188.17-73.5-73.16-179.83-73.16-106.33 0-179.83 73.16Q226.67-667 226.67-552q0 73.67 63 169.83Q352.67-286 480-168Zm0 88Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z"/>`,
     // material symbols: fmd_bad (Apache 2.0) — botao Turno, so-icone, na barra do topo
+    arrastar: `<path d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-400q-33 0-56.5-23.5T280-480q0-33 23.5-56.5T360-560q33 0 56.5 23.5T440-480q0 33-23.5 56.5T360-400Zm240 0q-33 0-56.5-23.5T520-480q0-33 23.5-56.5T600-560q33 0 56.5 23.5T680-480q0 33-23.5 56.5T600-400ZM360-640q-33 0-56.5-23.5T280-720q0-33 23.5-56.5T360-800q33 0 56.5 23.5T440-720q0 33-23.5 56.5T360-640Zm240 0q-33 0-56.5-23.5T520-720q0-33 23.5-56.5T600-800q33 0 56.5 23.5T680-720q0 33-23.5 56.5T600-640Z"/>`
+    // material symbols: drag_indicator (Apache 2.0) — alca de arrastar o cartao do alerta
   };
   function ico(nome, tam) {
     const d = P[nome];
@@ -8334,6 +8360,38 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     return p.setor === "BOX" ? "BOX " + (p.box || "?") : p.setor;
   }
   var TIPOS_ALERTA = ["BOX", "TCX", "TLC"];
+  function reordenarAlerta(ordem, tipoArrastado, indiceDestino) {
+    const atual = ordem.indexOf(tipoArrastado);
+    if (atual < 0) return ordem;
+    const nova = ordem.slice();
+    nova.splice(atual, 1);
+    const alvo = Math.max(0, Math.min(indiceDestino, nova.length));
+    nova.splice(alvo, 0, tipoArrastado);
+    return nova;
+  }
+  function ordemAlertaValida(v) {
+    return Array.isArray(v) && v.length === TIPOS_ALERTA.length && TIPOS_ALERTA.every((t) => v.includes(t)) && new Set(v).size === TIPOS_ALERTA.length;
+  }
+  var CHAVE_ORDEM_ALERTA = "rampa_ordem_alerta";
+  function ordemAlertaAtual() {
+    if (UI.ordemAlerta == null) {
+      let v = TIPOS_ALERTA;
+      try {
+        const salva = JSON.parse(localStorage.getItem(CHAVE_ORDEM_ALERTA) || "null");
+        if (ordemAlertaValida(salva)) v = salva;
+      } catch (e) {
+      }
+      UI.ordemAlerta = v;
+    }
+    return UI.ordemAlerta;
+  }
+  function salvarOrdemAlerta(nova) {
+    UI.ordemAlerta = nova;
+    try {
+      localStorage.setItem(CHAVE_ORDEM_ALERTA, JSON.stringify(nova));
+    } catch (e) {
+    }
+  }
   function gruposDeAlerta() {
     const porTipo = /* @__PURE__ */ new Map();
     for (const p of prontasNotificaveis()) {
@@ -8342,7 +8400,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
       porTipo.get(tipo).push(p);
     }
     const gs = [];
-    for (const tipo of TIPOS_ALERTA) {
+    for (const tipo of ordemAlertaAtual()) {
       const ps = porTipo.get(tipo) || [];
       const porLugar = /* @__PURE__ */ new Map();
       for (const p of ps) {
@@ -8522,8 +8580,10 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   }
   function cartaoTipo(g) {
     const { abas, corpo } = boxFiltrado(g);
-    return `<div class="card alerta">
+    return `<div class="card alerta" data-tipo="${esc(g.tipo)}">
     <div class="lugar-linha">
+      <button type="button" class="alerta-handle" aria-label="Arrastar para reordenar"
+        onpointerdown="arrastarCartaoAlerta(event,'${esc(g.tipo)}')">${ico("arrastar", 20)}</button>
       ${abas}
       <span class="lugar">${esc(g.tipo)}</span>
     </div>
@@ -8531,7 +8591,77 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   </div>`;
   }
   function corpoDoAlerta() {
-    return gruposDeAlerta().map(cartaoTipo).join("");
+    return `<div class="alertas-lista" id="alertas-lista">${gruposDeAlerta().map(cartaoTipo).join("")}</div>`;
+  }
+  function deslocamentosDeReordenacao(ordemViva, alturas, tipoArrastado) {
+    let acumulado = 0;
+    const alvos = {};
+    for (const t of ordemViva) {
+      alvos[t] = acumulado;
+      acumulado += alturas[t].alt;
+    }
+    const desloc = {};
+    for (const t of ordemViva) {
+      if (t === tipoArrastado) continue;
+      desloc[t] = alvos[t] - alturas[t].top;
+    }
+    return desloc;
+  }
+  function arrastarCartaoAlerta(ev, tipo) {
+    const lista = document.getElementById("alertas-lista");
+    const cartao = lista && lista.querySelector(`.card.alerta[data-tipo="${tipo}"]`);
+    if (!lista || !cartao) return;
+    ev.preventDefault();
+    const cartoes = [...lista.querySelectorAll(".card.alerta")];
+    const alturas = {};
+    for (const c of cartoes) alturas[c.dataset.tipo] = { top: c.offsetTop, alt: c.offsetHeight };
+    const ordemInicial = ordemAlertaAtual();
+    let ordemViva = ordemInicial.slice();
+    const startY = ev.clientY;
+    cartao.setPointerCapture(ev.pointerId);
+    cartao.classList.add("arrastando");
+    function aplicarDeslocamentos() {
+      const desloc = deslocamentosDeReordenacao(ordemViva, alturas, tipo);
+      for (const c of cartoes) {
+        if (c === cartao) continue;
+        const d = desloc[c.dataset.tipo] || 0;
+        c.style.transform = d ? `translateY(${d}px)` : "";
+      }
+    }
+    function mover(e) {
+      const dy = e.clientY - startY;
+      cartao.style.transform = `translateY(${dy}px)`;
+      const meio = alturas[tipo].top + dy + alturas[tipo].alt / 2;
+      for (const outro of ordemViva) {
+        if (outro === tipo) continue;
+        const h = alturas[outro];
+        const outroMeio = h.top + h.alt / 2;
+        const iAtual = ordemViva.indexOf(tipo), iOutro = ordemViva.indexOf(outro);
+        const cruzouDescendo = iAtual < iOutro && meio > outroMeio;
+        const cruzouSubindo = iAtual > iOutro && meio < outroMeio;
+        if (cruzouDescendo || cruzouSubindo) {
+          ordemViva = reordenarAlerta(ordemViva, tipo, iOutro);
+          aplicarDeslocamentos();
+          break;
+        }
+      }
+    }
+    function soltar() {
+      document.removeEventListener("pointermove", mover);
+      document.removeEventListener("pointerup", soltar);
+      document.removeEventListener("pointercancel", soltar);
+      for (const c of cartoes) {
+        c.style.transform = "";
+        c.classList.remove("arrastando");
+      }
+      if (ordemViva.join() !== ordemInicial.join()) {
+        salvarOrdemAlerta(ordemViva);
+        bus.render();
+      }
+    }
+    document.addEventListener("pointermove", mover);
+    document.addEventListener("pointerup", soltar);
+    document.addEventListener("pointercancel", soltar);
   }
   var viaDaPronta = (p) => p.setor === "TCX" || p.setor === "TLC" ? "VOO" : "PP";
   function origemDaPronta(p) {
@@ -8820,13 +8950,13 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   }
   function skeletonArranque() {
     return `
-    <header class="app"><h1>Rampa Ops</h1>
+    <header class="app"><h1>AIROPS-Modulo_Rampa</h1>
       <div class="who">
         <div class="skeleton skeleton-line" style="width:110px; margin-left:auto"></div>
         <div class="skeleton skeleton-line" style="width:70px; height:10px; margin-left:auto"></div>
       </div>
     </header>
-    <main id="main" role="status" aria-busy="true" aria-label="Carregando o Rampa Ops">
+    <main id="main" role="status" aria-busy="true" aria-label="Carregando o AIROPS-Modulo_Rampa">
       ${skeletonCards(3)}
     </main>
     <nav class="tabs">
@@ -8971,7 +9101,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       (k) => `<button class="${UI.tab === k ? "on" : ""}" onclick="irPara('${k}')">${ABA_TITULO[k] || k}</button>`
     ).join("")}</nav>`;
     app().innerHTML = `
-    <header class="app"><h1>Rampa Ops</h1>
+    <header class="app"><h1>AIROPS-Modulo_Rampa</h1>
       ${UI.filaOffline.length ? `<span class="fila-offline">Fila offline: ${UI.filaOffline.length} pendente${UI.filaOffline.length === 1 ? "" : "s"}</span>` : ""}
       <div class="who"><b>${esc(S.me.nome)}</b><span>${esc(S.me.perfil)} \xB7 v${esc(window.RAMPA_BUILD || "dev")}</span></div>
       <button class="small ghost" style="width:auto" onclick="sair()">Sair</button>
@@ -9081,7 +9211,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   // src/ui/screens/telaLogin.js
   function telaLogin() {
     return `<div class="login">
-    <h1>Rampa Ops</h1><p class="sub">central de solicita\xE7\xF5es da rampa</p>
+    <h1>AIROPS-Modulo_Rampa</h1><p class="sub">central de solicita\xE7\xF5es da rampa</p>
     <div class="card" style="margin-top:24px">
       <label>E-mail</label><input id="lem" type="email" autocomplete="username">
       <label>Senha</label><input id="lpw" type="password" autocomplete="current-password">
@@ -9259,6 +9389,7 @@ Sair mesmo assim?`
     fecharEscolhaVoosBox,
     confirmarEscolhaVoosBox,
     escolherSecaoBox,
+    arrastarCartaoAlerta,
     // OC
     assumirVoo: assumirVoo2,
     soltarVoo: soltarVoo2,
