@@ -388,7 +388,7 @@
   .folha-x{position:absolute; top:-54px; right:10px; z-index:1;
     width:48px; height:48px; padding:0; border-radius:999px;
     font-size:20px; line-height:1;
-    background:var(--surface); border:1px solid var(--line)}
+    background:var(--bg); border:1px solid var(--line)}
 
   .folha-cabeca{flex:none}
   .folha-carga{font-size:18px;
@@ -603,9 +603,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 31/08/2026, 09:42:46
+     Gerado em: 31/08/2026, 11:09:59
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 09:42";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 11:09";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2106,7 +2106,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     malha: "0 -960 960 960",
     historico: "0 -960 960 960",
     turno: "0 -960 960 960",
-    arrastar: "0 -960 960 960"
+    arrastar: "0 -960 960 960",
+    thumb_up: "0 -960 960 960"
   };
   var P = {
     "mala-check": `<path d="m696-150 141.33-142-28.66-28.67L696-207.33 638-266l-28.67 29.33L696-150Zm-337.33-46.67v-406h-57.34v406h57.34ZM481.33-130h-180q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-406q0-27 19.83-46.83t46.83-19.83h267.34v-144h-16q-27 0-46.84-19.84Q486-853 486-880h149.33v392.67q-17.33 6-34.16 14.66-16.84 8.67-32.5 20.67v-150.67H425.33v406h37.34q1.66 18 6.33 34.34Q473.67-146 481.33-130Zm380.84-245.5q57.16 57.17 57.16 138.83 0 81.67-57.16 138.84Q805-40.67 723.33-40.67q-81.66 0-138.83-57.16-57.17-57.17-57.17-138.84 0-81.66 57.17-138.83 57.17-57.17 138.83-57.17 81.67 0 138.84 57.17ZM392-400Zm-33.33 203.33v-406 406Zm66.66 0v-406 406Z"/>`,
@@ -2157,8 +2158,10 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     // material symbols: assignment (Apache 2.0) — botao Historico, so-icone, na barra do topo
     turno: `<path d="M446.67-520h66.66v-200h-66.66v200ZM480-373.33q13.67 0 23.5-9.84 9.83-9.83 9.83-23.5 0-13.66-9.83-23.5Q493.67-440 480-440t-23.5 9.83q-9.83 9.84-9.83 23.5 0 13.67 9.83 23.5 9.83 9.84 23.5 9.84ZM480-168q129.33-118 191.33-214.17 62-96.16 62-169.83 0-115-73.5-188.17-73.5-73.16-179.83-73.16-106.33 0-179.83 73.16Q226.67-667 226.67-552q0 73.67 63 169.83Q352.67-286 480-168Zm0 88Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z"/>`,
     // material symbols: fmd_bad (Apache 2.0) — botao Turno, so-icone, na barra do topo
-    arrastar: `<path d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-400q-33 0-56.5-23.5T280-480q0-33 23.5-56.5T360-560q33 0 56.5 23.5T440-480q0 33-23.5 56.5T360-400Zm240 0q-33 0-56.5-23.5T520-480q0-33 23.5-56.5T600-560q33 0 56.5 23.5T680-480q0 33-23.5 56.5T600-400ZM360-640q-33 0-56.5-23.5T280-720q0-33 23.5-56.5T360-800q33 0 56.5 23.5T440-720q0 33-23.5 56.5T360-640Zm240 0q-33 0-56.5-23.5T520-720q0-33 23.5-56.5T600-800q33 0 56.5 23.5T680-720q0 33-23.5 56.5T600-640Z"/>`
+    arrastar: `<path d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-400q-33 0-56.5-23.5T280-480q0-33 23.5-56.5T360-560q33 0 56.5 23.5T440-480q0 33-23.5 56.5T360-400Zm240 0q-33 0-56.5-23.5T520-480q0-33 23.5-56.5T600-560q33 0 56.5 23.5T680-480q0 33-23.5 56.5T600-400ZM360-640q-33 0-56.5-23.5T280-720q0-33 23.5-56.5T360-800q33 0 56.5 23.5T440-720q0 33-23.5 56.5T360-640Zm240 0q-33 0-56.5-23.5T520-720q0-33 23.5-56.5T600-800q33 0 56.5 23.5T680-720q0 33-23.5 56.5T600-640Z"/>`,
     // material symbols: drag_indicator (Apache 2.0) — alca de arrastar o cartao do alerta
+    thumb_up: `<path d="M716-120H272v-512l278-288 39 31q6 5 9 14t3 22v10l-45 211h299q24 0 42 18t18 42v81.84q0 7.16 1.5 14.66T915-461L789-171q-8.88 21.25-29.59 36.12Q738.69-120 716-120Zm-384-60h397l126-299v-93H482l53-249-203 214v427Zm0-427v427-427Zm-60-25v60H139v392h133v60H79v-512h193Z"/>`
+    // material symbols: thumb_up (Apache 2.0) — botao "Aceitar" do card (BOX/TCX/TLC)
   };
   function ico(nome, tam) {
     const d = P[nome];
@@ -2182,7 +2185,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const tam = o.tam ? " voo-" + o.tam : "";
     const placa = o.placa != null ? o.placa : p.box;
     const comBox = o.box !== false && placa;
-    return `<span class="voo ${classe}${tam}">` + (o.aviao ? ico(tipo === "chegada" ? "pousando" : "decolando") : "") + `<span class="voo-apt">${esc(p.apt)}</span><span class="voo-sep">-</span><span class="voo-num">${esc(p.num)}</span>` + (comBox ? `<span class="voo-sep">-</span><span class="voo-box">${esc(placa)}</span>` : "") + (o.hora && p.hora ? `<span class="voo-hora">${esc(p.hora)}</span>` : "") + `</span>`;
+    const icone = o.aviao ? ico(tipo === "chegada" ? "pousando" : "decolando") : "";
+    return `<span class="voo ${classe}${tam}">` + (icone && !o.aviaoApos ? icone : "") + `<span class="voo-apt">${esc(p.apt)}</span><span class="voo-sep">-</span><span class="voo-num">${esc(p.num)}</span>` + (comBox ? `<span class="voo-sep">-</span><span class="voo-box">${esc(placa)}</span>` : "") + (icone && o.aviaoApos ? icone : "") + (o.hora && p.hora ? `<span class="voo-hora">${esc(p.hora)}</span>` : "") + `</span>`;
   }
   function vooPar(vChegada, vSaida, opcoes) {
     const o = opcoes || {};
@@ -2796,13 +2800,17 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     { nome: "4A-8", de: "4A", ate: "8" },
     { nome: "9-12", de: "9", ate: "12" },
     { nome: "13-16", de: "13", ate: "16" },
-    { nome: "17-22", de: "17", ate: "22" }
+    { nome: "17-22", de: "17", ate: "22" },
+    { nome: "47-60", de: "47", ate: "60" }
   ];
   function secaoDoBox(box) {
     const o = ordemBox(box);
     if (o == null) return null;
     const s = SECOES_BOX.find((s2) => o >= ordemBox(s2.de) && o <= ordemBox(s2.ate));
     return s ? s.nome : null;
+  }
+  function nomesDasSecoes() {
+    return SECOES_BOX.map((s) => s.nome);
   }
 
   // src/ui/screens/telaPontos.js
@@ -8041,6 +8049,12 @@ Ele sai da lista de boxes dos operadores.`);
   function vooDeOrigem(d, vg) {
     return voo((d == null ? void 0 : d.origem_voo_id) || vg.voo_origem_id) || null;
   }
+  function origemComumDoGrupo(ds, vg) {
+    const chave = (d) => `${d.origem_box || ""}|${d.origem_voo_id || ""}`;
+    if (chave(ds[0]) === "|") return null;
+    if (!ds.every((d) => chave(d) === chave(ds[0]))) return null;
+    return { box: ds[0].origem_box || null, vo: vooDeOrigem(ds[0], vg) };
+  }
   function rotuloEsteira(d, vg) {
     const vo = vooDeOrigem(d, vg);
     return vooRotulo2(vo || {}, "chegada", { placa: "E-" + ((vo == null ? void 0 : vo.esteira) || "?") });
@@ -8082,12 +8096,20 @@ Ele sai da lista de boxes dos operadores.`);
     return itens;
   }
   function cartaoDestinoGrupo(ds, vg) {
+    const origem = origemComumDoGrupo(ds, vg);
+    const linhaOrigem = origem ? `<div class="note" style="margin-top:4px;display:flex;align-items:center;gap:4px;flex-wrap:wrap">Origem ${ico("seta", 14)} ${vooRotulo2(
+      origem.vo || {},
+      "chegada",
+      origem.box ? { aviao: true, placa: origem.box } : { aviao: true, box: false }
+    )}
+    </div>` : "";
     return `
       <div class="card">
         <div class="list-line" style="border:none;padding:0">
           <span class="grow">${rotuloDestinoCompacto(ds[0], vg)}</span>
           <button class="ok" style="width:auto" onclick="abrirEntregaGrupo([${ds.map((d) => d.id).join(",")}],${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
         </div>
+        ${linhaOrigem}
       </div>`;
   }
   function abrirEntregaGrupo(ids, vgId) {
@@ -8507,10 +8529,11 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
       const marcado = e.sel.includes(p.id);
       return `<div class="pt-linha" onclick="alternarEscolhaVoo(${p.id})">
       ${ico(marcado ? "quadradoMarcado" : "quadrado", 20)}
-      <span class="grow">${vooRotulo2(v, "saida", { aviao: true })}${timerAlerta(v)}</span>
+      <span class="grow">${vooRotulo2(v, "saida", { aviao: true, aviaoApos: true })}${timerAlerta(v)}</span>
     </div>`;
     }).join("") : `<p class="note">Nada pendente aqui agora.</p>`;
-    abrirModal(`<h3>${esc(e.tipo)}${e.box ? ` \xB7 BOX ${esc(e.box)}` : ""}</h3>${linhas}
+    const titulo = e.box ? `${ico("pousando", 20)} ORIGEM <span class="voo voo-saida"><span class="voo-box">${esc(e.box)}</span></span>` : esc(e.tipo);
+    abrirModal(`<h3 style="display:flex;align-items:center;gap:6px">${titulo}</h3>${linhas}
     <div class="modal-acoes" style="margin-top:12px">
       <button class="ghost" onclick="fecharEscolhaVoosBox()">Fechar</button>
       <button class="primary" ${e.sel.length ? "" : "disabled"} onclick="confirmarEscolhaVoosBox()">Adicionar \xE0 viagem${e.sel.length ? ` (${e.sel.length})` : ""}</button>
@@ -8565,7 +8588,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     const v = voo(p.voo_destino_id) || {};
     const minha = p.status === "ciente" && p.ciente_por === S.me.id;
     const cancelar = minha ? `<button class="alerta-acao ghost" onclick="cancelarSolicitacao(${p.id})" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
-    const acao = minha ? `<button class="alerta-acao ok" onclick="pegarSolicitacao(${p.id})" aria-label="Pegar">${ico("mala-check", 20)}</button>` : `<button class="alerta-acao primary" onclick="aceitarSolicitacao(${p.id})" aria-label="Aceitar">${ico("mala-duvida", 20)}</button>`;
+    const acao = minha ? `<button class="alerta-acao ok" onclick="pegarSolicitacao(${p.id})" aria-label="Pegar">${ico("mala-check", 20)}</button>` : `<button class="alerta-acao primary" onclick="aceitarSolicitacao(${p.id})" aria-label="Aceitar">${ico("thumb_up", 20)}</button>`;
     return `<div class="list-line alerta-linha">
     <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${vooRotulo2(v, "saida", { aviao: true })}${timerAlerta(v)}</span>
     ${cancelar}${acao}
@@ -8578,8 +8601,8 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     const urgentes = contarUrgentes(s.ps);
     const idsAceitar = s.ps.filter((p) => p.status === "pronta").map((p) => p.id);
     const idsCancelar = s.ps.filter((p) => p.status === "ciente").map((p) => p.id);
-    const principal = podeAceitar ? `<button class="alerta-acao primary" onclick="aceitarBox([${idsAceitar.join(",")}])" aria-label="Aceitar">${ico("aceite", 20)}</button>` : `<button class="alerta-acao ok" onclick="abrirEscolhaVoosBox('${tipo}',${s.box ? `'${esc(s.box)}'` : null})" aria-label="Ver voos">${ico("vervoos", 20)}</button>`;
-    const cancelar = `<button class="alerta-acao ghost" ${podeCancelar2 ? "" : "disabled"} onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>`;
+    const principal = podeAceitar ? `<button class="alerta-acao primary" onclick="aceitarBox([${idsAceitar.join(",")}])" aria-label="Aceitar">${ico("thumb_up", 20)}</button>` : `<button class="alerta-acao ok" onclick="abrirEscolhaVoosBox('${tipo}',${s.box ? `'${esc(s.box)}'` : null})" aria-label="Ver voos">${ico("vervoos", 20)}</button>`;
+    const cancelar = podeCancelar2 ? `<button class="alerta-acao ghost" onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
     return `<div class="list-line alerta-linha">
     ${ico("pousando", 20)}
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -8596,23 +8619,30 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   }
   function boxFiltrado(g) {
     const linhas = (s) => g.tipo === "BOX" ? linhaLugar(g.tipo, s) : s.ps.map(linhaSolicitacao).join("");
+    if (g.tipo !== "BOX") return { abas: "", corpo: g.sub.map(linhas).join("") };
     const porSecao = /* @__PURE__ */ new Map();
     for (const s of g.sub) {
       const nome = secaoDoBox(s.box);
       if (!porSecao.has(nome)) porSecao.set(nome, []);
       porSecao.get(nome).push(s);
     }
-    if (porSecao.size <= 1) return { abas: "", corpo: g.sub.map(linhas).join("") };
-    const secoes = [...porSecao.entries()].map(([nome, subs]) => ({ nome, subs, urg: subs[0].urg }));
+    const conhecidas = nomesDasSecoes().map((nome) => {
+      const subs = porSecao.get(nome) || [];
+      return { nome, subs, urg: subs.length ? subs[0].urg : Infinity };
+    });
+    const orfaos = porSecao.get(null);
+    const secoes = orfaos ? [...conhecidas, { nome: "OUTROS", subs: orfaos, urg: orfaos[0].urg }] : conhecidas;
+    if (secoes.length <= 1) return { abas: "", corpo: g.sub.map(linhas).join("") };
     secoes.sort((a, b) => a.urg - b.urg);
     const ativa = secoes.some((s) => s.nome === UI.alertaSecao) ? UI.alertaSecao : null;
     const abas = `<div class="deg-linha">${secoes.map((sec) => {
-      const urgente = corTimer(sec.urg - agoraMin()) === "timer-vermelho";
+      const urgente = sec.subs.length > 0 && corTimer(sec.urg - agoraMin()) === "timer-vermelho";
       return degrau(sec.nome, ativa === sec.nome, `escolherSecaoBox('${sec.nome}')`, urgente ? "aba-urgente" : null);
     }).join("")}</div>`;
     const visiveis = ativa ? secoes.filter((s) => s.nome === ativa) : secoes;
     const subVisivel = visiveis.flatMap((s) => s.subs);
-    return { abas, corpo: subVisivel.map(linhas).join("") };
+    const corpo = subVisivel.length ? subVisivel.map(linhas).join("") : `<p class="note">Nada pendente aqui agora.</p>`;
+    return { abas, corpo };
   }
   function cartaoTipo(g) {
     const { abas, corpo } = boxFiltrado(g);
