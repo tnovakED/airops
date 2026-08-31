@@ -116,7 +116,25 @@
   .voo-box{display:inline-flex; align-items:center; justify-content:center;
     min-width:1.9em; height:1.55em; padding:0 .3em; margin-left:1px;
     border:2px solid currentColor; border-radius:6px; background:var(--surface);
-    font-size:.92em; letter-spacing:.02em}
+    font-size:.92em; letter-spacing:.02em; position:relative}
+  /* selo de pouso/decolagem CENTRALIZADO em cima da placa (pedido do
+     Tiago, 31/08) — antes ficava solto do lado do texto do voo,
+     ocupando espaco a mais na linha. Testado no navegador, nessa ordem:
+     (1) 26px no canto (20px de icone) cobria o primeiro digito da placa
+     ("20" virava so "0" visivel) — a placa e pequena demais pra
+     sobrepor pela metade como um mockup avulso faria; (2) empurrar o
+     selo quase todo pra fora resolvia o digito mas, empilhado numa
+     lista densa (.alerta-lista, padding 6px 0), furava a linha de CIMA;
+     (3) empurrar so pro lado (sem mexer no vertical) resolvia as duas
+     mas ai o selo invadia o NUMERO do voo, que fica coladinho do outro
+     lado da placa. Centralizado por cima (sem lado esquerdo/direito) e
+     menor (14px de icone, nao os 20px do resto — unico lugar do app
+     onde o icone de pouso/decolagem nao e 20px) resolveu os tres ao
+     mesmo tempo. */
+  .voo-corner{position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+    width:20px; height:20px;
+    border-radius:50%; border:1.5px solid currentColor; background:var(--surface);
+    display:flex; align-items:center; justify-content:center; pointer-events:none}
   /* placa VERDE: ONDE a bag esta sendo largada (TCX/TLC). Na mesma
      linha convivem tres coisas — o box de onde ela saiu (branco, cor
      de chegada), o voo dela (ambar, cor de saida) e o destino da
@@ -431,7 +449,12 @@
      por escrito vira cor: faixa embaixo = estado da descarga, ponto no
      canto = bag em curso, numero no canto = quantos voos no box. */
   .bxq-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
-  .bxq{position:relative; overflow:hidden; cursor:pointer;
+  /* .bxq tem overflow:hidden pra recortar os cantos da faixa de cor de
+     baixo — um selo sobreposto a propria borda (como o do mockup) ficaria
+     cortado ao meio se vivesse dentro dele. Por isso o selo (.bxq-corner)
+     mora no wrapper, como IRMAO do quadrado, nao filho. */
+  .bxq-wrap{position:relative; overflow:visible; cursor:pointer}
+  .bxq{position:relative; overflow:hidden;
     background:var(--surface2); border:1px solid var(--line); border-radius:12px;
     min-height:64px; display:flex; align-items:center; justify-content:center}
   .bxq-num{font-weight:700;
@@ -446,10 +469,19 @@
   .bxq.sel .bxq-faixa{background:rgba(255,255,255,.3)}
   .bxq-pt{position:absolute; top:6px; right:6px; width:9px; height:9px;
     border-radius:50%; background:var(--orange)}
-  .bxq-n{position:absolute; top:3px; left:6px;
+  /* desceu do canto superior esquerdo (top:3px) pro inferior: o selo de
+     pouso novo tomou aquele canto. */
+  .bxq-n{position:absolute; bottom:7px; left:6px;
     font-size:11px; font-weight:600; color:var(--muted)}
   .bxq.sel .bxq-n{color:#fff}
   .bxq-legenda{margin-top:8px}
+  /* selo de pouso no canto do quadrado — a grade compacta so mostra
+     chegada (voosEmSolo), nunca saida, entao o icone e sempre "pousando"
+     em todo tile. */
+  .bxq-corner{position:absolute; top:-16px; left:-16px; width:32px; height:32px;
+    border-radius:50%; border:2px solid var(--line); background:var(--surface);
+    display:flex; align-items:center; justify-content:center; color:var(--muted);
+    pointer-events:none; z-index:1}
 
   /* ---------- popover do box com mais de um voo ----------
      A regra do relogio resolve quase sempre. Quando nao resolve, a
@@ -618,9 +650,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 31/08/2026, 15:30:39
+     Gerado em: 31/08/2026, 16:48:24
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 15:30";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 16:48";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2200,8 +2232,11 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const tam = o.tam ? ` voo-${o.tam}` : "";
     const placa = o.placa != null ? o.placa : p.box;
     const comBox = o.box !== false && placa;
-    const icone = o.aviao ? ico(tipo === "chegada" ? "pousando" : "decolando") : "";
-    return `<span class="voo ${classe}${tam}">` + (icone && !o.aviaoApos ? icone : "") + `<span class="voo-apt">${esc(p.apt)}</span><span class="voo-sep">-</span><span class="voo-num">${esc(p.num)}</span>` + (comBox ? `<span class="voo-sep">-</span><span class="voo-box">${esc(placa)}</span>` : "") + (icone && o.aviaoApos ? icone : "") + (o.hora && p.hora ? `<span class="voo-hora">${esc(p.hora)}</span>` : "") + `</span>`;
+    const nomeIcone = tipo === "chegada" ? "pousando" : "decolando";
+    const aviao = !!o.aviao;
+    const iconeSolto = aviao && !comBox ? ico(nomeIcone) : "";
+    const selo = aviao && comBox ? `<span class="voo-corner">${ico(nomeIcone, 14)}</span>` : "";
+    return `<span class="voo ${classe}${tam}">` + (iconeSolto && !o.aviaoApos ? iconeSolto : "") + `<span class="voo-apt">${esc(p.apt)}</span><span class="voo-sep">-</span><span class="voo-num">${esc(p.num)}</span>` + (comBox ? `<span class="voo-sep">-</span><span class="voo-box">${selo}${esc(placa)}</span>` : "") + (iconeSolto && o.aviaoApos ? iconeSolto : "") + (o.hora && p.hora ? `<span class="voo-hora">${esc(p.hora)}</span>` : "") + `</span>`;
   }
   function vooPar(vChegada, vSaida, opcoes) {
     const o = opcoes || {};
@@ -2456,12 +2491,15 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       const pend = vs.some((v) => pendenciaDeChegada(v.id));
       if (compacta) {
         const pop = opcoes && opcoes.popover ? opcoes.popover(b, vs) || "" : "";
-        return `<div class="bxq bx-${est} ${selecionado === b ? "sel" : ""}" onclick="${fn}('${esc(b)}')">
+        return `<div class="bxq-wrap" onclick="${fn}('${esc(b)}')">
+      <span class="bxq-corner">${ico("pousando", 20)}</span>
+      <div class="bxq bx-${est} ${selecionado === b ? "sel" : ""}">
       ${vs.length > 1 ? `<span class="bxq-n">${vs.length}</span>` : ""}
       <span class="bxq-num">${esc(b)}</span>
       ${pend ? `<span class="bxq-pt" title="bag em curso"></span>` : ""}
       <span class="bxq-faixa"></span>
       ${pop ? `<div class="bxq-pop" onclick="event.stopPropagation()">${pop}</div>` : ""}
+    </div>
     </div>`;
       }
       return `<div class="voo-btn bx-${est} ${selecionado === b ? "sel" : ""}" onclick="${fn}('${esc(b)}')">
@@ -8126,7 +8164,7 @@ Ele sai da lista de boxes dos operadores.`);
         vo = vooDeOrigem(d, vg);
         if (!bx && !vo) setor = vg.origem;
       }
-      const origemHtml = vo ? vooRotulo2(vo, "chegada", { aviao: true, placa: bx }) : bx ? `${ico("pousando", 18)}<span class="voo voo-chegada"><span class="voo-box">${esc(bx)}</span></span>` : setor ? setorRotulo(setor) : "";
+      const origemHtml = vo ? vooRotulo2(vo, "chegada", { aviao: true, placa: bx }) : bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : setor ? setorRotulo(setor) : "";
       return `<div class="list-line">
       ${origemHtml}
       <span class="grow"></span>
@@ -8145,7 +8183,7 @@ Ele sai da lista de boxes dos operadores.`);
       const bx = d.origem_box || vg.box_origem;
       return `<div class="list-line" style="padding:6px 0">
       <span class="grow" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        ${bx ? `<span class="voo voo-chegada"><span class="voo-box">${esc(bx)}</span></span>` : ""}
+        ${bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : ""}
         ${vooRotulo2(d.voo_destino_id ? voo(d.voo_destino_id) || {} : {}, "saida", { box: false })}
         <span class="voo voo-larga"><span class="voo-box">${esc(via)}</span></span>
       </span>
@@ -8542,7 +8580,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     </div>`;
     }).join("") : `<p class="note">Nada pendente aqui agora.</p>`;
     const voChegada = e.box ? desempatarBoxes(voosChegando()).find((v) => v.box === e.box) : null;
-    const placaOrigem = voChegada ? vooRotulo2(voChegada, "chegada", { aviao: true, placa: e.box }) : `${ico("pousando", 20)}<span class="voo voo-chegada"><span class="voo-box">${esc(e.box)}</span></span>`;
+    const placaOrigem = voChegada ? vooRotulo2(voChegada, "chegada", { aviao: true, placa: e.box }) : `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner">${ico("pousando", 14)}</span>${esc(e.box)}</span></span>`;
     const titulo = e.box ? `Origem: ${placaOrigem}` : esc(e.tipo);
     abrirModal(`<h3 style="display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px">${titulo}</h3>${linhas}
     <div class="modal-acoes" style="margin-top:12px">
@@ -8615,9 +8653,8 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     const principal = podeAceitar ? `<button class="alerta-acao primary" onclick="aceitarBox([${idsAceitar.join(",")}])" aria-label="Aceitar">${ico("thumb_up", 20)}</button>` : `<button class="alerta-acao ok" onclick="abrirEscolhaVoosBox('${tipo}',${s.box ? `'${esc(s.box)}'` : null})" aria-label="Ver voos">${ico("vervoos", 20)}</button>`;
     const cancelar = podeCancelar2 ? `<button class="alerta-acao ghost" onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
     return `<div class="list-line alerta-linha">
-    ${ico("pousando", 20)}
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      ${s.box ? `<span class="voo voo-saida"><span class="voo-box">${esc(s.box)}</span></span>` : ""}
+      ${s.box ? `<span class="voo voo-saida"><span class="voo-box"><span class="voo-corner">${ico("pousando", 14)}</span>${esc(s.box)}</span></span>` : ico("pousando", 20)}
       <span class="alerta-contagem">${totalVoos} voo${totalVoos === 1 ? "" : "s"}</span>
       ${urgentes > 0 ? `<span class="alerta-urgentes">${ico("alerta", 16)} ${urgentes}</span>` : ""}
     </span>
