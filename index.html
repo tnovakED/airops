@@ -134,6 +134,14 @@
   .voo-par{display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap}
   .voo-seta{display:inline-flex; color:var(--muted); flex:0 0 auto}
 
+  /* Origem -> destino numa linha so (pedido do Tiago, 31/08), reaproveitando
+     .voo-par pro layout (mesmo padrao "chegada -> saida" de vooPar()). O box
+     do DESTINO fica maior: e o dado mais lido de relance; o resto (origem
+     inteira + aeroporto/numero do destino) fica pequeno e em negrito, so
+     contexto. */
+  .linha-od .voo{font-size:14px; font-weight:700}
+  .linha-od .voo-saida .voo-box{font-size:22px}
+
   /* ---------- janela de tempo (operador) ---------- */
   .janela{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 12px}
   .janela-rot{text-transform:uppercase;
@@ -171,19 +179,24 @@
      (.deg-linha, quando existem) ocupam o espaco a esquerda e quebram
      linha sozinhas conforme crescem, sem empurrar o LUGAR pra baixo. */
   .lugar-linha{display:flex; align-items:flex-start; gap:10px; padding:0 0 2px}
-  .lugar-linha .deg-linha{flex:1 1 auto; margin-top:0}
+  /* Espacamento minimo, so aqui (pedido do Tiago, 31/08): o card BOX tem
+     6 secoes conhecidas e as abas quebravam em 3 linhas. Nao mexe no
+     .deg-linha/.deg base — esses continuam servindo a trilha da folha
+     (ONDE ESTOU/QUAIS DESTINOS), que nao tem esse problema de espaco.
+     Altura do alvo de toque (min-height) nao muda — so a largura. */
+  .lugar-linha .deg-linha{flex:1 1 auto; margin-top:0; gap:3px}
+  .lugar-linha .deg-linha .deg{padding:0 8px}
+  /* A propria palavra e o gatilho de arrastar (pedido do Tiago, 31/08 —
+     antes era um botao de alca dedicado, tirado pra sobrar espaco pras
+     abas de secao). touch-action:none so aqui, igual a alca tinha: o
+     resto do cartao continua rolando a pagina normal, e as abas ao lado
+     (mesmo flex .lugar-linha) nao ganham isto, senao o toque nelas
+     estragava. Margem negativa encosta o texto no canto superior direito
+     do card — o .card pai tem padding:14px, sem isto sempre sobrava esse
+     tanto ate a borda. */
   .lugar{font-size:clamp(34px,10.5vw,44px); font-weight:600; line-height:.95;
-    letter-spacing:.02em; color:var(--text); flex:0 0 auto; margin-left:auto}
-
-  /* Alca para arrastar o CARTAO inteiro (BOX/TCX/TLC) e reordenar —
-     decisao do Tiago (31/08). 44px, o minimo de alvo de toque dentro de
-     alerta (ver tela-de-patio). touch-action:none so aqui: o resto do
-     cartao continua rolando a pagina normal, e a .alerta-lista (scroll
-     interno de cada cartao) nem e tocada por isto. */
-  .alerta-handle{flex:0 0 auto; width:44px; height:44px; min-height:44px; padding:0;
-    display:flex; align-items:center; justify-content:center;
-    background:transparent; border:1px solid var(--line); border-radius:8px;
-    color:var(--muted); touch-action:none; cursor:grab}
+    letter-spacing:.02em; color:var(--text); flex:0 0 auto; margin-left:auto;
+    touch-action:none; cursor:grab; margin-top:-8px; margin-right:-8px}
 
   /* Os cartoes deslizam (translateY, aplicado via JS em
      arrastarCartaoAlerta) para abrir espaco conforme o arrastado passa
@@ -603,9 +616,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 31/08/2026, 11:09:59
+     Gerado em: 31/08/2026, 13:13:15
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 11:09";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 13:13";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2182,7 +2195,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const o = opcoes || {};
     const p = partesVoo(v, tipo);
     const classe = tipo === "chegada" ? "voo-chegada" : "voo-saida";
-    const tam = o.tam ? " voo-" + o.tam : "";
+    const tam = o.tam ? ` voo-${o.tam}` : "";
     const placa = o.placa != null ? o.placa : p.box;
     const comBox = o.box !== false && placa;
     const icone = o.aviao ? ico(tipo === "chegada" ? "pousando" : "decolando") : "";
@@ -8097,23 +8110,24 @@ Ele sai da lista de boxes dos operadores.`);
   }
   function cartaoDestinoGrupo(ds, vg) {
     const origem = origemComumDoGrupo(ds, vg);
-    const linhaOrigem = origem ? `<div class="note" style="margin-top:4px;display:flex;align-items:center;gap:4px;flex-wrap:wrap">Origem ${ico("seta", 14)} ${vooRotulo2(
+    const destinoCompacto = origem ? `<span class="voo-par linha-od">${vooRotulo2(
       origem.vo || {},
       "chegada",
       origem.box ? { aviao: true, placa: origem.box } : { aviao: true, box: false }
-    )}
-    </div>` : "";
+    )}<span class="voo-seta">${ico("seta", 16)}</span>${rotuloDestinoCompacto(ds[0], vg)}</span>` : rotuloDestinoCompacto(ds[0], vg);
     return `
       <div class="card">
         <div class="list-line" style="border:none;padding:0">
-          <span class="grow">${rotuloDestinoCompacto(ds[0], vg)}</span>
+          <span class="grow">${destinoCompacto}</span>
           <button class="ok" style="width:auto" onclick="abrirEntregaGrupo([${ds.map((d) => d.id).join(",")}],${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
         </div>
-        ${linhaOrigem}
       </div>`;
   }
   function abrirEntregaGrupo(ids, vgId) {
     const vg = D.viagens.find((x) => x.id === vgId) || {};
+    const vDestino = voo((D.destinos.find((x) => x.id === ids[0]) || {}).voo_destino_id) || {};
+    const pDestino = partesVoo(vDestino, "saida");
+    const textoDestino = `${pDestino.apt}-${pDestino.num}${pDestino.box ? `-${pDestino.box}` : ""}`;
     const linhas = ids.map((id) => {
       const d = D.destinos.find((x) => x.id === id);
       const bx = (d == null ? void 0 : d.origem_box) || vg.box_origem;
@@ -8124,7 +8138,7 @@ Ele sai da lista de boxes dos operadores.`);
       <input id="qtd-grupo-${id}" type="number" inputmode="numeric" min="0" placeholder="qtd" style="width:90px">
     </div>`;
     }).join("");
-    abrirModal(`<h3>Quantas bags dessa(s) origem(s)?</h3>${linhas}
+    abrirModal(`<h3>Quantas bags da origem abaixo para o voo <b>${esc(textoDestino)}</b>?</h3>${linhas}
     <div class="modal-acoes" style="margin-top:12px">
       <button onclick="cancelarPopoverViagem()">Cancelar</button>
       <button class="primary" onclick="confirmarEntregaGrupo([${ids.join(",")}],${vgId})">Confirmar</button>
@@ -8648,10 +8662,9 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     const { abas, corpo } = boxFiltrado(g);
     return `<div class="card alerta" data-tipo="${esc(g.tipo)}">
     <div class="lugar-linha">
-      <button type="button" class="alerta-handle" aria-label="Arrastar para reordenar"
-        onpointerdown="arrastarCartaoAlerta(event,'${esc(g.tipo)}')">${ico("arrastar", 20)}</button>
       ${abas}
-      <span class="lugar">${esc(g.tipo)}</span>
+      <span class="lugar" onpointerdown="arrastarCartaoAlerta(event,'${esc(g.tipo)}')"
+        aria-label="${esc(g.tipo)} \u2014 arraste para reordenar">${esc(g.tipo)}</span>
     </div>
     <div class="alerta-lista">${corpo}</div>
   </div>`;
