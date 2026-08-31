@@ -618,9 +618,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 31/08/2026, 14:38:27
+     Gerado em: 31/08/2026, 15:30:39
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 14:38";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="31/08 15:30";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -8116,20 +8116,24 @@ Ele sai da lista de boxes dos operadores.`);
   function abrirEntregaGrupo(ids, vgId) {
     const vg = D.viagens.find((x) => x.id === vgId) || {};
     const vDestino = voo((D.destinos.find((x) => x.id === ids[0]) || {}).voo_destino_id) || {};
-    const pDestino = partesVoo(vDestino, "saida");
-    const textoDestino = `${pDestino.apt}-${pDestino.num}${pDestino.box ? `-${pDestino.box}` : ""}`;
     const linhas = ids.map((id) => {
       const d = D.destinos.find((x) => x.id === id);
-      const bx = (d == null ? void 0 : d.origem_box) || vg.box_origem;
-      const vo = vooDeOrigem(d, vg);
-      const origemHtml = vo ? vooRotulo2(vo, "chegada", { aviao: true, placa: bx }) : bx ? `${ico("pousando", 18)}<span class="voo voo-chegada"><span class="voo-box">${esc(bx)}</span></span>` : "";
+      let bx, vo, setor;
+      if (d == null ? void 0 : d.origem_setor) {
+        setor = d.origem_setor;
+      } else {
+        bx = (d == null ? void 0 : d.origem_box) || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
+        vo = vooDeOrigem(d, vg);
+        if (!bx && !vo) setor = vg.origem;
+      }
+      const origemHtml = vo ? vooRotulo2(vo, "chegada", { aviao: true, placa: bx }) : bx ? `${ico("pousando", 18)}<span class="voo voo-chegada"><span class="voo-box">${esc(bx)}</span></span>` : setor ? setorRotulo(setor) : "";
       return `<div class="list-line">
       ${origemHtml}
       <span class="grow"></span>
       <input id="qtd-grupo-${id}" type="number" inputmode="numeric" min="0" placeholder="qtd" style="width:90px">
     </div>`;
     }).join("");
-    abrirModal(`<h3>Quantas bags da origem abaixo para o voo <b>${esc(textoDestino)}</b>?</h3>${linhas}
+    abrirModal(`<h3 style="display:flex;align-items:center;gap:6px">Bags para o ${vooRotulo2(vDestino, "saida", { aviao: true, aviaoApos: true })}</h3>${linhas}
     <div class="modal-acoes" style="margin-top:12px">
       <button onclick="cancelarPopoverViagem()">Cancelar</button>
       <button class="primary" onclick="confirmarEntregaGrupo([${ids.join(",")}],${vgId})">Confirmar</button>
@@ -8276,7 +8280,7 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
     bus.render();
   }
   async function confirmarColeta(vgId) {
-    const linhas = UI.pu.origem === "BOX" ? linhasDosGrupos(UI.pu, vgId, { origem_box: UI.pu.boxOrigem, origem_voo_id: UI.pu.vooOrigemId }) : UI.pu.sel.map((x) => typeof x === "number" ? { viagem_id: vgId, voo_destino_id: x, entrega_via: "VOO" } : { viagem_id: vgId, setor_destino: x, entrega_via: x === "ESTEIRA" ? "ESTEIRA" : x });
+    const linhas = UI.pu.origem === "BOX" ? linhasDosGrupos(UI.pu, vgId, { origem_box: UI.pu.boxOrigem, origem_voo_id: UI.pu.vooOrigemId }) : UI.pu.sel.map((x) => typeof x === "number" ? { viagem_id: vgId, voo_destino_id: x, entrega_via: "VOO", origem_setor: UI.pu.origem } : { viagem_id: vgId, setor_destino: x, entrega_via: x === "ESTEIRA" ? "ESTEIRA" : x, origem_setor: UI.pu.origem });
     const { error } = await adicionarDestinos(linhas);
     if (error) {
       await erro(error);
