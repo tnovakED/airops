@@ -117,24 +117,19 @@
     min-width:1.9em; height:1.55em; padding:0 .3em; margin-left:1px;
     border:2px solid currentColor; border-radius:6px; background:var(--surface);
     font-size:.92em; letter-spacing:.02em; position:relative}
-  /* selo de pouso/decolagem CENTRALIZADO em cima da placa (pedido do
-     Tiago, 31/08) — antes ficava solto do lado do texto do voo,
-     ocupando espaco a mais na linha. Testado no navegador, nessa ordem:
-     (1) 26px no canto (20px de icone) cobria o primeiro digito da placa
-     ("20" virava so "0" visivel) — a placa e pequena demais pra
-     sobrepor pela metade como um mockup avulso faria; (2) empurrar o
-     selo quase todo pra fora resolvia o digito mas, empilhado numa
-     lista densa (.alerta-lista, padding 6px 0), furava a linha de CIMA;
-     (3) empurrar so pro lado (sem mexer no vertical) resolvia as duas
-     mas ai o selo invadia o NUMERO do voo, que fica coladinho do outro
-     lado da placa. Centralizado por cima (sem lado esquerdo/direito) e
-     menor (14px de icone, nao os 20px do resto — unico lugar do app
-     onde o icone de pouso/decolagem nao e 20px) resolveu os tres ao
-     mesmo tempo. */
-  .voo-corner{position:absolute; top:-10px; left:50%; transform:translateX(-50%);
+  /* selo de pouso/decolagem no CANTO da placa (mockup de referencia do
+     Tiago, 01/09 — gemini-code-1788205900854.html, .icon-seal em
+     .top-left/.top-right). Reverte o centralizado-em-cima de 31/08:
+     aquela versao evitava cobrir o digito e invadir o numero do voo
+     numa lista densa (ver docs/decisoes.md). Corner volta porque foi
+     pedido explicitamente com o mockup na mao — se digito ou numero
+     comecarem a sumir de novo, o problema documentado ali e esse. */
+  .voo-corner{position:absolute; top:-8px;
     width:20px; height:20px;
     border-radius:50%; border:1.5px solid currentColor; background:var(--surface);
     display:flex; align-items:center; justify-content:center; pointer-events:none}
+  .voo-corner.esq{left:-8px}
+  .voo-corner.dir{right:-8px}
   /* placa VERDE: ONDE a bag esta sendo largada (TCX/TLC). Na mesma
      linha convivem tres coisas — o box de onde ela saiu (branco, cor
      de chegada), o voo dela (ambar, cor de saida) e o destino da
@@ -650,9 +645,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/09/2026, 09:58:29
+     Gerado em: 01/09/2026, 10:12:43
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/09 09:58";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/09 10:12";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2235,7 +2230,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const nomeIcone = tipo === "chegada" ? "pousando" : "decolando";
     const aviao = !!o.aviao;
     const iconeSolto = aviao && !comBox ? ico(nomeIcone) : "";
-    const selo = aviao && comBox ? `<span class="voo-corner">${ico(nomeIcone, 14)}</span>` : "";
+    const selo = aviao && comBox ? `<span class="voo-corner ${o.aviaoApos ? "dir" : "esq"}">${ico(nomeIcone, 14)}</span>` : "";
     return `<span class="voo ${classe}${tam}">` + (iconeSolto && !o.aviaoApos ? iconeSolto : "") + `<span class="voo-apt">${esc(p.apt)}</span><span class="voo-sep">-</span><span class="voo-num">${esc(p.num)}</span>` + (comBox ? `<span class="voo-sep">-</span><span class="voo-box">${selo}${esc(placa)}</span>` : "") + (iconeSolto && o.aviaoApos ? iconeSolto : "") + (o.hora && p.hora ? `<span class="voo-hora">${esc(p.hora)}</span>` : "") + `</span>`;
   }
   function vooPar(vChegada, vSaida, opcoes) {
@@ -8164,7 +8159,7 @@ Ele sai da lista de boxes dos operadores.`);
         vo = vooDeOrigem(d, vg);
         if (!bx && !vo) setor = vg.origem;
       }
-      const origemHtml = vo ? vooRotulo2(vo, "chegada", { aviao: true, placa: bx }) : bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : setor ? setorRotulo(setor) : "";
+      const origemHtml = vo ? vooRotulo2(vo, "chegada", { aviao: true, placa: bx }) : bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : setor ? setorRotulo(setor) : "";
       return `<div class="list-line">
       ${origemHtml}
       <span class="grow"></span>
@@ -8183,7 +8178,7 @@ Ele sai da lista de boxes dos operadores.`);
       const bx = d.origem_box || vg.box_origem;
       return `<div class="list-line" style="padding:6px 0">
       <span class="grow" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        ${bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : ""}
+        ${bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : ""}
         ${vooRotulo2(d.voo_destino_id ? voo(d.voo_destino_id) || {} : {}, "saida", { box: false })}
         <span class="voo voo-larga"><span class="voo-box">${esc(via)}</span></span>
       </span>
@@ -8580,7 +8575,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     </div>`;
     }).join("") : `<p class="note">Nada pendente aqui agora.</p>`;
     const voChegada = e.box ? desempatarBoxes(voosChegando()).find((v) => v.box === e.box) : null;
-    const placaOrigem = voChegada ? vooRotulo2(voChegada, "chegada", { aviao: true, placa: e.box }) : `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner">${ico("pousando", 14)}</span>${esc(e.box)}</span></span>`;
+    const placaOrigem = voChegada ? vooRotulo2(voChegada, "chegada", { aviao: true, placa: e.box }) : `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq">${ico("pousando", 14)}</span>${esc(e.box)}</span></span>`;
     const titulo = e.box ? `Origem: ${placaOrigem}` : esc(e.tipo);
     abrirModal(`<h3 style="display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px">${titulo}</h3>${linhas}
     <div class="modal-acoes" style="margin-top:12px">
@@ -8654,7 +8649,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     const cancelar = podeCancelar2 ? `<button class="alerta-acao ghost" onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
     return `<div class="list-line alerta-linha">
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      ${s.box ? `<span class="voo voo-saida"><span class="voo-box"><span class="voo-corner">${ico("pousando", 14)}</span>${esc(s.box)}</span></span>` : ico("pousando", 20)}
+      ${s.box ? `<span class="voo voo-saida"><span class="voo-box"><span class="voo-corner esq">${ico("pousando", 14)}</span>${esc(s.box)}</span></span>` : ico("pousando", 20)}
       <span class="alerta-contagem">${totalVoos} voo${totalVoos === 1 ? "" : "s"}</span>
       ${urgentes > 0 ? `<span class="alerta-urgentes">${ico("alerta", 16)} ${urgentes}</span>` : ""}
     </span>
