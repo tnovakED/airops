@@ -130,6 +130,12 @@
     display:flex; align-items:center; justify-content:center; pointer-events:none}
   .voo-corner.esq{left:-8px}
   .voo-corner.dir{right:-8px}
+  /* cor do selo segue o TIPO do voo (pousando/decolando), nao o canto
+     onde caiu (esq/dir e so posicao, ver aviaoApos em voo.js) — senao um
+     selo de decolagem apareceria verde sempre que calhasse do lado
+     esquerdo. Preto (currentColor) pinta icone e borda juntos. */
+  .voo-corner.pousando{background:var(--green); color:#000}
+  .voo-corner.decolando{background:var(--amber-mid); color:#000}
   /* placa VERDE: ONDE a bag esta sendo largada (TCX/TLC). Na mesma
      linha convivem tres coisas — o box de onde ela saiu (branco, cor
      de chegada), o voo dela (ambar, cor de saida) e o destino da
@@ -645,9 +651,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/09/2026, 10:12:43
+     Gerado em: 01/09/2026, 11:22:26
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/09 10:12";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/09 11:22";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2230,7 +2236,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const nomeIcone = tipo === "chegada" ? "pousando" : "decolando";
     const aviao = !!o.aviao;
     const iconeSolto = aviao && !comBox ? ico(nomeIcone) : "";
-    const selo = aviao && comBox ? `<span class="voo-corner ${o.aviaoApos ? "dir" : "esq"}">${ico(nomeIcone, 14)}</span>` : "";
+    const selo = aviao && comBox ? `<span class="voo-corner ${o.aviaoApos ? "dir" : "esq"} ${nomeIcone}">${ico(nomeIcone, 14)}</span>` : "";
     return `<span class="voo ${classe}${tam}">` + (iconeSolto && !o.aviaoApos ? iconeSolto : "") + `<span class="voo-apt">${esc(p.apt)}</span><span class="voo-sep">-</span><span class="voo-num">${esc(p.num)}</span>` + (comBox ? `<span class="voo-sep">-</span><span class="voo-box">${selo}${esc(placa)}</span>` : "") + (iconeSolto && o.aviaoApos ? iconeSolto : "") + (o.hora && p.hora ? `<span class="voo-hora">${esc(p.hora)}</span>` : "") + `</span>`;
   }
   function vooPar(vChegada, vSaida, opcoes) {
@@ -2869,14 +2875,6 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   function vooChegadaConexao(numero) {
     return D.voos.find((v) => v.voo_chegada === numero || !v.voo_chegada && v.numero === numero);
   }
-  function ondeConexao(vc) {
-    if (!vc) return "n\xE3o achei na malha";
-    if (vc.descarga_ok_em) return "descarga OK";
-    if (emSolo(vc)) return "em solo \xB7 box " + (vc.box || "?");
-    const ts = minutosDe(vc.saida);
-    if (ts !== null && agoraMin() > ts) return "j\xE1 saiu";
-    return "n\xE3o pousou";
-  }
   function aCaminhoDaConexao(pi) {
     const vc = vooChegadaConexao(pi.voo_chegada_numero);
     if (!vc) return [];
@@ -2962,37 +2960,20 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   <span style="color:var(--red)">D</span> diferen\xE7a (real \u2212 previsto)
 </p>`;
   var ICONE_COLETADO = `<span title="operador j\xE1 coletou essas bags" style="color:var(--blue)">${ico("pacote", 18)}</span>`;
-  function linhasConexoes(lista) {
-    return lista.map((pi) => {
-      const sit = situacaoConexao(pi);
-      return `<div class="list-line">
-      ${vooRotulo2(comoChegada(pi.origem, pi.voo_chegada_numero), "chegada", { box: false })}
-      <span class="note grow">${esc(ondeConexao(sit.vc))}${pi.rct ? " \xB7 RCT " + esc(pi.rct) : ""}</span>
-      ${bagsACaminho(pi) ? ICONE_COLETADO : ""}
-      ${prdTag(pi)}
-      <span class="chip st-${sit.entregue ? "entregue" : "a_caminho"}">${sit.entregue ? "Entregue" : "Aguardando"}</span>
-      ${!sit.entregue ? `<button class="small ok" onclick="marcarIndiaEntregue(${pi.id})">Recebi</button>` : sit.manual ? `<button class="small ghost" onclick="marcarIndiaEntregue(${pi.id},true)">Desfazer</button>` : ""}
-    </div>`;
-    }).join("");
-  }
-  function cartaoIndiaVoo(v, lista) {
-    const falt = lista.filter((pi) => !situacaoConexao(pi).entregue).sort((a, b) => duracaoMin(a.rct) - duracaoMin(b.rct));
-    const entr = lista.filter((pi) => situacaoConexao(pi).entregue);
-    const totalBag = lista.reduce((a, pi) => a + (pi.bag_qtd || 0), 0);
-    return `<div class="card">
-    <div class="list-line" style="border:none;padding:0 0 6px">
-      <b class="grow">${vooRotulo2(v, "saida", { tam: "g" })}</b>
-      <span class="flip">${totalBag} bags</span>
-    </div>
-    ${linhasConexoes(falt)}${linhasConexoes(entr)}
-  </div>`;
+  function linhaPontoVoo(v) {
+    return `<tr>
+    <td class="mono">${esc(v.voo_chegada || "\u2014")}</td>
+    <td>${esc(v.origem || "\u2014")}</td>
+    <td class="mono" style="color:var(--amber)">${esc(v.numero || "\u2014")}</td>
+    <td>${esc(v.destino || "\u2014")}</td>
+    <td>
+      <button class="small" style="width:auto" onclick="abrirPontoDelta(${v.id})">Delta</button>
+      <button class="small primary" style="width:auto" onclick="abrirPontoIndiaOC(${v.id})">\xCDndia</button>
+    </td>
+  </tr>`;
   }
   function telaPontosImport() {
-    const porVoo = {};
-    D.indias.forEach((pi) => {
-      (porVoo[pi.voo_id] = porVoo[pi.voo_id] || []).push(pi);
-    });
-    const voosComIndia = Object.keys(porVoo).map((id) => voo(+id)).filter(Boolean).sort((a, b) => minPlain(a.saida) - minPlain(b.saida));
+    const voos = D.voos.slice().sort((a, b) => minPlain(a.saida) - minPlain(b.saida));
     return `
   <div class="card">
     <h3 style="color:var(--amber)">Importar Pontos (\xCDndia / Delta)</h3>
@@ -3005,8 +2986,11 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     <div class="row" style="margin-top:10px"><button class="primary" ${UI.indiaArquivos.length ? "" : "disabled"} onclick="importarPontos()">Importar</button></div>
     ${UI.indiaLog ? `<pre class="note" style="white-space:pre-wrap;margin-top:8px">${esc(UI.indiaLog)}</pre>` : ""}
   </div>
-  <div class="board-title"><h2>Pontos de hoje</h2><span class="flip">${D.indias.length}</span></div>
-  ${voosComIndia.length ? LEGENDA_PRD + voosComIndia.map((v) => cartaoIndiaVoo(v, porVoo[v.id])).join("") : `<div class="card note">Nada importado ainda.</div>`}`;
+  <div class="board-title"><h2>Voos do dia</h2><span class="flip">${voos.length}</span></div>
+  <div class="card tbl-wrap">${voos.length ? `
+    <table><tr><th>Cheg.</th><th>De</th><th>Sa\xEDda</th><th>Para</th><th></th></tr>
+    ${voos.map(linhaPontoVoo).join("")}</table>` : `<p class="note">Nenhum voo na malha de hoje.</p>`}
+  </div>`;
   }
   async function importarPontos() {
     if (!UI.indiaArquivos.length) {
@@ -3081,7 +3065,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     }).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
     const descarga = !pode("descarga_ok") ? "" : v.descarga_ok_em ? `<p class="note" style="margin-top:12px">Descarga confirmada ${hora(v.descarga_ok_em)} por ${esc(nomeDe(v.descarga_ok_por))}.</p>` : `<div style="margin-top:12px"><button class="ok" onclick="marcarDescargaDelta(${vooId})">Descarrega OK</button>
          <p class="note" style="margin-top:6px">Confirma que o voo foi descarregado \u2014 ele sai da grade de boxes dos operadores.</p></div>`;
-    abrirModal(`<h3>Delta \xB7 ${vooRotulo2(v, "chegada", { box: false })}</h3>${linhas}${descarga}
+    abrirModal(`<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>
+    <h3>Delta \xB7 ${vooRotulo2(v, "chegada", { box: false })}</h3>${linhas}${descarga}
     <div style="margin-top:12px"><button class="ghost" onclick="fecharModal()">Fechar</button></div>`);
   }
   async function marcarDescargaDelta(vooId) {
@@ -3133,11 +3118,13 @@ Ele sai da lista de boxes dos operadores.`);
       ${prdTag(pi)}
       <div style="display:flex;gap:8px;flex:0 0 auto">
         <button class="small ok" style="width:auto" onclick="abrirRecebi(${pi.id})">Recebi</button>
+        ${sit.manual ? `<button class="small ghost" style="width:auto" onclick="marcarIndiaEntregue(${pi.id},true)">Desfazer</button>` : ""}
         ${pedido ? `<button class="small ghost" style="width:auto;color:var(--red)" onclick="cancelarBagIndia(${pi.id})">Cancelar</button>` : `<button class="small ghost" style="width:auto" onclick="solicitarBagIndia(${pi.id})">Solicitar</button>`}
       </div>
     </div>`;
     }).join("") : `<p class="note">Nada importado do \xCDndia pra esse voo.</p>`;
-    return `<h3>\xCDndia \xB7 ${vooRotulo2(v, "saida", { box: false })}</h3>${LEGENDA_PRD}${linhas}
+    return `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('india',${vooId})">Substituir</button>
+    <h3>\xCDndia \xB7 ${vooRotulo2(v, "saida", { box: false })}</h3>${LEGENDA_PRD}${linhas}
     <div style="margin-top:12px"><button class="ghost" onclick="fecharModal()">Fechar</button></div>`;
   }
   function abrirPontoIndiaOC(vooId) {
@@ -3146,6 +3133,26 @@ Ele sai da lista de boxes dos operadores.`);
   }
   function atualizarPontoIndia(vooId) {
     abrirModal(conteudoPontoIndiaOC(vooId));
+  }
+  function abrirSubstituirPonto(tipo, vooId) {
+    UI.modalVivo = null;
+    const v = voo(vooId) || {};
+    const rotulo = tipo === "delta" ? vooRotulo2(v, "chegada", { box: false }) : vooRotulo2(v, "saida", { box: false });
+    const voltar = tipo === "delta" ? `abrirPontoDelta(${vooId})` : `abrirPontoIndiaOC(${vooId})`;
+    abrirModal(`<h3>Substituir o Ponto ${tipo === "delta" ? "Delta" : "\xCDndia"} do voo</h3>
+    <p class="note">${rotulo}?</p>
+    <input id="arqSubstituto" type="file" accept=".txt" style="display:none" onchange="substituirPonto('${tipo}',${vooId},this.files[0])">
+    <div class="row" style="margin-top:12px">
+      <button class="primary" onclick="document.getElementById('arqSubstituto').click()">Escolher arquivo</button>
+      <button class="ghost" onclick="${voltar}">Voltar</button>
+    </div>`);
+  }
+  async function substituirPonto(tipo, vooId, file) {
+    if (!file) return;
+    const log = await importarArquivosPontos([file], UI.indiaData || hoje());
+    await bus.recarregar();
+    await aviso(log);
+    tipo === "delta" ? abrirPontoDelta(vooId) : abrirPontoIndiaOC(vooId);
   }
   function abrirRecebi(id) {
     const pi = D.indias.find((x) => x.id === id);
@@ -8159,7 +8166,7 @@ Ele sai da lista de boxes dos operadores.`);
         vo = vooDeOrigem(d, vg);
         if (!bx && !vo) setor = vg.origem;
       }
-      const origemHtml = vo ? vooRotulo2(vo, "chegada", { aviao: true, placa: bx }) : bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : setor ? setorRotulo(setor) : "";
+      const origemHtml = vo ? vooRotulo2(vo, "chegada", { aviao: true, placa: bx }) : bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : setor ? setorRotulo(setor) : "";
       return `<div class="list-line">
       ${origemHtml}
       <span class="grow"></span>
@@ -8178,7 +8185,7 @@ Ele sai da lista de boxes dos operadores.`);
       const bx = d.origem_box || vg.box_origem;
       return `<div class="list-line" style="padding:6px 0">
       <span class="grow" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        ${bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : ""}
+        ${bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : ""}
         ${vooRotulo2(d.voo_destino_id ? voo(d.voo_destino_id) || {} : {}, "saida", { box: false })}
         <span class="voo voo-larga"><span class="voo-box">${esc(via)}</span></span>
       </span>
@@ -8575,7 +8582,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     </div>`;
     }).join("") : `<p class="note">Nada pendente aqui agora.</p>`;
     const voChegada = e.box ? desempatarBoxes(voosChegando()).find((v) => v.box === e.box) : null;
-    const placaOrigem = voChegada ? vooRotulo2(voChegada, "chegada", { aviao: true, placa: e.box }) : `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq">${ico("pousando", 14)}</span>${esc(e.box)}</span></span>`;
+    const placaOrigem = voChegada ? vooRotulo2(voChegada, "chegada", { aviao: true, placa: e.box }) : `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(e.box)}</span></span>`;
     const titulo = e.box ? `Origem: ${placaOrigem}` : esc(e.tipo);
     abrirModal(`<h3 style="display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px">${titulo}</h3>${linhas}
     <div class="modal-acoes" style="margin-top:12px">
@@ -8649,7 +8656,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     const cancelar = podeCancelar2 ? `<button class="alerta-acao ghost" onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
     return `<div class="list-line alerta-linha">
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      ${s.box ? `<span class="voo voo-saida"><span class="voo-box"><span class="voo-corner esq">${ico("pousando", 14)}</span>${esc(s.box)}</span></span>` : ico("pousando", 20)}
+      ${s.box ? `<span class="voo voo-saida"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(s.box)}</span></span>` : ico("pousando", 20)}
       <span class="alerta-contagem">${totalVoos} voo${totalVoos === 1 ? "" : "s"}</span>
       ${urgentes > 0 ? `<span class="alerta-urgentes">${ico("alerta", 16)} ${urgentes}</span>` : ""}
     </span>
@@ -9523,6 +9530,8 @@ Sair mesmo assim?`
     cancelarBagIndia,
     marcarDescargaDelta,
     solicitarPPDelta,
+    abrirSubstituirPonto,
+    substituirPonto,
     // painel de acessos
     alternarAcesso
   });
