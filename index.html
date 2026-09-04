@@ -665,9 +665,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 04/09/2026, 13:14:10
+     Gerado em: 04/09/2026, 15:07:28
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="04/09 13:14";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="04/09 15:07";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -840,18 +840,34 @@
     }
   });
 
+  // src/config/regras.js
+  var ANTES_DO_POUSO_MIN, JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN;
+  var init_regras = __esm({
+    "src/config/regras.js"() {
+      ANTES_DO_POUSO_MIN = 15;
+      JANELA_DESCARGA_ESTIMADA_MIN = 30;
+      CCO_JANELA_ATRAS_MIN = 60;
+      CCO_JANELA_FRENTE_MIN = 240;
+      HORA_VIRADA_DIA = 5;
+      RAIO_PORTA_A_PORTA_BOX = 2;
+      TIMER_FOLGA_MIN = 40;
+      TIMER_APERTO_MIN = 25;
+      TIMER_HORA_IR_MIN = 15;
+    }
+  });
+
   // src/utils/horas.js
   function minutosDe(hhmm) {
     const m = String(hhmm || "").match(/^(\d{1,2}):(\d{2})/);
     if (!m) return null;
     let t = +m[1] * 60 + +m[2];
-    if (t < 300) t += 1440;
+    if (t < HORA_VIRADA_DIA * 60) t += 1440;
     return t;
   }
   function agoraMin() {
     const ag = /* @__PURE__ */ new Date();
     let na = ag.getHours() * 60 + ag.getMinutes();
-    if (na < 300) na += 1440;
+    if (na < HORA_VIRADA_DIA * 60) na += 1440;
     return na;
   }
   function minPlain(h) {
@@ -886,8 +902,8 @@
     const ag = /* @__PURE__ */ new Date();
     const na = ag.getHours() * 60 + ag.getMinutes();
     const ts = [];
-    if (na >= 180 && na <= 780) ts.push("manha");
-    if (na >= 720 && na <= 1080) ts.push("tarde");
+    if (na >= FAIXAS_TURNO.manha[0] && na <= FAIXAS_TURNO.manha[1]) ts.push("manha");
+    if (na >= FAIXAS_TURNO.tarde[0] && na <= FAIXAS_TURNO.tarde[1]) ts.push("tarde");
     if (na >= 960 || na < 180) ts.push("noite");
     return ts.length ? ts : ["manha", "tarde", "noite"];
   }
@@ -944,7 +960,7 @@
   }
   function pousandoOuPousou(v) {
     const tc = minutosDe(v.chegada);
-    return tc === null ? true : agoraMin() >= tc - ANTES_DO_POUSO;
+    return tc === null ? true : agoraMin() >= tc - ANTES_DO_POUSO_MIN;
   }
   function voosChegando() {
     return D.voos.filter((v) => ehChegada(v) && pousandoOuPousou(v) && (dentroDoIntervalo(minutosDe(v.chegada), UI.opDe, UI.opAte) || pendenciaDeChegada(v.id))).sort((a, b) => {
@@ -975,7 +991,7 @@
     if (v.descarga_ok_em) return "ok";
     const tc = minutosDe(v.chegada);
     if (tc !== null && agoraMin() < tc) return "chegando";
-    if (tc !== null && agoraMin() <= tc + 30) return "descarregando";
+    if (tc !== null && agoraMin() <= tc + JANELA_DESCARGA_ESTIMADA_MIN) return "descarregando";
     return "aguardando";
   }
   function candidatosDestino(excluir) {
@@ -1007,15 +1023,15 @@
     achados.foraDaMalha = foraDaMalha;
     return achados;
   }
-  var hoje, FAIXAS_TURNO, voosAtivos, voosEmSolo, ANTES_DO_POUSO;
+  var hoje, FAIXAS_TURNO, voosAtivos, voosEmSolo;
   var init_horas = __esm({
     "src/utils/horas.js"() {
       init_store();
+      init_regras();
       hoje = () => (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA");
       FAIXAS_TURNO = { manha: [180, 780], tarde: [720, 1080], noite: [960, 1560] };
       voosAtivos = () => D.voos.filter(rotacaoAtiva);
       voosEmSolo = () => D.voos.filter(emSolo);
-      ANTES_DO_POUSO = 30;
     }
   });
 
@@ -2227,6 +2243,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   }
 
   // src/ui/screens/telaViagensCCO.js
+  init_regras();
   function faltam(v) {
     const t = minutosDe(v.saida);
     return t === null ? null : t - agoraMin();
@@ -2328,7 +2345,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       const pend = destinosDe_doVoo(v.id).some((d) => d.status === "a_caminho");
       if (pend || paradoEmTriagem(v.id)) return true;
       if (min === null) return false;
-      return min > -60 && min < 240;
+      return min > -CCO_JANELA_ATRAS_MIN && min < CCO_JANELA_FRENTE_MIN;
     });
     const abertos = lista.filter((v) => destinosDe_doVoo(v.id).some((d) => d.status === "a_caminho") || paradoEmTriagem(v.id) || !comMov.has(v.id));
     const fechados = lista.filter((v) => !abertos.includes(v));
@@ -2850,6 +2867,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   // src/ui/screens/telaPontos.js
   init_modal();
   init_bus();
+  init_regras();
   var comoChegada = (apt, num) => ({ origem: apt, voo_chegada: num });
   var comoSaida = (apt, num, box) => ({ destino: apt, numero: num, box });
   function vooChegadaConexao(numero) {
@@ -3021,7 +3039,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const dist = distanciaBox(v.box, vSaida == null ? void 0 : vSaida.box);
     if (dist == null) return { tipo: null, vSaida };
     if (dist === 0) return { tipo: "tst", vSaida };
-    if (dist <= 2) return { tipo: "pp", vSaida };
+    if (dist <= RAIO_PORTA_A_PORTA_BOX) return { tipo: "pp", vSaida };
     return { tipo: null, vSaida };
   }
   var SELO_DELTA = {
@@ -3093,23 +3111,24 @@ Ele sai da lista de boxes dos operadores.`);
       const sit = situacaoConexao(pi);
       const indo = aCaminhoDaConexao(pi);
       const pedido = pedidoAtivoDaConexao(pi);
-      const marca = sit.entregue ? `<span style="color:var(--green)">-C</span>` : indo.map((id) => `<span title="${esc(nomeDe(id))} est\xE1 trazendo"
-          style="color:var(--green);margin-left:2px">${ico("seta", 19)}</span>`).join("");
+      const marca = sit.entregue ? `<span style="color:#1f1f1f" title="Conex\xE3o entregue">${ico("pacote", 19)}</span>` : indo.map((id) => `<span title="${esc(nomeDe(id))} est\xE1 trazendo"
+          style="color:var(--green);margin-left:2px">${ico("carreta", 19)}</span>`).join("");
       const lbl = vooRotulo2(comoChegada(pi.origem, pi.voo_chegada_numero), "chegada", { box: false });
       const bl = sit.entregue ? null : ondeEstaoAsBags(pi, sit.vc);
       const txtLocal = bl && ROTULO_LOCAL[bl.status] ? ROTULO_LOCAL[bl.status](bl) : null;
       const transito = distanciaBox(v.box, (_a = sit.vc) == null ? void 0 : _a.box) === 0;
       return `<div class="pt-linha">
-      ${lbl}${marca}${bagsACaminho(pi) ? ICONE_COLETADO : ""}
+      ${lbl}
       ${txtLocal ? `<span class="chip ${bl.status === "na_carreta" ? "st-a_caminho" : "st-aceita"}">${esc(txtLocal)}</span>` : ""}
       ${transito ? `<span class="chip st-entregue" title="Bagagem tr\xE2nsito \u2014 mesmo box, n\xE3o precisa mover.">TST</span>` : ""}
       <span class="note">RCT ${esc(pi.rct || "\u2014")}</span>
+      ${marca}${bagsACaminho(pi) ? ICONE_COLETADO : ""}
       <span class="grow"></span>
       ${prdTag(pi)}
       <div style="display:flex;gap:8px;flex:0 0 auto">
-        <button class="small ok" style="width:auto" onclick="abrirRecebi(${pi.id})">Recebi</button>
+        <button class="small ok" style="width:auto" onclick="abrirRecebi(${pi.id})" aria-label="Recebi" title="Recebi">${ico("aceite", 18)}</button>
         ${sit.manual ? `<button class="small ghost" style="width:auto" onclick="marcarIndiaEntregue(${pi.id},true)">Desfazer</button>` : ""}
-        ${pedido ? `<button class="small ghost" style="width:auto;color:var(--red)" onclick="cancelarBagIndia(${pi.id})">Cancelar</button>` : `<button class="small ghost" style="width:auto" onclick="solicitarBagIndia(${pi.id})">Solicitar</button>`}
+        ${pedido ? `<button class="small ghost" style="width:auto;color:var(--red)" onclick="cancelarBagIndia(${pi.id})" aria-label="Cancelar pedido" title="Cancelar pedido">${ico("cancelar", 18)}</button>` : `<button class="small ghost" style="width:auto" onclick="solicitarBagIndia(${pi.id})" aria-label="Solicitar" title="Solicitar">${ico("carreta", 18)}</button>`}
       </div>
     </div>`;
     }).join("") : `<p class="note">Nada importado do \xCDndia pra esse voo.</p>`;
@@ -7499,6 +7518,7 @@ Ele sai da lista de boxes dos operadores.`);
   }
 
   // src/ui/screens/telaOperador.js
+  init_regras();
   var BASE_IATA = "BSB";
   var viagemAtiva = () => D.viagens.find((v) => v.operador_id === S.me.id && v.status === "a_caminho");
   function contarMarcados(st) {
@@ -8611,9 +8631,9 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     bus.recarregar();
   }
   function corTimer(min) {
-    if (min >= 40) return "timer-azul";
-    if (min >= 25) return "timer-laranja";
-    if (min >= 15) return "timer-amarelo";
+    if (min >= TIMER_FOLGA_MIN) return "timer-azul";
+    if (min >= TIMER_APERTO_MIN) return "timer-laranja";
+    if (min >= TIMER_HORA_IR_MIN) return "timer-amarelo";
     return "timer-vermelho";
   }
   function contarVoosUnicos(ps) {
