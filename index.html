@@ -26,6 +26,11 @@
     --accent-light:#81C3D7;                     /* sky-blue-light — fundo de chip/aba selecionada */
     --amber-mid:#A67C1F;                        /* fora da paleta nova, de proposito — timer "hora de ir" */
     --green:#1F8A4C; --orange:#C15B1F; --red:#C23B3B; /* status escurecidos p/ nao lavar no fundo claro */
+    /* verde-claro/amarelo sao NOVOS, de proposito diferentes de --green
+       (ja significa "OK"/status concluido) e --amber-mid (dourado escuro,
+       nao le como "amarelo" de bater o olho) — pousar/decolar precisa da
+       propria identidade visual, sem emprestar significado de outro estado. */
+    --verde-claro:#8BC34A; --amarelo:#F2C94C;
     --text:#16425B; --muted:rgba(22,66,91,.62); /* yale-blue */
     --header-h:46px;
     --barra-h:52px;
@@ -133,9 +138,20 @@
   /* cor do selo segue o TIPO do voo (pousando/decolando), nao o canto
      onde caiu (esq/dir e so posicao, ver aviaoApos em voo.js) — senao um
      selo de decolagem apareceria verde sempre que calhasse do lado
-     esquerdo. Preto (currentColor) pinta icone e borda juntos. */
-  .voo-corner.pousando{background:var(--green); color:#000}
-  .voo-corner.decolando{background:var(--amber-mid); color:#000}
+     esquerdo. Preto (currentColor) pinta a borda; o icone fica preto
+     pela regra .voo-corner .ico-pousando/.ico-decolando, mais abaixo. */
+  .voo-corner.pousando{background:var(--verde-claro); color:#000}
+  .voo-corner.decolando{background:var(--amarelo); color:#000}
+  /* pousando/decolando tem cor propria em QUALQUER lugar que apareçam —
+     placa, selo da grade compacta de boxes, "ja decolou" — nao so aqui
+     dentro da placa. Dentro de um circulo ja colorido (esta placa, o
+     .bxq-corner da grade compacta) o icone tem que ficar PRETO por cima:
+     verde-claro sobre fundo verde-claro sumiria. Por isso a regra mais
+     especifica sobrescreve a de cima so nesses dois contextos. */
+  .ico-pousando{color:var(--verde-claro)}
+  .ico-decolando{color:var(--amarelo)}
+  .voo-corner .ico-pousando, .voo-corner .ico-decolando,
+  .bxq-corner .ico-pousando{color:#000}
   /* placa VERDE: ONDE a bag esta sendo largada (TCX/TLC). Na mesma
      linha convivem tres coisas — o box de onde ela saiu (branco, cor
      de chegada), o voo dela (ambar, cor de saida) e o destino da
@@ -163,12 +179,12 @@
   .destino-viagem .voo{font-weight:700}
   .destino-viagem .voo-box{font-size:25.4px}
 
-  /* ---------- janela de tempo (operador) ---------- */
-  .janela{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 12px}
-  .janela-rot{text-transform:uppercase;
-    letter-spacing:.08em; font-size:13px; color:var(--muted)}
-  .janela button{min-height:40px; width:auto; padding:4px 16px; font-size:16px}
-  .janela-dica{flex-basis:100%; font-size:12px}
+  /* ---------- filtro de horario livre (inicio/fim) ---------- */
+  .janela{display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; margin:0 0 12px}
+  .janela-campo{display:flex; flex-direction:column; flex:0 0 auto}
+  .janela-campo label{margin:0 0 4px}
+  .janela-campo input{width:84px; min-height:44px; font-size:16px;
+    text-align:center; padding:6px 4px}
 
   /* estado da descarga no box: a cor da borda diz sem precisar ler */
   .bx-estado{text-transform:uppercase;
@@ -183,10 +199,10 @@
 
   /* Voo que ja decolou e ainda tem bag no chao. Acontece com
      frequencia na operacao, entao NAO e alarme vermelho: seria
-     ruido constante e o operador aprenderia a ignorar. --amber =
-     "repare nisto", que e o peso certo (o token continua se chamando
-     amber; a cor por tras dele e que trocou pra azul em 30/08/2026). */
-  .voo-partiu{color:var(--amber); display:inline-flex; align-items:center; gap:4px}
+     ruido constante e o operador aprenderia a ignorar. --amarelo (a
+     mesma cor do icone de decolagem ao lado, ver .ico-decolando) e o
+     peso certo — "repare nisto", sem alarmar. */
+  .voo-partiu{color:var(--amarelo); display:inline-flex; align-items:center; gap:4px}
 
   /* ---------- alerta de serviço solicitado ----------
      Cada demanda aparece direto na lista, com o proprio Aceitar do
@@ -480,8 +496,8 @@
      chegada (voosEmSolo), nunca saida, entao o icone e sempre "pousando"
      em todo tile. */
   .bxq-corner{position:absolute; top:-16px; left:-16px; width:32px; height:32px;
-    border-radius:50%; border:2px solid var(--line); background:var(--surface);
-    display:flex; align-items:center; justify-content:center; color:var(--muted);
+    border-radius:50%; border:2px solid #000; background:var(--verde-claro);
+    display:flex; align-items:center; justify-content:center; color:#000;
     pointer-events:none; z-index:1}
 
   /* ---------- popover do box com mais de um voo ----------
@@ -562,19 +578,17 @@
   @media (prefers-reduced-motion: reduce){ .op-barra, .op-barra-flutuante{animation:none} }
 
   /* Dropdown do relogio: flutua por cima do conteudo (nao empurra
-     nada) e fecha ao escolher um horario ou ao tocar fora — o backdrop
-     transparente e quem captura esse toque fora. Entrada suave via
-     @keyframes: dispara sozinho quando o elemento entra no DOM (uma
-     transition precisaria de um segundo frame pra animar, que o
-     innerHTML trocado de uma vez nao da). */
+     nada) e fecha so ao tocar fora — o backdrop transparente e quem
+     captura esse toque. Entrada suave via @keyframes: dispara sozinho
+     quando o elemento entra no DOM (uma transition precisaria de um
+     segundo frame pra animar, que o innerHTML trocado de uma vez nao
+     da). */
   .janela-backdrop{position:fixed; inset:0; z-index:8}
   .janela-drop{position:absolute; top:100%; left:12px; z-index:9; margin-top:4px;
     background:var(--surface2); border:1px solid var(--line); border-radius:12px;
-    padding:10px; display:flex; gap:6px; flex-wrap:wrap; width:200px;
+    padding:12px; display:flex; gap:10px; flex-wrap:wrap; width:auto;
     animation:cairJanela .16s ease-out}
-  .janela-drop button{flex:0 0 auto; width:auto; min-height:38px; padding:4px 16px}
-  .janela-drop button.on{background:var(--amber); color:#fff; border-color:var(--amber)}
-  .janela-drop .note{flex-basis:100%; margin:4px 0 0}
+  .janela-drop .note{flex-basis:100%; margin:8px 0 0; font-size:12px}
   @keyframes cairJanela{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:translateY(0)}}
   @media (prefers-reduced-motion: reduce){ .janela-drop{animation:none} }
 
@@ -651,9 +665,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/09/2026, 11:22:26
+     Gerado em: 04/09/2026, 13:14:10
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/09 11:22";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="04/09 13:14";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -704,10 +718,14 @@
         tab: null,
         // fluxo do operador
         op: { origem: null, boxOrigem: null, vooOrigemId: null, sel: [] },
-        janela: null,
-        // horas da janela do operador (null = ainda nao lida do localStorage)
+        opDe: "",
+        opAte: "",
+        // filtro de horario livre do operador (vazio = sem limite)
         janelaAberta: false,
-        // dropdown da janela, na barra do Operador (render.js)
+        // dropdown do filtro de horario, na barra do Operador (render.js)
+        ocDe: "",
+        ocAte: "",
+        // filtro de horario livre do OC (assumir voo)
         barraFechada: false,
         // menu do topo (relogio/Malha/Historico/Turno/+) recolhido? comeca aberto
         pu: null,
@@ -897,45 +915,12 @@
     if (ts !== null && na > ts) return false;
     return true;
   }
-  function rotuloJanela(h) {
-    if (!h || h === JANELA_DIA) return "a malha do dia inteira";
-    const m = minutosAtras(h);
-    const atras = m % 60 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}` : `${m / 60}h`;
-    return `pousos ${atras} atr\xE1s \xB7 sa\xEDdas ${h}h \xE0 frente`;
-  }
-  function janelaAtual() {
-    if (UI.janela == null) {
-      let v = 4;
-      try {
-        const g = localStorage.getItem(CHAVE_JANELA);
-        const n = Number(g);
-        if (g !== null && !isNaN(n)) v = JANELAS.includes(n) ? n : n === 0 ? JANELA_DIA : 4;
-      } catch (e) {
-      }
-      UI.janela = v;
-    }
-    return UI.janela;
-  }
-  function definirJanela(h) {
-    UI.janela = Number(h);
-    try {
-      localStorage.setItem(CHAVE_JANELA, String(h));
-    } catch (e) {
-    }
-  }
-  function chegadaNaJanela(v, h) {
-    if (!h || h === JANELA_DIA) return true;
-    const tc = minutosDe(v.chegada);
-    if (tc === null) return true;
-    const desde = agoraMin() - tc;
-    return desde >= -ANTES_DO_POUSO && desde <= minutosAtras(h);
-  }
-  function saidaNaJanela(v, h) {
-    if (!h || h === JANELA_DIA) return true;
-    const ts = minutosDe(v.saida);
-    if (ts === null) return true;
-    const falta = ts - agoraMin();
-    return falta >= -60 && falta <= h * 60;
+  function dentroDoIntervalo(min, de, ate) {
+    if (min === null) return true;
+    const d = minutosDe(de), a = minutosDe(ate);
+    if (d !== null && min < d) return false;
+    if (a !== null && min > a) return false;
+    return true;
   }
   function pendenciaDeSaida(vooId) {
     const id = Number(vooId);
@@ -961,22 +946,20 @@
     const tc = minutosDe(v.chegada);
     return tc === null ? true : agoraMin() >= tc - ANTES_DO_POUSO;
   }
-  function voosChegando(h) {
-    const j = h === void 0 ? janelaAtual() : h;
-    return D.voos.filter((v) => ehChegada(v) && pousandoOuPousou(v) && (chegadaNaJanela(v, j) || pendenciaDeChegada(v.id))).sort((a, b) => {
+  function voosChegando() {
+    return D.voos.filter((v) => ehChegada(v) && pousandoOuPousou(v) && (dentroDoIntervalo(minutosDe(v.chegada), UI.opDe, UI.opAte) || pendenciaDeChegada(v.id))).sort((a, b) => {
       var _a, _b;
       return ((_a = minutosDe(b.chegada)) != null ? _a : 0) - ((_b = minutosDe(a.chegada)) != null ? _b : 0);
     });
   }
-  function voosSaindo(h) {
-    const j = h === void 0 ? janelaAtual() : h;
-    return D.voos.filter((v) => ehSaida(v) && (saidaNaJanela(v, j) || pendenciaDeSaida(v.id))).sort((a, b) => {
+  function voosSaindo(de, ate) {
+    return D.voos.filter((v) => ehSaida(v) && (dentroDoIntervalo(minutosDe(v.saida), de, ate) || pendenciaDeSaida(v.id))).sort((a, b) => {
       var _a, _b;
       return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
     });
   }
-  function candidatosDestinoJanela(excluir, h) {
-    return voosSaindo(h).filter((v) => !excluir.includes(v.id));
+  function candidatosDestinoJanela(excluir) {
+    return voosSaindo(UI.opDe, UI.opAte).filter((v) => !excluir.includes(v.id));
   }
   function fisicamenteNoBox(v) {
     const tc = minutosDe(v.chegada);
@@ -1024,7 +1007,7 @@
     achados.foraDaMalha = foraDaMalha;
     return achados;
   }
-  var hoje, FAIXAS_TURNO, voosAtivos, voosEmSolo, JANELAS, JANELA_DIA, ATRAS, CHAVE_JANELA, ANTES_DO_POUSO, minutosAtras;
+  var hoje, FAIXAS_TURNO, voosAtivos, voosEmSolo, ANTES_DO_POUSO;
   var init_horas = __esm({
     "src/utils/horas.js"() {
       init_store();
@@ -1032,12 +1015,7 @@
       FAIXAS_TURNO = { manha: [180, 780], tarde: [720, 1080], noite: [960, 1560] };
       voosAtivos = () => D.voos.filter(rotacaoAtiva);
       voosEmSolo = () => D.voos.filter(emSolo);
-      JANELAS = [2, 4, 8, 24];
-      JANELA_DIA = 24;
-      ATRAS = { 2: 75, 4: 75, 8: 120 };
-      CHAVE_JANELA = "rampa_janela";
       ANTES_DO_POUSO = 30;
-      minutosAtras = (h) => ATRAS[h] != null ? ATRAS[h] : h * 60;
     }
   });
 
@@ -1369,7 +1347,7 @@
       t.push("viagens", "viagens_destinos");
     if (vejoTudo || pode("sol_abrir") || pode("sol_atender") || pode("triagem_sinalizar"))
       t.push("solicitacoes");
-    const vejoIndia = pode("oc_pontos") || pode("pontos_import");
+    const vejoIndia = pode("oc_pontos") || pode("pontos_import") || pode("levar");
     if (vejoTudo || pode("levar") || pode("triagem_sinalizar") || vejoIndia)
       t.push("prontas", "bags_local");
     if (vejoIndia)
@@ -2216,7 +2194,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     if (!d) return "";
     const s = tam || 18;
     const vb = VB[nome] || "0 0 256 256";
-    return `<svg class="ico" width="${s}" height="${s}" viewBox="${vb}" fill="currentColor" aria-hidden="true" focusable="false">${d}</svg>`;
+    const corTipo = nome === "pousando" || nome === "decolando" ? ` ico-${nome}` : "";
+    return `<svg class="ico${corTipo}" width="${s}" height="${s}" viewBox="${vb}" fill="currentColor" aria-hidden="true" focusable="false">${d}</svg>`;
   }
   var ICONES = Object.keys(P);
 
@@ -2513,13 +2492,14 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const legenda = compacta ? `<p class="note bxq-legenda">\xE2mbar = ainda vai pousar \xB7 azul = descarregando \xB7 verde = descarga OK \xB7 ponto = bag em curso</p>` : "";
     return `<div class="${compacta ? "bxq-grid" : "voo-grid"}">${boxes.map(btn).join("")}</div>${legenda}`;
   }
-  function seletorJanela() {
-    const j = janelaAtual();
+  function seletorHoras(de, ate, onDe, onAte) {
     return `<div class="janela">
-    <span class="janela-rot">Janela</span>
-    ${JANELAS.map((h) => `<button class="small ${j === h ? "primary" : "ghost"}"
-      onclick="mudarJanela(${h})">${h}h</button>`).join("")}
-    <span class="note janela-dica">${rotuloJanela(j)}</span>
+    <div class="janela-campo"><label>De</label>
+      <input value="${esc(de)}" inputmode="numeric" placeholder="\u2014"
+        oninput="this.value=mascaraHora(this.value)" onchange="${onDe}(this.value)"></div>
+    <div class="janela-campo"><label>At\xE9</label>
+      <input value="${esc(ate)}" inputmode="numeric" placeholder="\u2014"
+        oninput="this.value=mascaraHora(this.value)" onchange="${onAte}(this.value)"></div>
   </div>`;
   }
   function gradeDestinos(cands, setores, sel, fn) {
@@ -2532,8 +2512,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       const ts = minutosDe(v.saida);
       const partiu = ts !== null && agoraMin() > ts;
       return `<div class="voo-btn ${sel.includes(v.id) ? "sel" : ""}" onclick="${fn}(${v.id})">
-      <div class="linha-c">${vooRotulo2(v, "saida")}</div>
-      <div class="dhora">${partiu ? `<span class="voo-partiu">${ico("decolando", 14)} j\xE1 decolou</span>` : esc(v.saida || "")}${v._bag != null ? ` \xB7 ${v._bag} bag${v._bag === 1 ? "" : "s"}` : ""}&nbsp;</div>
+      <div class="linha-c">${vooRotulo2(v, "saida", { aviao: true })}</div>
+      <div class="dhora">${partiu ? `<span class="voo-partiu">${ico("decolando", 14)}${ico("aceite", 14)}${v._bag != null ? ` ${v._bag}` : ""}</span>` : `${esc(v.saida || "")}${v._bag != null ? ` \xB7 ${v._bag} bag${v._bag === 1 ? "" : "s"}` : ""}`}&nbsp;</div>
     </div>`;
     }).join("")}
   </div>`;
@@ -2913,6 +2893,15 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     no_local: (b) => `na ${b.local}`,
     na_carreta: (b) => `carreta da ${b.local}`
   };
+  function resolverConexaoIndia(vooDestinoId, vooOrigemId) {
+    if (vooDestinoId == null || vooOrigemId == null) return null;
+    const candidatos = D.indias.filter((pi) => {
+      if (!mesmoId(pi.voo_id, vooDestinoId)) return false;
+      const vc = vooChegadaConexao(pi.voo_chegada_numero);
+      return !!vc && mesmoId(vc.id, vooOrigemId);
+    });
+    return candidatos.length === 1 ? candidatos[0].id : null;
+  }
   function situacaoConexao(pi) {
     const vc = vooChegadaConexao(pi.voo_chegada_numero);
     const auto = D.destinos.some((d) => {
@@ -3065,7 +3054,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     }).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
     const descarga = !pode("descarga_ok") ? "" : v.descarga_ok_em ? `<p class="note" style="margin-top:12px">Descarga confirmada ${hora(v.descarga_ok_em)} por ${esc(nomeDe(v.descarga_ok_por))}.</p>` : `<div style="margin-top:12px"><button class="ok" onclick="marcarDescargaDelta(${vooId})">Descarrega OK</button>
          <p class="note" style="margin-top:6px">Confirma que o voo foi descarregado \u2014 ele sai da grade de boxes dos operadores.</p></div>`;
-    abrirModal(`<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>
+    const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>`;
+    abrirModal(`${substituir}
     <h3>Delta \xB7 ${vooRotulo2(v, "chegada", { box: false })}</h3>${linhas}${descarga}
     <div style="margin-top:12px"><button class="ghost" onclick="fecharModal()">Fechar</button></div>`);
   }
@@ -3123,7 +3113,8 @@ Ele sai da lista de boxes dos operadores.`);
       </div>
     </div>`;
     }).join("") : `<p class="note">Nada importado do \xCDndia pra esse voo.</p>`;
-    return `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('india',${vooId})">Substituir</button>
+    const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('india',${vooId})">Substituir</button>`;
+    return `${substituir}
     <h3>\xCDndia \xB7 ${vooRotulo2(v, "saida", { box: false })}</h3>${LEGENDA_PRD}${linhas}
     <div style="margin-top:12px"><button class="ghost" onclick="fecharModal()">Fechar</button></div>`;
   }
@@ -7616,7 +7607,7 @@ Ele sai da lista de boxes dos operadores.`);
     return `<nav class="op-barra">
     <button class="op-barra-abrir" onclick="toggleBarraOperador()" aria-label="Esconder menu">${ico("lista", 18)}</button>
     <button class="op-barra-relogio${UI.janelaAberta ? " on" : ""}"
-      onclick="toggleJanelaBarra()" aria-label="Janela de tempo">${ico("relogio", 20)}</button>
+      onclick="toggleJanelaBarra()" aria-label="Filtrar por horario">${ico("relogio", 20)}</button>
     ${tem("voos") ? `<button class="${UI.tab === "voos" ? "on" : ""}" onclick="irPara('voos')" aria-label="Malha">${ico("malha", 20)}</button>` : ""}
     ${tem("minhas") ? `<button class="${UI.tab === "minhas" ? "on" : ""}" onclick="irPara('minhas')" aria-label="Hist\xF3rico">${ico("historico", 20)}</button>` : ""}
     <button class="${UI.tab === "levar" ? "on" : ""}" onclick="irPara('levar')" aria-label="Turno">${ico("turno", 20)}</button>
@@ -7631,11 +7622,15 @@ Ele sai da lista de boxes dos operadores.`);
     bus.render();
   }
   function janelaDropdown() {
-    const j = janelaAtual();
     return `<div class="janela-backdrop" onclick="fecharJanelaBarra()"></div>
     <div class="janela-drop">
-      ${JANELAS.map((h) => `<button class="${j === h ? "on" : ""}" onclick="escolherJanelaBarra(${h})">${h}h</button>`).join("")}
-      <p class="note">${rotuloJanela(j)}</p>
+      <div class="janela-campo"><label>De</label>
+        <input value="${esc(UI.opDe)}" inputmode="numeric" placeholder="\u2014"
+          oninput="this.value=mascaraHora(this.value)" onchange="mudarOpDe(this.value)"></div>
+      <div class="janela-campo"><label>At\xE9</label>
+        <input value="${esc(UI.opAte)}" inputmode="numeric" placeholder="\u2014"
+          oninput="this.value=mascaraHora(this.value)" onchange="mudarOpAte(this.value)"></div>
+      <p class="note">Vazio = sem limite \xB7 bag pendente sempre aparece</p>
     </div>`;
   }
   function toggleJanelaBarra() {
@@ -7646,9 +7641,12 @@ Ele sai da lista de boxes dos operadores.`);
     UI.janelaAberta = false;
     bus.render();
   }
-  function escolherJanelaBarra(h) {
-    definirJanela(h);
-    UI.janelaAberta = false;
+  function mudarOpDe(v) {
+    UI.opDe = normHora(v);
+    bus.render();
+  }
+  function mudarOpAte(v) {
+    UI.opAte = normHora(v);
     bus.render();
   }
   function urgenciaDoVoo(vooId) {
@@ -8023,10 +8021,6 @@ Ele sai da lista de boxes dos operadores.`);
       linhas.push({ viagem_id: vgId, setor_destino: "ESTEIRA", entrega_via: "ESTEIRA", ...extra });
     return linhas;
   }
-  function mudarJanela(h) {
-    definirJanela(h);
-    bus.render();
-  }
   function escolherBoxOrigem(b) {
     UI.op.boxOrigem = b;
     UI.op.vooOrigemId = null;
@@ -8389,14 +8383,18 @@ Destino: ${esc(inf.num)}`);
         await avisarFalhaLocal(e.message || String(e));
       }
     }
-    if (d && d.ponto_india_id != null) {
+    const idDireto = d && d.ponto_india_id != null ? d.ponto_india_id : null;
+    if (idDireto != null) {
       if (chegouNoVoo(d)) {
-        await creditarEntregaIndia(d.ponto_india_id, qtd);
-        await marcarProntaEntregueDb(d.ponto_india_id);
+        await creditarEntregaIndia(idDireto, qtd);
+        await marcarProntaEntregueDb(idDireto);
       } else {
-        await marcarProntaEntregueDb(d.ponto_india_id);
-        await sinalizarProntaDb(via, d.voo_destino_id, null, d.ponto_india_id);
+        await marcarProntaEntregueDb(idDireto);
+        await sinalizarProntaDb(via, d.voo_destino_id, null, idDireto);
       }
+    } else if (d && d.voo_destino_id != null && chegouNoVoo(d)) {
+      const pontoIndiaId = resolverConexaoIndia(d.voo_destino_id, origemVoo);
+      if (pontoIndiaId != null) await creditarEntregaIndia(pontoIndiaId, qtd);
     }
   }
   function pernasDaTriagem(vgId, via) {
@@ -8835,16 +8833,25 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   init_dom();
   init_modal();
   init_horas();
+  init_bus();
   function telaOC() {
-    const vs = voosSaindo();
+    const vs = voosSaindo(UI.ocDe, UI.ocAte);
     return `
-    ${seletorJanela()}
+    ${seletorHoras(UI.ocDe, UI.ocAte, "mudarOcDe", "mudarOcAte")}
     <div class="board-title"><h2>Voos de hoje</h2><span class="flip">${vs.length}</span></div>
     ${vs.length ? vs.map((v) => `
       <div class="card"><div class="list-line" style="border:none;padding:0">
         <span class="grow">${vooRotulo2(v, "saida", { hora: true })}</span>
         ${v.oc_id === S.me.id ? `<button class="small" onclick="soltarVoo(${v.id})">Soltar</button>` : v.oc_id ? `<span class="note">${esc(nomeDe(v.oc_id))}</span>` : `<button class="small ok" onclick="assumirVoo(${v.id})">Assumir</button>`}
-      </div></div>`).join("") : `<div class="card note">Nenhum voo nesta janela. Toque em <b>24h</b> para ver a malha do dia inteira.</div>`}`;
+      </div></div>`).join("") : `<div class="card note">Nenhum voo neste intervalo. Limpe os campos De/At\xE9 para ver a malha do dia inteira.</div>`}`;
+  }
+  function mudarOcDe(v) {
+    UI.ocDe = normHora(v);
+    bus.render();
+  }
+  function mudarOcAte(v) {
+    UI.ocAte = normHora(v);
+    bus.render();
   }
   async function assumirVoo2(id) {
     try {
@@ -9282,7 +9289,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const vejoTudo = pode("viagens_cco");
     const pegaViagens = vejoTudo || pode("levar") || pode("oc_chegando") || pode("triagem_sinalizar") || pode("oc_pontos");
     const pegaSols = pode("sol_abrir") || pode("sol_atender") || pode("triagem_sinalizar") || vejoTudo;
-    const pegaIndia = pode("oc_pontos") || pode("pontos_import");
+    const pegaIndia = pode("oc_pontos") || pode("pontos_import") || pode("levar");
     const pegaProntas = vejoTudo || pode("levar") || pode("triagem_sinalizar") || pegaIndia;
     const pegaDelta = pegaIndia || vejoTudo || pode("levar") || pode("triagem_sinalizar");
     let qv = sb.from("viagens").select("*").gte("saiu_em", ini).order("saiu_em", { ascending: false });
@@ -9464,7 +9471,6 @@ Sair mesmo assim?`
     confirmarEntregaGrupo,
     abrirEntregasFeitas,
     entregarTriagem,
-    mudarJanela,
     opAbrirVia,
     opFecharVia,
     opTogEsteira,
@@ -9493,7 +9499,8 @@ Sair mesmo assim?`
     confirmarVooColeta,
     toggleJanelaBarra,
     fecharJanelaBarra,
-    escolherJanelaBarra,
+    mudarOpDe,
+    mudarOpAte,
     toggleBarraOperador,
     aceitarSolicitacao,
     pegarSolicitacao,
@@ -9511,6 +9518,8 @@ Sair mesmo assim?`
     assumirVoo: assumirVoo2,
     soltarVoo: soltarVoo2,
     solicitarTLC,
+    mudarOcDe,
+    mudarOcAte,
     // triagem
     sinalizarPronta,
     cancelarPronta,
