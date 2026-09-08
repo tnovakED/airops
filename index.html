@@ -685,9 +685,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 08/09/2026, 11:15:22
+     Gerado em: 08/09/2026, 14:14:16
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/09 11:15";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/09 14:14";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2514,7 +2514,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
         const pop = opcoes && opcoes.popover ? opcoes.popover(b, vs) || "" : "";
         return `<div class="bxq-wrap" onclick="${fn}('${esc(b)}')">
       <span class="bxq-corner">${ico("pousando", 20)}</span>
-      <div class="bxq bx-${est} ${selecionado === b ? "sel" : ""}">
+      <div class="bxq bx-${est} ${String(selecionado) === String(b) ? "sel" : ""}">
       ${vs.length > 1 ? `<span class="bxq-n">${vs.length}</span>` : ""}
       <span class="bxq-num">${esc(b)}</span>
       ${pend ? `<span class="bxq-pt" title="bag em curso"></span>` : ""}
@@ -2523,7 +2523,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     </div>
     </div>`;
       }
-      return `<div class="voo-btn bx-${est} ${selecionado === b ? "sel" : ""}" onclick="${fn}('${esc(b)}')">
+      return `<div class="voo-btn bx-${est} ${String(selecionado) === String(b) ? "sel" : ""}" onclick="${fn}('${esc(b)}')">
       <div class="linha-c">${vs.map((v) => vooRotulo2(v, "chegada")).join(" ")}</div>
       <div class="bx-estado">${ico("pousando", 14)} ${esc(vs[0].chegada || "")}${est === "ok" ? " \xB7 descarga OK" : est === "descarregando" ? " \xB7 descarregando" : est === "chegando" ? " \xB7 ainda vai pousar" : ""}${pend ? " \xB7 bag em curso" : ""}</div>
     </div>`;
@@ -7864,11 +7864,11 @@ Ele sai da lista de boxes dos operadores.`);
     ${origemGrid(abrirOrigem)}`;
     if (st.origem === "BOX" && !st.vooOrigemId) {
       const patio = desempatarBoxes(voosChegando());
-      const noBox = st.boxOrigem ? patio.filter((v) => v.box === st.boxOrigem) : [];
+      const noBox = st.boxOrigem ? patio.filter((v) => String(v.box) === String(st.boxOrigem)) : [];
       const um = noBox.length === 1 ? noBox[0] : null;
       const acao = um ? `<button class="primary passo-canto" onclick="${confirmarVoo}(${um.id})">Confirmar<br>${vooRotulo2(um, "chegada", { box: false })}</button>` : "";
       const nota = !st.boxOrigem ? "Toque no box onde voc\xEA est\xE1." : noBox.length === 0 ? "Nenhum voo da malha neste box." : "";
-      const popover = (b, vs) => b !== st.boxOrigem || vs.length < 2 ? "" : `
+      const popover = (b, vs) => String(b) !== String(st.boxOrigem) || vs.length < 2 ? "" : `
       <p class="note">Mais de um voo no box ${esc(b)} \u2014 qual \xE9?</p>
       ${vs.map((v) => `<button onclick="${confirmarVoo}(${v.id})">${vooRotulo2(v, "chegada", { box: false })}</button>`).join("")}`;
       return passoCab("EM QUAL BOX?", nota, acao) + gradeBoxes(st.boxOrigem, escolherBox, patio, { compacta: true, popover });
@@ -8229,7 +8229,7 @@ Ele sai da lista de boxes dos operadores.`);
     const { bx, vo, setor } = origemDaPerna(d, vg);
     if (vo) return vooRotulo2(vo, "chegada", { aviao: true, placa: bx });
     if (bx) return `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(bx)}</span></span>`;
-    if (setor) return setorRotulo(setor);
+    if (setor) return setorRotulo(ROTULO[setor] || setor);
     return "";
   }
   function origensDoGrupo(ds, vg) {
