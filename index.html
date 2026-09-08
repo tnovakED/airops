@@ -179,6 +179,20 @@
   .destino-viagem .voo{font-weight:700}
   .destino-viagem .voo-box{font-size:25.4px}
 
+  /* Accordion do painel da viagem (cartaoVooDestino): a linha inteira
+     toca pra abrir/fechar (de onde cada bag desse voo veio), o check
+     tem stopPropagation no proprio onclick pra nao alternar junto.
+     max-height, nao height, porque o conteudo tem tamanho variavel
+     (1 a N origens) sem JS medindo nada. */
+  .acordeon-cabeca{cursor:pointer}
+  .acordeon-seta{display:inline-flex; color:var(--muted); transition:transform .16s ease}
+  .acordeon-destino.aberto .acordeon-seta{transform:rotate(90deg)}
+  .acordeon-corpo{max-height:0; overflow:hidden; opacity:0; transition:max-height .16s ease, opacity .16s ease}
+  .acordeon-destino.aberto .acordeon-corpo{max-height:240px; opacity:1; margin-top:4px}
+  @media (prefers-reduced-motion: reduce){
+    .acordeon-seta, .acordeon-corpo{transition:none}
+  }
+
   /* ---------- filtro de horario livre (inicio/fim) ---------- */
   .janela{display:flex; align-items:flex-end; gap:10px; flex-wrap:wrap; margin:0 0 12px}
   .janela-campo{display:flex; flex-direction:column; flex:0 0 auto}
@@ -279,6 +293,12 @@
   /* ---------- icones (Phosphor + Material Symbols) ---------- */
   .ico{display:inline-block; vertical-align:-.15em}
   button .ico{vertical-align:-.18em; margin-right:6px}
+
+  /* Log do Ponto Delta/Indice por linha (Subir Pontos): so aparece se
+     aquele voo teve algo no log da ultima importacao. Toque (nao hover)
+     abre o texto — celular no patio nao tem mouse pra tooltip. */
+  .log-ponto{display:inline-flex; flex:0 0 auto; color:var(--amber); cursor:pointer;
+    vertical-align:-.15em; margin:0 4px}
 
   /* ---------- chips de status ---------- */
   .chip{display:inline-block; text-transform:uppercase; letter-spacing:.07em;
@@ -665,9 +685,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 04/09/2026, 15:07:28
+     Gerado em: 08/09/2026, 11:15:22
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="04/09 15:07";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/09 11:15";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -730,6 +750,8 @@
         // menu do topo (relogio/Malha/Historico/Turno/+) recolhido? comeca aberto
         pu: null,
         // coleta no caminho
+        viagemAberto: {},
+        // {[chave do cartao]: true} — accordion aberto no painel da viagem
         tri: { setor: null, box: null },
         // triagem
         alertaSecao: null,
@@ -772,7 +794,7 @@
         // pontos India/Delta
         indiaArquivos: [],
         indiaData: null,
-        indiaLog: "",
+        indiaEntradas: [],
         // painel de acessos
         acBusca: "",
         acEmpresa: "",
@@ -2202,8 +2224,10 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     // material symbols: fmd_bad (Apache 2.0) — botao Turno, so-icone, na barra do topo
     arrastar: `<path d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-400q-33 0-56.5-23.5T280-480q0-33 23.5-56.5T360-560q33 0 56.5 23.5T440-480q0 33-23.5 56.5T360-400Zm240 0q-33 0-56.5-23.5T520-480q0-33 23.5-56.5T600-560q33 0 56.5 23.5T680-480q0 33-23.5 56.5T600-400ZM360-640q-33 0-56.5-23.5T280-720q0-33 23.5-56.5T360-800q33 0 56.5 23.5T440-720q0 33-23.5 56.5T360-640Zm240 0q-33 0-56.5-23.5T520-720q0-33 23.5-56.5T600-800q33 0 56.5 23.5T680-720q0 33-23.5 56.5T600-640Z"/>`,
     // material symbols: drag_indicator (Apache 2.0) — alca de arrastar o cartao do alerta
-    thumb_up: `<path d="M716-120H272v-512l278-288 39 31q6 5 9 14t3 22v10l-45 211h299q24 0 42 18t18 42v81.84q0 7.16 1.5 14.66T915-461L789-171q-8.88 21.25-29.59 36.12Q738.69-120 716-120Zm-384-60h397l126-299v-93H482l53-249-203 214v427Zm0-427v427-427Zm-60-25v60H139v392h133v60H79v-512h193Z"/>`
+    thumb_up: `<path d="M716-120H272v-512l278-288 39 31q6 5 9 14t3 22v10l-45 211h299q24 0 42 18t18 42v81.84q0 7.16 1.5 14.66T915-461L789-171q-8.88 21.25-29.59 36.12Q738.69-120 716-120Zm-384-60h397l126-299v-93H482l53-249-203 214v427Zm0-427v427-427Zm-60-25v60H139v392h133v60H79v-512h193Z"/>`,
     // material symbols: thumb_up (Apache 2.0) — botao "Aceitar" do card (BOX/TCX/TLC)
+    exclamacao: `<rect x="112" y="40" width="32" height="128" rx="16"/><circle cx="128" cy="208" r="20"/>`
+    // desenhado a mao (traco + bola), grade 256 igual ao check/x/lista — "tem log pra ver" nas linhas de Ponto Delta/Indice
   };
   function ico(nome, tam) {
     const d = P[nome];
@@ -2734,9 +2758,13 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   async function reconciliarPontoDeltaDb(dia, vooId, conexoes) {
     return sb.rpc("reconciliar_ponto_delta", { p_data: dia, p_voo_id: vooId, p_conexoes: conexoes });
   }
-  async function importarArquivosPontos(arquivos, dia) {
+  async function importarArquivosPontos(arquivos, dia, entradas) {
     dia = dia || hoje();
     const log = [];
+    const semVoo = (msg) => {
+      log.push(msg);
+      entradas == null ? void 0 : entradas.push({ vooId: null, tipo: null, texto: msg });
+    };
     for (const f of arquivos) {
       let texto;
       try {
@@ -2747,69 +2775,83 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
           texto = new TextDecoder("iso-8859-1").decode(buf);
         }
       } catch (e) {
-        log.push(`${f.name}: n\xE3o consegui ler o arquivo.`);
+        semVoo(`${f.name}: n\xE3o consegui ler o arquivo.`);
         continue;
       }
       const mIndia = f.name.match(/^i0*(\d+)/i);
       const mDelta = f.name.match(/^d0*(\d+)/i);
       if (!mIndia && !mDelta) {
-        log.push(`${f.name}: nome n\xE3o reconhecido \u2014 use i<numero>.txt (\xCDndia) ou d<numero>.txt (Delta).`);
+        semVoo(`${f.name}: nome n\xE3o reconhecido \u2014 use i<numero>.txt (\xCDndia) ou d<numero>.txt (Delta).`);
         continue;
       }
       const vooNome = (mIndia || mDelta)[1];
       if (mIndia) {
         const r = processarPontoIndia(texto);
         if (r.erro) {
-          log.push(`${f.name}: ${r.erro}`);
+          semVoo(`${f.name}: ${r.erro}`);
           continue;
-        }
-        if (r.vooCabecalho && r.vooCabecalho !== vooNome) {
-          log.push(`${f.name}: aviso \u2014 nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho do conte\xFAdo diz ${r.vooCabecalho}. Confira se o arquivo foi extra\xEDdo certo.`);
         }
         const alvo = D.voos.find((v) => v.data === dia && v.numero === vooNome);
         if (!alvo) {
-          log.push(`${f.name}: voo de sa\xEDda ${vooNome} n\xE3o est\xE1 na malha de ${dia} \u2014 importe a malha antes.`);
+          semVoo(`${f.name}: voo de sa\xEDda ${vooNome} n\xE3o est\xE1 na malha de ${dia} \u2014 importe a malha antes.`);
           continue;
         }
+        const rotulo = `${alvo.destino || "\u2014"}-${vooNome}`;
+        const anota = (msg) => {
+          log.push(msg);
+          entradas == null ? void 0 : entradas.push({ vooId: alvo.id, tipo: "india", texto: msg });
+        };
+        if (r.vooCabecalho && r.vooCabecalho !== vooNome) {
+          anota(`Aviso: nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho diz ${r.vooCabecalho}. Confira se foi extra\xEDdo certo.`);
+        }
         if (!r.conexoes.length) {
-          log.push(`${f.name}: nenhuma conex\xE3o reconhecida no arquivo.`);
+          anota("n\xE3o h\xE1 conex\xF5es desse voo.");
           continue;
         }
         const { data, error } = await reconciliarPontoIndiaDb(dia, alvo.id, r.conexoes);
         if (error) {
-          log.push(`Erro ao gravar \xCDndia (${f.name}): ${error.message}`);
+          anota(`Erro ao gravar \xCDndia - voo ${rotulo}: ${error.message}`);
           continue;
         }
         const totalBag = r.conexoes.reduce((a, c) => a + (c.bag_qtd || 0), 0);
-        log.push(`${f.name}: \xCDndia \xB7 voo ${vooNome} \u2014 ${data.total} conex\xF5es (${data.adicionadas} novas, ${data.removidas} removidas, ${data.mantidas} mantidas), ${totalBag} bags.`);
+        anota(`\xCDndia - voo ${rotulo}
+Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
+(${data.adicionadas} novas, ${data.removidas} removidas, ${data.mantidas} mantidas)`);
         if (data.bloqueadas > 0) {
-          log.push(`${f.name}: aviso \u2014 ${data.bloqueadas} conex\xE3o(\xF5es) sumiu(ram) do arquivo mas j\xE1 tem bag em andamento; n\xE3o foi(ram) removida(s). Confira manualmente.`);
+          anota(`Aviso: ${data.bloqueadas} conex\xE3o(\xF5es) sumiu(ram) do arquivo mas j\xE1 tem bag em andamento; n\xE3o foi(ram) removida(s). Confira manualmente.`);
         }
       } else {
         const r = processarPontoDelta(texto);
         if (r.erro) {
-          log.push(`${f.name}: ${r.erro}`);
+          semVoo(`${f.name}: ${r.erro}`);
           continue;
-        }
-        if (r.vooCabecalho && r.vooCabecalho !== vooNome) {
-          log.push(`${f.name}: aviso \u2014 nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho do conte\xFAdo diz ${r.vooCabecalho}. Confira se o arquivo foi extra\xEDdo certo.`);
         }
         const alvo = D.voos.find((v) => v.data === dia && v.voo_chegada === vooNome);
         if (!alvo) {
-          log.push(`${f.name}: voo de chegada ${vooNome} n\xE3o est\xE1 na malha de ${dia} \u2014 importe a malha antes.`);
+          semVoo(`${f.name}: voo de chegada ${vooNome} n\xE3o est\xE1 na malha de ${dia} \u2014 importe a malha antes.`);
           continue;
         }
+        const rotulo = `${alvo.origem || "\u2014"}-${vooNome}`;
+        const anota = (msg) => {
+          log.push(msg);
+          entradas == null ? void 0 : entradas.push({ vooId: alvo.id, tipo: "delta", texto: msg });
+        };
+        if (r.vooCabecalho && r.vooCabecalho !== vooNome) {
+          anota(`Aviso: nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho diz ${r.vooCabecalho}. Confira se foi extra\xEDdo certo.`);
+        }
         if (!r.conexoes.length) {
-          log.push(`${f.name}: nenhuma conex\xE3o reconhecida no arquivo.`);
+          anota("n\xE3o h\xE1 conex\xF5es desse voo.");
           continue;
         }
         const { data, error } = await reconciliarPontoDeltaDb(dia, alvo.id, r.conexoes);
         if (error) {
-          log.push(`Erro ao gravar Delta (${f.name}): ${error.message}`);
+          anota(`Erro ao gravar Delta - voo ${rotulo}: ${error.message}`);
           continue;
         }
         const totalBag = r.conexoes.reduce((a, c) => a + (c.bag_qtd || 0), 0);
-        log.push(`${f.name}: Delta \xB7 voo ${vooNome} \u2014 ${data.total} conex\xF5es (${data.adicionadas} novas, ${data.removidas} removidas, ${data.mantidas} mantidas), ${totalBag} bags.`);
+        anota(`Delta - voo ${rotulo}
+Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
+(${data.adicionadas} novas, ${data.removidas} removidas, ${data.mantidas} mantidas)`);
       }
     }
     return log.join("\n");
@@ -2878,13 +2920,13 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     if (!vc) return [];
     return D.destinos.filter((d) => {
       if (!chegouNoVoo(d)) return false;
-      if (d.status !== "a_caminho" || d.voo_destino_id !== pi.voo_id) return false;
-      const vg = D.viagens.find((x) => x.id === d.viagem_id);
+      if (d.status !== "a_caminho" || !mesmoId(d.voo_destino_id, pi.voo_id)) return false;
+      const vg = D.viagens.find((x) => mesmoId(x.id, d.viagem_id));
       if (!vg || vg.status !== "a_caminho") return false;
       const origemVoo = d.origem_voo_id || vg.voo_origem_id;
-      return origemVoo === vc.id;
+      return mesmoId(origemVoo, vc.id);
     }).map((d) => {
-      const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
+      const vg = D.viagens.find((x) => mesmoId(x.id, d.viagem_id)) || {};
       return vg.operador_id;
     });
   }
@@ -2967,14 +3009,30 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   <span style="color:var(--red)">D</span> diferen\xE7a (real \u2212 previsto)
 </p>`;
   var ICONE_COLETADO = `<span title="operador j\xE1 coletou essas bags" style="color:var(--blue)">${ico("pacote", 18)}</span>`;
+  function iconeLogPonto(v, tipo) {
+    const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId === v.id && e.tipo === tipo);
+    if (!entradas.length) return "";
+    const resumo = entradas.map((e) => e.texto).join("\n");
+    return `<span class="log-ponto" title="${esc(resumo)}" onclick="verLogPonto(${v.id},'${tipo}')">${ico("exclamacao", 16)}</span>`;
+  }
+  function iconeLogAnomalias() {
+    const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId == null);
+    if (!entradas.length) return "";
+    const resumo = entradas.map((e) => e.texto).join("\n");
+    return `<span class="log-ponto" title="${esc(resumo)}" onclick="verLogAnomalias()">${ico("exclamacao", 16)}</span>`;
+  }
   function linhaPontoVoo(v) {
     return `<tr>
+    <td>
+      <button class="small" style="width:auto" onclick="abrirPontoDelta(${v.id})">Delta</button>
+      ${iconeLogPonto(v, "delta")}
+    </td>
     <td class="mono">${esc(v.voo_chegada || "\u2014")}</td>
     <td>${esc(v.origem || "\u2014")}</td>
     <td class="mono" style="color:var(--amber)">${esc(v.numero || "\u2014")}</td>
     <td>${esc(v.destino || "\u2014")}</td>
     <td>
-      <button class="small" style="width:auto" onclick="abrirPontoDelta(${v.id})">Delta</button>
+      ${iconeLogPonto(v, "india")}
       <button class="small primary" style="width:auto" onclick="abrirPontoIndiaOC(${v.id})">\xCDndia</button>
     </td>
   </tr>`;
@@ -2990,22 +3048,34 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       <div><label>Arquivos</label><input type="file" accept=".txt" multiple onchange="UI.indiaArquivos=[...this.files];renderSeguro()"></div>
     </div>
     ${UI.indiaArquivos.length ? `<p class="note" style="margin-top:8px">${UI.indiaArquivos.length} arquivo(s) pronto(s): <b style="color:var(--amber)">${UI.indiaArquivos.map((f) => esc(f.name)).join(", ")}</b></p>` : ""}
-    <div class="row" style="margin-top:10px"><button class="primary" ${UI.indiaArquivos.length ? "" : "disabled"} onclick="importarPontos()">Importar</button></div>
-    ${UI.indiaLog ? `<pre class="note" style="white-space:pre-wrap;margin-top:8px">${esc(UI.indiaLog)}</pre>` : ""}
+    <div class="row" style="margin-top:10px;align-items:center">
+      <button class="primary" ${UI.indiaArquivos.length ? "" : "disabled"} onclick="importarPontos()">Importar</button>
+      ${iconeLogAnomalias()}
+    </div>
   </div>
   <div class="board-title"><h2>Voos do dia</h2><span class="flip">${voos.length}</span></div>
   <div class="card tbl-wrap">${voos.length ? `
-    <table><tr><th>Cheg.</th><th>De</th><th>Sa\xEDda</th><th>Para</th><th></th></tr>
+    <table><tr><th></th><th>Cheg.</th><th>De</th><th>Sa\xEDda</th><th>Para</th><th></th></tr>
     ${voos.map(linhaPontoVoo).join("")}</table>` : `<p class="note">Nenhum voo na malha de hoje.</p>`}
   </div>`;
   }
+  function verLogPonto(vooId, tipo) {
+    const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId === vooId && e.tipo === tipo);
+    if (!entradas.length) return;
+    aviso(entradas.map((e) => e.texto).join("\n"), tipo === "delta" ? "Log do Ponto Delta" : "Log do Ponto \xCDndia");
+  }
+  function verLogAnomalias() {
+    const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId == null);
+    if (!entradas.length) return;
+    aviso(entradas.map((e) => e.texto).join("\n"), "Avisos da importa\xE7\xE3o");
+  }
   async function importarPontos() {
     if (!UI.indiaArquivos.length) {
-      UI.indiaLog = "Escolha ao menos um arquivo .txt.";
-      bus.renderSeguro();
+      await aviso("Escolha ao menos um arquivo .txt.");
       return;
     }
-    UI.indiaLog = await importarArquivosPontos(UI.indiaArquivos, UI.indiaData || hoje());
+    UI.indiaEntradas = [];
+    await importarArquivosPontos(UI.indiaArquivos, UI.indiaData || hoje(), UI.indiaEntradas);
     UI.indiaArquivos = [];
     await bus.recarregar();
   }
@@ -8132,16 +8202,6 @@ Ele sai da lista de boxes dos operadores.`);
   }
   var TRIAGENS = ["TCX", "TLC"];
   var naTriagem = (d) => TRIAGENS.indexOf(d.entrega_via) >= 0 && !!d.voo_destino_id;
-  function cartaoDestino(d, vg) {
-    return `
-      <div class="card">
-        <div class="list-line" style="border:none;padding:0">
-          <span class="grow">${rotuloDestinoCompacto(d, vg)}</span>
-          <button class="ok" style="width:auto" onclick="entregar(${d.id},${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
-        </div>
-        ${d.origem_box ? `<div class="note" style="margin-top:4px">coletada no box ${esc(d.origem_box)}${d.origem_voo_id ? " do voo " + esc((voo(d.origem_voo_id) || {}).voo_chegada || (voo(d.origem_voo_id) || {}).numero || "?") : ""}</div>` : ""}
-      </div>`;
-  }
   function gruposDiretos(ds) {
     const porVoo = /* @__PURE__ */ new Map();
     const itens = [];
@@ -8158,31 +8218,60 @@ Ele sai da lista de boxes dos operadores.`);
     itens.sort((a, b) => a.urg - b.urg);
     return itens;
   }
-  function cartaoDestinoGrupo(ds, vg) {
+  function origemDaPerna(d, vg) {
+    if (d == null ? void 0 : d.origem_setor) return { setor: d.origem_setor, waypoint: true };
+    const bx = (d == null ? void 0 : d.origem_box) || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
+    const vo = vooDeOrigem(d, vg);
+    if (!bx && !vo) return { setor: vg.origem, waypoint: !!(d == null ? void 0 : d.origem_box) };
+    return { bx, vo, waypoint: !!(d == null ? void 0 : d.origem_box) };
+  }
+  function origemRotuloHtml(d, vg) {
+    const { bx, vo, setor } = origemDaPerna(d, vg);
+    if (vo) return vooRotulo2(vo, "chegada", { aviao: true, placa: bx });
+    if (bx) return `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(bx)}</span></span>`;
+    if (setor) return setorRotulo(setor);
+    return "";
+  }
+  function origensDoGrupo(ds, vg) {
+    return ds.map((d) => ({ rotulo: origemRotuloHtml(d, vg), waypoint: origemDaPerna(d, vg).waypoint }));
+  }
+  function cartaoVooDestino(item, vg) {
+    const ds = item.grupo || [item.solo];
+    const primeiro = ds[0];
+    const chave = item.grupo ? `v${primeiro.voo_destino_id}` : `d${primeiro.id}`;
+    const aberto = !!(UI.viagemAberto && UI.viagemAberto[chave]);
+    const origens = origensDoGrupo(ds, vg);
+    const temColeta = origens.length > 1 || origens.some((o) => o.waypoint);
+    const rotuloVoo = rotuloDestinoCompacto(primeiro, vg, item.grupo ? { aviao: true, aviaoApos: true } : void 0);
+    const onclickCheck = item.grupo ? `abrirEntregaGrupo([${ds.map((d) => d.id).join(",")}],${vg.id})` : `entregar(${primeiro.id},${vg.id})`;
     return `
-      <div class="card">
-        <div class="list-line" style="border:none;padding:0">
-          <span class="grow"><span class="destino-viagem">${rotuloDestinoCompacto(ds[0], vg, { aviao: true, aviaoApos: true })}</span></span>
-          <button class="ok" style="width:auto" onclick="abrirEntregaGrupo([${ds.map((d) => d.id).join(",")}],${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
+      <div class="card acordeon-destino${aberto ? " aberto" : ""}">
+        <div class="list-line acordeon-cabeca" style="border:none;padding:0" onclick="toggleVooDestino('${chave}')">
+          <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="acordeon-seta">${ico("seta", 14)}</span>
+            <span class="destino-viagem">${rotuloVoo}</span>
+            ${temColeta ? `<span class="chip st-aceita">Coleta no caminho</span>` : ""}
+          </span>
+          <button class="ok" style="width:auto" onclick="event.stopPropagation();${onclickCheck}" aria-label="Entreguei">${ico("aceite", 18)}</button>
+        </div>
+        <div class="acordeon-corpo">
+          ${origens.map((o) => `<div class="note" style="margin-top:4px">${o.rotulo}</div>`).join("")}
         </div>
       </div>`;
   }
+  function toggleVooDestino(chave) {
+    UI.viagemAberto = UI.viagemAberto || {};
+    UI.viagemAberto[chave] = !UI.viagemAberto[chave];
+    bus.render();
+  }
   function abrirEntregaGrupo(ids, vgId) {
+    UI.modalVivo = null;
     const vg = D.viagens.find((x) => x.id === vgId) || {};
     const vDestino = voo((D.destinos.find((x) => x.id === ids[0]) || {}).voo_destino_id) || {};
     const linhas = ids.map((id) => {
       const d = D.destinos.find((x) => x.id === id);
-      let bx, vo, setor;
-      if (d == null ? void 0 : d.origem_setor) {
-        setor = d.origem_setor;
-      } else {
-        bx = (d == null ? void 0 : d.origem_box) || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
-        vo = vooDeOrigem(d, vg);
-        if (!bx && !vo) setor = vg.origem;
-      }
-      const origemHtml = vo ? vooRotulo2(vo, "chegada", { aviao: true, placa: bx }) : bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : setor ? setorRotulo(setor) : "";
       return `<div class="list-line">
-      ${origemHtml}
+      ${origemRotuloHtml(d, vg)}
       <span class="grow"></span>
       <input id="qtd-grupo-${id}" type="number" inputmode="numeric" min="0" placeholder="qtd" style="width:90px">
     </div>`;
@@ -8214,15 +8303,6 @@ Ele sai da lista de boxes dos operadores.`);
         ${ds.map(linha).join("")}
       </div>`;
   }
-  function cabecalhoOrigem(vg) {
-    const daBox = vg.origem === "BOX" || vg.origem === "BPP";
-    const vo = daBox ? voo(vg.voo_origem_id) : null;
-    const equip = vg.carga === "EQUIPAMENTO" ? ` <span class="chip st-aceita">${esc(vg.equipamento || "EQUIP")}${vg.equip_qtd > 1 ? " \xD7" + vg.equip_qtd : ""}</span>` : "";
-    const de = vo ? `${vooRotulo2(vo, "chegada", { box: false })} <span class="note">do box</span> <b>${esc(vg.box_origem || "?")}</b>` : daBox ? `<span class="note">box</span> <b>${esc(vg.box_origem || "?")}</b>` : `<b>${esc(vg.origem || "?")}</b> <span class="note">${esc(ROTULO[vg.origem] || "")}</span>`;
-    return `<div class="linha-c" style="justify-content:flex-start">
-    <span class="note">ORIGEM:</span> ${de}${equip}
-  </div>`;
-  }
   var podeCancelar = (vg) => !destinosDe(vg.id).some((d) => d.status === "a_caminho");
   function conteudoPainelViagem(vg) {
     if (UI.pu) return folhaColeta(vg);
@@ -8231,8 +8311,7 @@ Ele sai da lista de boxes dos operadores.`);
     const feitas = ds.filter((d) => d.status === "entregue");
     return `
     <div class="board-title"><h2>Viagem em andamento</h2><span class="chip st-a_caminho">A caminho</span></div>
-    <div class="card">${cabecalhoOrigem(vg)}</div>
-    ${gruposDiretos(diretosPendentes).map((x) => x.solo ? cartaoDestino(x.solo, vg) : cartaoDestinoGrupo(x.grupo, vg)).join("")}
+    ${gruposDiretos(diretosPendentes).map((x) => cartaoVooDestino(x, vg)).join("")}
     ${TRIAGENS.map((via) => cartaoTriagem(via, ds.filter((d) => naTriagem(d) && d.entrega_via === via && d.status !== "entregue"), vg)).join("")}
     ${feitas.length ? `<button class="ghost" style="margin-top:8px" onclick="abrirEntregasFeitas(${vg.id})">${ico("aceite", 16)} Ver entregas feitas (${feitas.length})</button>` : ""}
     <button onclick="UI.pu={origem:null,boxOrigem:null,vooOrigemId:null,sel:[]};render()">+ Pegar bags no caminho</button>
@@ -8255,9 +8334,12 @@ Ele sai da lista de boxes dos operadores.`);
 ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
     if (!ok) return;
     const vg = D.viagens.find((x) => x.id === vgId) || {};
-    for (const id of ids) {
+    const qtds = ids.map((id) => {
       const campo = $(`qtd-grupo-${id}`);
-      const qtd = qtdDigitada(campo ? campo.value : "");
+      return { id, qtd: qtdDigitada(campo ? campo.value : "") };
+    });
+    fecharModal();
+    for (const { id, qtd } of qtds) {
       const d = D.destinos.find((x) => x.id === id);
       await entregarDestino(id, vgId, qtd);
       await depoisDaEntrega(d, vg, qtd);
@@ -9534,6 +9616,7 @@ Sair mesmo assim?`
     escolherSecaoBox,
     arrastarCartaoAlerta,
     cancelarPopoverViagem,
+    toggleVooDestino,
     // OC
     assumirVoo: assumirVoo2,
     soltarVoo: soltarVoo2,
@@ -9561,6 +9644,8 @@ Sair mesmo assim?`
     solicitarPPDelta,
     abrirSubstituirPonto,
     substituirPonto,
+    verLogPonto,
+    verLogAnomalias,
     // painel de acessos
     alternarAcesso
   });
