@@ -522,15 +522,27 @@
 
   /* ---------- popover do box com mais de um voo ----------
      A regra do relogio resolve quase sempre. Quando nao resolve, a
-     escolha abre colada no box — o dedo ja esta la. */
-  .bxq-pop{position:absolute; z-index:5; left:50%; transform:translateX(-50%);
+     escolha abre colada no box — o dedo ja esta la.
+
+     Centralizado embaixo do proprio quadrado (~85px) com um popover de
+     190px, ele estourava a tela pra quem tocava numa ponta da grade —
+     bug relatado pelo Tiago (08/09): o quadrado mostrava a contagem
+     certa, mas nada aparecia ao tocar, porque o popover nascia fora da
+     area visivel, sem nenhum scroll que revelasse. Por isso a
+     encostada na borda de dentro (.esq/.dir, escolhida por coluna em
+     gradeBoxes) no lugar do left:50%/transform centralizado. */
+  .bxq-pop{position:absolute; z-index:5;
     top:calc(100% + 6px); min-width:190px; padding:8px;
     background:var(--surface); border:1px solid var(--amber); border-radius:12px;
     box-shadow:0 10px 26px rgba(0,0,0,.5); cursor:default}
-  .bxq-pop:before{content:""; position:absolute; top:-6px; left:50%; margin-left:-6px;
-    width:10px; height:10px; background:var(--surface);
+  .bxq-pop.esq{left:0}
+  .bxq-pop.dir{right:0}
+  .bxq-pop:before{content:""; position:absolute; top:-6px; width:10px; height:10px;
+    background:var(--surface);
     border-left:1px solid var(--amber); border-top:1px solid var(--amber);
     transform:rotate(45deg)}
+  .bxq-pop.esq:before{left:40px}
+  .bxq-pop.dir:before{right:40px}
   .bxq-pop .note{margin:0 0 6px}
   .bxq-pop button{min-height:48px; margin-top:6px; text-align:left}
 
@@ -685,9 +697,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 08/09/2026, 14:14:16
+     Gerado em: 08/09/2026, 14:48:55
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/09 14:14";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/09 14:48";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2506,12 +2518,14 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       if (vs.every((v) => estadoDescarga(v) === "chegando")) return "chegando";
       return "aguardando";
     };
-    const btn = (b) => {
+    const COLUNAS = 4;
+    const btn = (b, indice) => {
       const est = estadoDoBox(b);
       const vs = porBox.get(b);
       const pend = vs.some((v) => pendenciaDeChegada(v.id));
       if (compacta) {
         const pop = opcoes && opcoes.popover ? opcoes.popover(b, vs) || "" : "";
+        const lado = indice % COLUNAS < COLUNAS / 2 ? "esq" : "dir";
         return `<div class="bxq-wrap" onclick="${fn}('${esc(b)}')">
       <span class="bxq-corner">${ico("pousando", 20)}</span>
       <div class="bxq bx-${est} ${String(selecionado) === String(b) ? "sel" : ""}">
@@ -2519,7 +2533,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       <span class="bxq-num">${esc(b)}</span>
       ${pend ? `<span class="bxq-pt" title="bag em curso"></span>` : ""}
       <span class="bxq-faixa"></span>
-      ${pop ? `<div class="bxq-pop" onclick="event.stopPropagation()">${pop}</div>` : ""}
+      ${pop ? `<div class="bxq-pop ${lado}" onclick="event.stopPropagation()">${pop}</div>` : ""}
     </div>
     </div>`;
       }
@@ -2531,7 +2545,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const vazio = `<div class="card note">Nenhum voo no p\xE1tio nesta janela.</div>`;
     if (!boxes.length) return vazio;
     const legenda = compacta ? `<p class="note bxq-legenda">\xE2mbar = ainda vai pousar \xB7 azul = descarregando \xB7 verde = descarga OK \xB7 ponto = bag em curso</p>` : "";
-    return `<div class="${compacta ? "bxq-grid" : "voo-grid"}">${boxes.map(btn).join("")}</div>${legenda}`;
+    return `<div class="${compacta ? "bxq-grid" : "voo-grid"}">${boxes.map((b, i) => btn(b, i)).join("")}</div>${legenda}`;
   }
   function seletorHoras(de, ate, onDe, onAte) {
     return `<div class="janela">
