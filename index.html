@@ -57,12 +57,17 @@
   header.app .who{margin-left:auto; text-align:right; line-height:1.1}
   header.app .who b{display:block; font-size:11px}
   header.app .who span{font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em}
+  /* Abre o SideMenu (menuLateral.js) — botao icone dentro do proprio
+     header, mesma familia visual do "Sair" (small ghost). */
+  .menu-abrir{flex:0 0 auto; width:40px; min-height:40px; padding:0;
+    background:transparent; border:none; display:inline-flex;
+    align-items:center; justify-content:center; color:var(--text)}
   .fila-offline{display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border:1px solid var(--amber);
     border-radius:20px; color:var(--amber); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em}
-  main{max-width:1024px; margin:0 auto; padding:14px 12px 90px}
-  /* Operador nao tem nav fixo embaixo (subiu pro topo, .op-barra) --
-     sem isto sobrava um vao de 90px reservado a toa. */
-  main.sem-nav-baixo{padding-bottom:14px}
+  /* Ninguem mais reserva faixa fixa embaixo (o nav antigo, nav.tabs, foi
+     substituido pelo SideMenu — que e overlay, nao ocupa espaco de
+     layout) — um padding uniforme serve qualquer tela. */
+  main{max-width:1024px; margin:0 auto; padding:14px 12px}
 
   /* ---------- board (assinatura FIDS) ---------- */
   .board-title{display:flex; align-items:baseline; gap:10px; margin:18px 0 8px}
@@ -354,11 +359,8 @@
   td .mono{color:var(--amber); font-weight:600}
   .tbl-wrap{overflow-x:auto}
 
-  /* ---------- abas ---------- */
-  nav.tabs{display:flex; gap:8px; position:fixed; bottom:0; left:0; right:0; background:var(--surface);
-    border-top:1px solid var(--line); padding:8px 10px calc(8px + env(safe-area-inset-bottom)); z-index:10}
-  nav.tabs button{min-height:50px; font-size:16px}
-  nav.tabs button.on{background:var(--amber); color:#fff; border-color:var(--amber)}
+  /* Navegacao entre abas mora no SideMenu — ver "menu lateral (navegacao)"
+     mais abaixo (.modal-bg.menu, .menu-lista, .menu-item). */
 
   /* ---------- login ---------- */
   .login{max-width:380px; margin:10vh auto; padding:0 16px}
@@ -445,6 +447,30 @@
     padding-right:calc(16px + env(safe-area-inset-right, 0px));
     transform:translateX(100%) scale(1)}
   .modal-bg.lado.show .modal-box{transform:translateX(0) scale(1)}
+
+  /* ---------- menu lateral (navegacao) ----------
+     Overlay PROPRIO (#menu-bg, ver menuLateral.js), nao o #modal-bg
+     generico: o menu precisa poder ficar aberto ao mesmo tempo que a
+     folha do Operador ou o painel da viagem (dois .modal-box deslizando
+     ao mesmo tempo brigariam por z-index e toque-fora) — por isso abrir
+     qualquer um dos outros fecha o menu antes. Mesma familia visual do
+     painel da viagem (.lado), so entrando pela esquerda.
+
+     Nenhuma regra de transition aqui de proposito, mesmo motivo da folha
+     e do painel lateral: herda os .16s da base .modal-box E o corte de
+     prefers-reduced-motion — declarar de novo aqui passaria por cima
+     sem ninguem perceber. */
+  .modal-bg.menu{align-items:stretch; justify-content:flex-start; padding:0}
+  .modal-bg.menu .modal-box{width:82%; max-width:300px; height:100%; max-height:none;
+    margin:0; border-radius:0; border:none; border-right:1px solid var(--line);
+    box-shadow:8px 0 24px rgba(0,0,0,.4);
+    padding:0; padding-left:env(safe-area-inset-left, 0px);
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    transform:translateX(-100%) scale(1)}
+  .modal-bg.menu.show .modal-box{transform:translateX(0) scale(1)}
+  .menu-lista{display:flex; flex-direction:column; padding:12px}
+  .menu-item{text-align:left; margin-bottom:8px}
+  .menu-item.on{background:var(--amber); color:#fff; border-color:var(--amber)}
 
   /* Alca: so sinaliza "isto subiu por cima". Nao arrasta — arrastar
      competiria com o rolar da lista de voos, que e o gesto que o
@@ -578,19 +604,8 @@
   .op-barra-relogio.on{background:var(--amber); color:#fff; border-color:var(--amber)}
   .op-barra-mais{flex:0 0 auto; width:auto; padding:0 18px;
     background:var(--amber); border-color:var(--amber); color:#fff}
-  .op-barra-abrir{flex:0 0 auto; width:32px; padding:0}
   @keyframes barraDesce{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:translateY(0)}}
-
-  /* Recolhida: some da tela por completo — nao reserva faixa nenhuma
-     (pedido do Tiago, 28/08) — vira so um circulo flutuando por cima do
-     conteudo. position:fixed, entao a posicao dele no HTML nao importa
-     pro layout. */
-  .op-barra-flutuante{position:fixed; top:calc(var(--header-h) + 8px); left:12px; z-index:9;
-    width:40px; height:40px; border-radius:50%; padding:0; display:inline-flex;
-    align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,.5);
-    animation:flutuaEntra .16s ease}
-  @keyframes flutuaEntra{from{opacity:0; transform:scale(.8)} to{opacity:1; transform:scale(1)}}
-  @media (prefers-reduced-motion: reduce){ .op-barra, .op-barra-flutuante{animation:none} }
+  @media (prefers-reduced-motion: reduce){ .op-barra{animation:none} }
 
   /* Dropdown do relogio: flutua por cima do conteudo (nao empurra
      nada) e fecha so ao tocar fora — o backdrop transparente e quem
@@ -680,9 +695,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 08/09/2026, 15:24:56
+     Gerado em: 08/09/2026, 16:49:37
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/09 15:24";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/09 16:49";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -701,6 +716,18 @@
   };
 
   // src/state/store.js
+  function guardarJanela(chave, valor) {
+    try {
+      localStorage.setItem(chave, valor);
+    } catch {
+    }
+  }
+  function guardarMenuAberto(aberto) {
+    try {
+      localStorage.setItem(CHAVE_MENU, aberto ? "1" : "0");
+    } catch {
+    }
+  }
   function limparEstado() {
     Object.keys(D).forEach((k) => {
       D[k] = [];
@@ -708,9 +735,28 @@
     S.me = null;
     S.ferramentas = [];
   }
-  var D, S, UI, mesmoId, voo, nomeDe, destinosDe, chegouNoVoo, pode;
+  var CHAVE_OP_DE, CHAVE_OP_ATE, CHAVE_OC_DE, CHAVE_OC_ATE, lido, CHAVE_MENU, lidoBool, D, S, UI, mesmoId, voo, nomeDe, destinosDe, chegouNoVoo, pode;
   var init_store = __esm({
     "src/state/store.js"() {
+      CHAVE_OP_DE = "rampa_op_de";
+      CHAVE_OP_ATE = "rampa_op_ate";
+      CHAVE_OC_DE = "rampa_oc_de";
+      CHAVE_OC_ATE = "rampa_oc_ate";
+      lido = (chave) => {
+        try {
+          return localStorage.getItem(chave) || "";
+        } catch {
+          return "";
+        }
+      };
+      CHAVE_MENU = "rampa_menu_aberto";
+      lidoBool = (chave) => {
+        try {
+          return localStorage.getItem(chave) === "1";
+        } catch {
+          return false;
+        }
+      };
       D = {
         voos: [],
         viagens: [],
@@ -733,16 +779,16 @@
         tab: null,
         // fluxo do operador
         op: { origem: null, boxOrigem: null, vooOrigemId: null, sel: [] },
-        opDe: "",
-        opAte: "",
+        opDe: lido(CHAVE_OP_DE),
+        opAte: lido(CHAVE_OP_ATE),
         // filtro de horario livre do operador (vazio = sem limite)
         janelaAberta: false,
         // dropdown do filtro de horario, na barra do Operador (render.js)
-        ocDe: "",
-        ocAte: "",
+        ocDe: lido(CHAVE_OC_DE),
+        ocAte: lido(CHAVE_OC_ATE),
         // filtro de horario livre do OC (assumir voo)
-        barraFechada: false,
-        // menu do topo (relogio/Malha/Historico/Turno/+) recolhido? comeca aberto
+        menuAberto: lidoBool(CHAVE_MENU),
+        // SideMenu de navegacao (ui/components/menuLateral.js)
         pu: null,
         // coleta no caminho
         viagemAberto: {},
@@ -854,201 +900,6 @@
         (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
       );
       hora = (ts) => ts ? new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
-    }
-  });
-
-  // src/config/regras.js
-  var ANTES_DO_POUSO_MIN, JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN;
-  var init_regras = __esm({
-    "src/config/regras.js"() {
-      ANTES_DO_POUSO_MIN = 15;
-      JANELA_DESCARGA_ESTIMADA_MIN = 30;
-      CCO_JANELA_ATRAS_MIN = 60;
-      CCO_JANELA_FRENTE_MIN = 240;
-      HORA_VIRADA_DIA = 5;
-      RAIO_PORTA_A_PORTA_BOX = 2;
-      TIMER_FOLGA_MIN = 40;
-      TIMER_APERTO_MIN = 25;
-      TIMER_HORA_IR_MIN = 15;
-    }
-  });
-
-  // src/utils/horas.js
-  function minutosDe(hhmm) {
-    const m = String(hhmm || "").match(/^(\d{1,2}):(\d{2})/);
-    if (!m) return null;
-    let t = +m[1] * 60 + +m[2];
-    if (t < HORA_VIRADA_DIA * 60) t += 1440;
-    return t;
-  }
-  function agoraMin() {
-    const ag = /* @__PURE__ */ new Date();
-    let na = ag.getHours() * 60 + ag.getMinutes();
-    if (na < HORA_VIRADA_DIA * 60) na += 1440;
-    return na;
-  }
-  function minPlain(h) {
-    const m = String(h || "").match(/^(\d{1,2}):(\d{2})/);
-    return m ? +m[1] * 60 + +m[2] : 99999;
-  }
-  function duracaoMin(s) {
-    const m = String(s || "").match(/^(\d{1,2}):(\d{2})/);
-    return m ? +m[1] * 60 + +m[2] : 99999;
-  }
-  function normHora(s) {
-    s = String(s || "").trim();
-    if (!s) return "";
-    let m = s.match(/^(\d{1,2}):(\d{2})$/);
-    if (!m) {
-      const d = s.replace(/\D/g, "");
-      if (d.length === 3) m = [null, d[0], d.slice(1)];
-      else if (d.length === 4) m = [null, d.slice(0, 2), d.slice(2)];
-      else return s;
-    }
-    const h = +m[1], mi = m[2];
-    if (h > 23 || +mi > 59) return s;
-    return h + ":" + mi;
-  }
-  function mascaraHora(s) {
-    const d = String(s || "").replace(/\D/g, "").slice(0, 4);
-    if (d.length <= 2) return d;
-    if (d.length === 3) return d[0] + ":" + d.slice(1);
-    return d.slice(0, 2) + ":" + d.slice(2);
-  }
-  function turnosAgora() {
-    const ag = /* @__PURE__ */ new Date();
-    const na = ag.getHours() * 60 + ag.getMinutes();
-    const ts = [];
-    if (na >= FAIXAS_TURNO.manha[0] && na <= FAIXAS_TURNO.manha[1]) ts.push("manha");
-    if (na >= FAIXAS_TURNO.tarde[0] && na <= FAIXAS_TURNO.tarde[1]) ts.push("tarde");
-    if (na >= 960 || na < 180) ts.push("noite");
-    return ts.length ? ts : ["manha", "tarde", "noite"];
-  }
-  function noTurno(hora2, turno) {
-    const m = String(hora2 || "").match(/^(\d{1,2}):(\d{2})/);
-    if (!m) return true;
-    let t = +m[1] * 60 + +m[2];
-    if (turno === "noite" && t <= 120) t += 1440;
-    const f = FAIXAS_TURNO[turno];
-    return t >= f[0] && t <= f[1];
-  }
-  function rotacaoAtiva(v) {
-    const ts = minutosDe(v.saida);
-    if (ts !== null && agoraMin() > ts) return false;
-    const h = v.saida || v.chegada;
-    if (minutosDe(h) === null) return true;
-    return turnosAgora().some((tu) => noTurno(h, tu));
-  }
-  function emSolo(v) {
-    if (v.descarga_ok_em) return false;
-    const na = agoraMin();
-    const tc = minutosDe(v.chegada);
-    if (tc !== null && na < tc) return false;
-    const ts = minutosDe(v.saida);
-    if (ts !== null && na > ts) return false;
-    return true;
-  }
-  function dentroDoIntervalo(min, de, ate) {
-    if (min === null) return true;
-    const d = minutosDe(de), a = minutosDe(ate);
-    if (d !== null && min < d) return false;
-    if (a !== null && min > a) return false;
-    return true;
-  }
-  function pendenciaDeSaida(vooId) {
-    const id = Number(vooId);
-    return D.destinos.some((d) => Number(d.voo_destino_id) === id && d.status === "a_caminho") || D.bagsLocal.some((b) => Number(b.voo_destino_id) === id && b.status !== "retirada");
-  }
-  function pendenciaDeChegada(vooId) {
-    const id = Number(vooId);
-    if (D.bagsLocal.some((b) => Number(b.voo_origem_id) === id && b.status !== "retirada")) return true;
-    return D.destinos.some((d) => {
-      if (d.status !== "a_caminho") return false;
-      if (Number(d.origem_voo_id) === id) return true;
-      const vg = D.viagens.find((x) => Number(x.id) === Number(d.viagem_id));
-      return !!vg && Number(vg.voo_origem_id) === id;
-    });
-  }
-  function ehChegada(v) {
-    return !!(v.chegada || v.voo_chegada);
-  }
-  function ehSaida(v) {
-    return !!(v.saida || v.destino);
-  }
-  function pousandoOuPousou(v) {
-    const tc = minutosDe(v.chegada);
-    return tc === null ? true : agoraMin() >= tc - ANTES_DO_POUSO_MIN;
-  }
-  function voosChegando() {
-    return D.voos.filter((v) => ehChegada(v) && pousandoOuPousou(v) && (dentroDoIntervalo(minutosDe(v.chegada), UI.opDe, UI.opAte) || pendenciaDeChegada(v.id))).sort((a, b) => {
-      var _a, _b;
-      return ((_a = minutosDe(b.chegada)) != null ? _a : 0) - ((_b = minutosDe(a.chegada)) != null ? _b : 0);
-    });
-  }
-  function voosSaindo(de, ate) {
-    return D.voos.filter((v) => ehSaida(v) && (dentroDoIntervalo(minutosDe(v.saida), de, ate) || pendenciaDeSaida(v.id))).sort((a, b) => {
-      var _a, _b;
-      return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
-    });
-  }
-  function candidatosDestinoJanela(excluir) {
-    return voosSaindo(UI.opDe, UI.opAte).filter((v) => !excluir.includes(v.id));
-  }
-  function fisicamenteNoBox(v) {
-    const tc = minutosDe(v.chegada);
-    if (tc !== null && agoraMin() < tc) return true;
-    const ts = minutosDe(v.saida);
-    if (ts === null) return true;
-    return agoraMin() <= ts;
-  }
-  function aindaNoBox(v) {
-    return fisicamenteNoBox(v) || pendenciaDeChegada(v.id);
-  }
-  function estadoDescarga(v) {
-    if (v.descarga_ok_em) return "ok";
-    const tc = minutosDe(v.chegada);
-    if (tc !== null && agoraMin() < tc) return "chegando";
-    if (tc !== null && agoraMin() <= tc + JANELA_DESCARGA_ESTIMADA_MIN) return "descarregando";
-    return "aguardando";
-  }
-  function candidatosDestino(excluir) {
-    return voosAtivos().filter((v) => !excluir.includes(v.id) && (v.saida || v.destino)).sort((a, b) => {
-      var _a, _b;
-      return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
-    });
-  }
-  function candidatosConexao(vooChegadaId) {
-    if (vooChegadaId == null) return null;
-    const pds = D.deltas.filter((pd) => Number(pd.voo_id) === Number(vooChegadaId));
-    if (!pds.length) return null;
-    const achados = [];
-    let foraDaMalha = 0;
-    for (const pd of pds) {
-      const v = D.voos.find((x) => x.numero === pd.voo_saida_numero && (!pd.destino || !x.destino || x.destino === pd.destino)) || D.voos.find((x) => x.numero === pd.voo_saida_numero);
-      if (!v) {
-        foraDaMalha++;
-        continue;
-      }
-      const ja = achados.find((a) => a.id === v.id);
-      if (ja) ja._bag += pd.bag_qtd || 0;
-      else achados.push({ ...v, _bag: pd.bag_qtd || 0 });
-    }
-    achados.sort((a, b) => {
-      var _a, _b;
-      return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
-    });
-    achados.foraDaMalha = foraDaMalha;
-    return achados;
-  }
-  var hoje, FAIXAS_TURNO, voosAtivos, voosEmSolo;
-  var init_horas = __esm({
-    "src/utils/horas.js"() {
-      init_store();
-      init_regras();
-      hoje = () => (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA");
-      FAIXAS_TURNO = { manha: [180, 780], tarde: [720, 1080], noite: [960, 1560] };
-      voosAtivos = () => D.voos.filter(rotacaoAtiva);
-      voosEmSolo = () => D.voos.filter(emSolo);
     }
   });
 
@@ -1261,6 +1112,201 @@
         else setTimeout(remover, DURACAO_SAIDA);
       };
       idsOrdenados = (lista) => lista.map((f) => f.id).sort().join(",");
+    }
+  });
+
+  // src/config/regras.js
+  var ANTES_DO_POUSO_MIN, JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN;
+  var init_regras = __esm({
+    "src/config/regras.js"() {
+      ANTES_DO_POUSO_MIN = 15;
+      JANELA_DESCARGA_ESTIMADA_MIN = 30;
+      CCO_JANELA_ATRAS_MIN = 60;
+      CCO_JANELA_FRENTE_MIN = 240;
+      HORA_VIRADA_DIA = 5;
+      RAIO_PORTA_A_PORTA_BOX = 2;
+      TIMER_FOLGA_MIN = 40;
+      TIMER_APERTO_MIN = 25;
+      TIMER_HORA_IR_MIN = 15;
+    }
+  });
+
+  // src/utils/horas.js
+  function minutosDe(hhmm) {
+    const m = String(hhmm || "").match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    let t = +m[1] * 60 + +m[2];
+    if (t < HORA_VIRADA_DIA * 60) t += 1440;
+    return t;
+  }
+  function agoraMin() {
+    const ag = /* @__PURE__ */ new Date();
+    let na = ag.getHours() * 60 + ag.getMinutes();
+    if (na < HORA_VIRADA_DIA * 60) na += 1440;
+    return na;
+  }
+  function minPlain(h) {
+    const m = String(h || "").match(/^(\d{1,2}):(\d{2})/);
+    return m ? +m[1] * 60 + +m[2] : 99999;
+  }
+  function duracaoMin(s) {
+    const m = String(s || "").match(/^(\d{1,2}):(\d{2})/);
+    return m ? +m[1] * 60 + +m[2] : 99999;
+  }
+  function normHora(s) {
+    s = String(s || "").trim();
+    if (!s) return "";
+    let m = s.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) {
+      const d = s.replace(/\D/g, "");
+      if (d.length === 3) m = [null, d[0], d.slice(1)];
+      else if (d.length === 4) m = [null, d.slice(0, 2), d.slice(2)];
+      else return s;
+    }
+    const h = +m[1], mi = m[2];
+    if (h > 23 || +mi > 59) return s;
+    return h + ":" + mi;
+  }
+  function mascaraHora(s) {
+    const d = String(s || "").replace(/\D/g, "").slice(0, 4);
+    if (d.length <= 2) return d;
+    if (d.length === 3) return d[0] + ":" + d.slice(1);
+    return d.slice(0, 2) + ":" + d.slice(2);
+  }
+  function turnosAgora() {
+    const ag = /* @__PURE__ */ new Date();
+    const na = ag.getHours() * 60 + ag.getMinutes();
+    const ts = [];
+    if (na >= FAIXAS_TURNO.manha[0] && na <= FAIXAS_TURNO.manha[1]) ts.push("manha");
+    if (na >= FAIXAS_TURNO.tarde[0] && na <= FAIXAS_TURNO.tarde[1]) ts.push("tarde");
+    if (na >= 960 || na < 180) ts.push("noite");
+    return ts.length ? ts : ["manha", "tarde", "noite"];
+  }
+  function noTurno(hora2, turno) {
+    const m = String(hora2 || "").match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return true;
+    let t = +m[1] * 60 + +m[2];
+    if (turno === "noite" && t <= 120) t += 1440;
+    const f = FAIXAS_TURNO[turno];
+    return t >= f[0] && t <= f[1];
+  }
+  function rotacaoAtiva(v) {
+    const ts = minutosDe(v.saida);
+    if (ts !== null && agoraMin() > ts) return false;
+    const h = v.saida || v.chegada;
+    if (minutosDe(h) === null) return true;
+    return turnosAgora().some((tu) => noTurno(h, tu));
+  }
+  function emSolo(v) {
+    if (v.descarga_ok_em) return false;
+    const na = agoraMin();
+    const tc = minutosDe(v.chegada);
+    if (tc !== null && na < tc) return false;
+    const ts = minutosDe(v.saida);
+    if (ts !== null && na > ts) return false;
+    return true;
+  }
+  function dentroDoIntervalo(min, de, ate) {
+    if (min === null) return true;
+    const d = minutosDe(de), a = minutosDe(ate);
+    if (d !== null && min < d) return false;
+    if (a !== null && min > a) return false;
+    return true;
+  }
+  function pendenciaDeSaida(vooId) {
+    const id = Number(vooId);
+    return D.destinos.some((d) => Number(d.voo_destino_id) === id && d.status === "a_caminho") || D.bagsLocal.some((b) => Number(b.voo_destino_id) === id && b.status !== "retirada");
+  }
+  function pendenciaDeChegada(vooId) {
+    const id = Number(vooId);
+    if (D.bagsLocal.some((b) => Number(b.voo_origem_id) === id && b.status !== "retirada")) return true;
+    return D.destinos.some((d) => {
+      if (d.status !== "a_caminho") return false;
+      if (Number(d.origem_voo_id) === id) return true;
+      const vg = D.viagens.find((x) => Number(x.id) === Number(d.viagem_id));
+      return !!vg && Number(vg.voo_origem_id) === id;
+    });
+  }
+  function ehChegada(v) {
+    return !!(v.chegada || v.voo_chegada);
+  }
+  function ehSaida(v) {
+    return !!(v.saida || v.destino);
+  }
+  function pousandoOuPousou(v) {
+    const tc = minutosDe(v.chegada);
+    return tc === null ? true : agoraMin() >= tc - ANTES_DO_POUSO_MIN;
+  }
+  function voosChegando() {
+    return D.voos.filter((v) => ehChegada(v) && pousandoOuPousou(v) && (dentroDoIntervalo(minutosDe(v.chegada), UI.opDe, UI.opAte) || pendenciaDeChegada(v.id))).sort((a, b) => {
+      var _a, _b;
+      return ((_a = minutosDe(b.chegada)) != null ? _a : 0) - ((_b = minutosDe(a.chegada)) != null ? _b : 0);
+    });
+  }
+  function voosSaindo(de, ate) {
+    return D.voos.filter((v) => ehSaida(v) && (dentroDoIntervalo(minutosDe(v.saida), de, ate) || pendenciaDeSaida(v.id))).sort((a, b) => {
+      var _a, _b;
+      return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
+    });
+  }
+  function candidatosDestinoJanela(excluir) {
+    return voosSaindo(UI.opDe, UI.opAte).filter((v) => !excluir.includes(v.id));
+  }
+  function fisicamenteNoBox(v) {
+    const tc = minutosDe(v.chegada);
+    if (tc !== null && agoraMin() < tc) return true;
+    const ts = minutosDe(v.saida);
+    if (ts === null) return true;
+    return agoraMin() <= ts;
+  }
+  function aindaNoBox(v) {
+    return fisicamenteNoBox(v) || pendenciaDeChegada(v.id);
+  }
+  function estadoDescarga(v) {
+    if (v.descarga_ok_em) return "ok";
+    const tc = minutosDe(v.chegada);
+    if (tc !== null && agoraMin() < tc) return "chegando";
+    if (tc !== null && agoraMin() <= tc + JANELA_DESCARGA_ESTIMADA_MIN) return "descarregando";
+    return "aguardando";
+  }
+  function candidatosDestino(excluir) {
+    return voosAtivos().filter((v) => !excluir.includes(v.id) && (v.saida || v.destino)).sort((a, b) => {
+      var _a, _b;
+      return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
+    });
+  }
+  function candidatosConexao(vooChegadaId) {
+    if (vooChegadaId == null) return null;
+    const pds = D.deltas.filter((pd) => Number(pd.voo_id) === Number(vooChegadaId));
+    if (!pds.length) return null;
+    const achados = [];
+    let foraDaMalha = 0;
+    for (const pd of pds) {
+      const v = D.voos.find((x) => x.numero === pd.voo_saida_numero && (!pd.destino || !x.destino || x.destino === pd.destino)) || D.voos.find((x) => x.numero === pd.voo_saida_numero);
+      if (!v) {
+        foraDaMalha++;
+        continue;
+      }
+      const ja = achados.find((a) => a.id === v.id);
+      if (ja) ja._bag += pd.bag_qtd || 0;
+      else achados.push({ ...v, _bag: pd.bag_qtd || 0 });
+    }
+    achados.sort((a, b) => {
+      var _a, _b;
+      return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
+    });
+    achados.foraDaMalha = foraDaMalha;
+    return achados;
+  }
+  var hoje, FAIXAS_TURNO, voosAtivos, voosEmSolo;
+  var init_horas = __esm({
+    "src/utils/horas.js"() {
+      init_store();
+      init_regras();
+      hoje = () => (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA");
+      FAIXAS_TURNO = { manha: [180, 780], tarde: [720, 1080], noite: [960, 1560] };
+      voosAtivos = () => D.voos.filter(rotacaoAtiva);
+      voosEmSolo = () => D.voos.filter(emSolo);
     }
   });
 
@@ -1520,6 +1566,161 @@
     triagem: ["triagem"],
     auxiliar: ["pontosimport"]
   };
+
+  // src/ui/components/menuLateral.js
+  init_dom();
+  init_store();
+
+  // src/ui/components/icones.js
+  var VB = {
+    pousando: "0 -960 960 960",
+    decolando: "0 -960 960 960",
+    carreta: "0 -960 960 960",
+    esteira: "0 -960 960 960",
+    pacote: "0 -960 960 960",
+    "mala-duvida": "0 -960 960 960",
+    "mala-check": "0 -960 960 960",
+    alerta: "0 -960 960 960",
+    vervoos: "0 -960 960 960",
+    cancelar: "0 -960 960 960",
+    aceite: "0 -960 960 960",
+    malha: "0 -960 960 960",
+    historico: "0 -960 960 960",
+    turno: "0 -960 960 960",
+    arrastar: "0 -960 960 960",
+    thumb_up: "0 -960 960 960"
+  };
+  var P = {
+    "mala-check": `<path d="m696-150 141.33-142-28.66-28.67L696-207.33 638-266l-28.67 29.33L696-150Zm-337.33-46.67v-406h-57.34v406h57.34ZM481.33-130h-180q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-406q0-27 19.83-46.83t46.83-19.83h267.34v-144h-16q-27 0-46.84-19.84Q486-853 486-880h149.33v392.67q-17.33 6-34.16 14.66-16.84 8.67-32.5 20.67v-150.67H425.33v406h37.34q1.66 18 6.33 34.34Q473.67-146 481.33-130Zm380.84-245.5q57.16 57.17 57.16 138.83 0 81.67-57.16 138.84Q805-40.67 723.33-40.67q-81.66 0-138.83-57.16-57.17-57.17-57.17-138.84 0-81.66 57.17-138.83 57.17-57.17 138.83-57.17 81.67 0 138.84 57.17ZM392-400Zm-33.33 203.33v-406 406Zm66.66 0v-406 406Z"/>`,
+    // material symbols: carry_on_bag_checked (Apache 2.0) — selo "Pegar" (ja reservado)
+    "mala-duvida": `<path d="M400.67-720h144q0-30-21-50t-51-20q-30 0-51 19.83-21 19.84-21 50.17Zm-131.34 66.67h-50.66V-320h50.66v-333.33ZM73.33-120v-66.67H472q3.67 19.34 8.67 35 5 15.67 12.66 31.67h-420Zm246-533.33V-320h162q-5.66 16-8.66 32.67-3 16.66-4.67 34H218.67q-27 0-46.84-19.84Q152-293 152-320v-333.33q0-27 19.83-46.84Q191.67-720 218.67-720h132.66q0-51.33 35.41-85.67 35.42-34.33 86-34.33 50.59 0 85.93 34.33Q594-771.33 594-720h132.67q27 0 46.83 19.83 19.83 19.84 19.83 46.84V-492q-18.33-4.67-33.16-6.33-14.84-1.67-33.5-1.67v-153.33H676V-494q-14.67 3-26.67 6.5-12 3.5-23.33 8.17v-174H319.33Zm550.5 276.83q56.84 56.83 56.84 139.83 0 83-56.84 139.84Q813-40 730-40q-83 0-139.83-56.83-56.84-56.84-56.84-139.84t56.84-139.83Q647-433.33 730-433.33q83 0 139.83 56.83ZM750.17-114.57q7.83-7.91 7.83-19.5 0-11.6-7.91-19.43-7.9-7.83-19.5-7.83-11.59 0-19.42 7.9-7.84 7.91-7.84 19.5 0 11.6 7.91 19.43 7.9 7.83 19.5 7.83 11.59 0 19.43-7.9Zm-20.98-246.1q-24.86 0-45.02 14.17Q664-332.33 656-307.68l34.67 15.01Q693-306 703.83-315.33q10.84-9.34 25.8-9.34 16.04 0 25.2 8 9.17 8 9.17 24 0 11-6.67 19.17-6.66 8.17-14.66 16.17-7.34 6.66-14.5 13.33-7.17 6.67-12.17 14.67-3.67 6.66-4.83 12.86Q710-210.27 710-202v15.33h38.67v-10.63q0-11.7 6.33-21.2t14.82-17.77q14.85-12.4 23.85-24.4 9-12 9-32 0-30.81-20.53-49.4-20.54-18.6-52.95-18.6ZM269.33-653.33h50-50Zm0 0h-50.66 50.66Zm50 0H626 319.33Zm306.67 0h50-50Zm50 0h50.67H676Z"/>`,
+    // material symbols: checked_bag_question (Apache 2.0) — selo "Aceitar" (ainda ninguem confirmou)
+    carreta: `<path d="M150-599.33q-13.32 0-22.33-9.84-9-9.83-9-23.5 0-13.66 9-23.5Q136.68-666 150-666h139.33q27.78 0 47.56 19.5T360-599.33H150Zm83.25 372.66q52.75 0 89.75-36.92t37-89.66Q360-406 323.08-443t-89.67-37q-52.74 0-89.74 36.92-37 36.92-37 89.67 0 52.74 36.92 89.74 36.92 37 89.66 37Zm599.58-20.38q20.5-20.38 20.5-49.5t-20.38-49.62q-20.38-20.5-49.5-20.5t-49.62 20.39q-20.5 20.38-20.5 49.5 0 29.11 20.39 49.61 20.38 20.5 49.5 20.5 29.11 0 49.61-20.38Zm-599.42-39.62q-27.74 0-47.24-19.42-19.5-19.42-19.5-47.16 0-27.75 19.42-47.25t47.16-19.5q27.75 0 47.25 19.42t19.5 47.17q0 27.74-19.42 47.24-19.42 19.5-47.17 19.5Zm573.26-145q21.33 5 35.33 11.84 14 6.83 31.33 21.16v-254q0-28.33-19.16-47.5-19.17-19.16-47.5-19.16H541.33l-46.66-47.34 60-60L533.33-848 392-706.67l22 22L473.33-744 520-698.24V-598q0 38.78-26.83 66.39Q466.33-504 427.33-504h-73q19 15 30 29.67 11 14.66 23.67 37h19.33q65.34 0 112.34-47.67t47-113v-54.67h220v221ZM649-320q6-23.67 13.17-37.5 7.16-13.83 21.16-29.83H424q2.67 19.66 2.67 33.66 0 14-2.67 33.67h225Zm134.67 160q-57 0-97-39.44t-40-95.23q0-57.44 40.61-98.05t98.05-40.61q55.79 0 95.23 40.02Q920-353.29 920-296.67q0 57.34-39.67 97Q840.67-160 783.67-160ZM232-160q-80.33 0-136.17-56.55Q40-273.1 40-353.33q0-80.24 56.5-136.79t136.76-56.55q80.27 0 136.84 56.57 56.57 56.57 56.57 136.84 0 80.26-56.5 136.76Q313.67-160 232-160Zm393.67-360Z"/>`,
+    // material symbols: agriculture (Apache 2.0) — trator = Operador; icone da viagem ativa e do S.OP
+    check: `<path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z"/>`,
+    // phosphor: check-bold (MIT)
+    decolando: `<path d="M120-120v-66.67h720V-120H120Zm67.33-206.67L42-568.67 126.67-592 242-495.33l156.67-42.34-211.67-282 104-27.66 306.33 257L776.67-639q30-7.67 55.83 7.83t34.17 45.5q8.33 29.34-6.17 55.17-14.5 25.83-43.17 34.17l-630 169.66Z"/>`,
+    // material symbols: flight_takeoff (Apache 2.0)
+    esteira: `<path d="M200.67-120q-50 0-85-35t-35-85q0-50 35-85t85-35h560q50 0 85 35t35 85q0 50-35 85t-85 35h-560Zm0-66.67h560q22.66 0 38-15.5Q814-217.67 814-240t-15.33-37.83q-15.34-15.5-38-15.5h-560q-22.67 0-38 15.5-15.34 15.5-15.34 37.83t15.34 37.83q15.33 15.5 38 15.5ZM394-440q-14.17 0-23.75-9.58-9.58-9.59-9.58-23.75v-333.34q0-14.16 9.58-23.75Q379.83-840 394-840h333.33q14.17 0 23.75 9.58 9.59 9.59 9.59 23.75v333.34q0 14.16-9.59 23.75-9.58 9.58-23.75 9.58H394Zm33.33-66.67H694v-266.66H427.33v266.66Zm-348-20.66V-593h213v65.67h-213ZM480-646.67h161.33V-713H480v66.33Zm-319.33 0h137V-713h-137v66.33Zm266.66 140v-266.66 266.66Z"/>`,
+    // material symbols: conveyor_belt (Apache 2.0)
+    lista: `<path d="M228,128a12,12,0,0,1-12,12H40a12,12,0,0,1,0-24H216A12,12,0,0,1,228,128ZM40,76H216a12,12,0,0,0,0-24H40a12,12,0,0,0,0,24ZM216,180H40a12,12,0,0,0,0,24H216a12,12,0,0,0,0-24Z"/>`,
+    // phosphor: list-bold (MIT)
+    mais: `<path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"/>`,
+    // phosphor: plus-bold (MIT)
+    pacote: `<path d="M266.67-120q-27.5 0-47.09-19.58Q200-159.17 200-186.67v-466.66q0-27.5 19.58-47.09Q239.17-720 266.67-720h96.66v-93.33q0-27.5 19.59-47.09Q402.5-880 430-880h100q27.5 0 47.08 19.58 19.59 19.59 19.59 47.09V-720h96.66q27.5 0 47.09 19.58Q760-680.83 760-653.33v466.66q0 27.5-19.58 47.09Q720.83-120 693.33-120q0 17-11.5 28.5T653.33-80q-17 0-28.5-11.5t-11.5-28.5H346.67q0 17-11.5 28.5T306.67-80q-17 0-28.5-11.5t-11.5-28.5Zm0-66.67h426.66v-466.66H266.67v466.66ZM363.33-240H430v-360h-66.67v360ZM530-240h66.67v-360H530v360ZM430-720h100v-93.33H430V-720Zm50 300Z"/>`,
+    // material symbols: luggage (Apache 2.0)
+    pousando: `<path d="M120-120v-66.67h720V-120H120Zm629.33-206.67L120-506.33v-282.34L204.67-765 254-622.67l155.33 44.34-35.66-351 103 30L607.33-521l179.34 51q23 7.33 38.16 26.67Q840-424 840-398.33q0 33-26.5 57.83t-64.17 13.83Z"/>`,
+    // material symbols: flight_land (Apache 2.0)
+    quadrado: `<path d="M208,28H48A20,20,0,0,0,28,48V208a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V48A20,20,0,0,0,208,28Zm-4,176H52V52H204Z"/>`,
+    // phosphor: square-bold (MIT)
+    quadradoMarcado: `<path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm-34.34,77.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/>`,
+    // phosphor: check-square-fill (MIT)
+    relogio: `<path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm68-84a12,12,0,0,1-12,12H128a12,12,0,0,1-12-12V72a12,12,0,0,1,24,0v44h44A12,12,0,0,1,196,128Z"/>`,
+    // phosphor: clock-bold (MIT)
+    seta: `<path d="M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z"/>`,
+    // phosphor: arrow-right-bold (MIT)
+    sino: `<path d="M225.29,165.93C216.61,151,212,129.57,212,104a84,84,0,0,0-168,0c0,25.58-4.59,47-13.27,61.93A20.08,20.08,0,0,0,30.66,186,19.77,19.77,0,0,0,48,196H84.18a44,44,0,0,0,87.64,0H208a19.77,19.77,0,0,0,17.31-10A20.08,20.08,0,0,0,225.29,165.93ZM128,212a20,20,0,0,1-19.6-16h39.2A20,20,0,0,1,128,212ZM54.66,172C63.51,154,68,131.14,68,104a60,60,0,0,1,120,0c0,27.13,4.48,50,13.33,68Z"/>`,
+    // phosphor: bell-bold (MIT)
+    sinoAtivo: `<path d="M224,71.1a8,8,0,0,1-10.78-3.42,94.13,94.13,0,0,0-33.46-36.91,8,8,0,1,1,8.54-13.54,111.46,111.46,0,0,1,39.12,43.09A8,8,0,0,1,224,71.1ZM35.71,72a8,8,0,0,0,7.1-4.32A94.13,94.13,0,0,1,76.27,30.77a8,8,0,1,0-8.54-13.54A111.46,111.46,0,0,0,28.61,60.32,8,8,0,0,0,35.71,72Zm186.1,103.94A16,16,0,0,1,208,200H167.2a40,40,0,0,1-78.4,0H48a16,16,0,0,1-13.79-24.06C43.22,160.39,48,138.28,48,112a80,80,0,0,1,160,0C208,138.27,212.78,160.38,221.81,175.94ZM150.62,200H105.38a24,24,0,0,0,45.24,0Z"/>`,
+    // phosphor: bell-ringing-fill (MIT)
+    x: `<path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/>`,
+    // phosphor: x-bold (MIT)
+    alerta: `<path d="M480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Zm0-421.33ZM160-200v-66.67h80v-296q0-83.66 49.67-149.5Q339.33-778 420-796v-24q0-25 17.5-42.5T480-880q23.61 0 40.14 15.5t19.19 37.83v4.34q-11.66 20.66-18 43.33-6.33 22.67-7.33 46.67-8.67-2-16.69-2.84-8.02-.83-17.31-.83-72 0-122.67 50.67-50.66 50.66-50.66 122.66v296h346.66v-275q16 4.67 32.84 6.84Q703-532.67 720-534v267.33h80V-200H160Zm467-446.41q-33-33.08-33-80.34Q594-774 627.08-807t80.33-33q47.26 0 80.26 33.08 33 33.08 33 80.33 0 47.26-33.08 80.26-33.08 33-80.34 33-47.25 0-80.25-33.08Z"/>`,
+    // material symbols: notifications_unread (Apache 2.0) — contagem de urgentes na linha do BOX
+    vervoos: `<path d="M80-200v-66.67h400V-200H80Zm0-206.67v-66.66h200v66.66H80Zm0-206.66V-680h200v66.67H80ZM833.33-200l-158-158Q650-339 620.5-329.5T560-320q-83 0-141.5-58.5T360-520q0-83 58.5-141.5T560-720q83 0 141.5 58.5T760-520q0 31-9.5 60.5T722-404.67l158 158L833.33-200ZM559.84-386.67q55.49 0 94.49-38.84 39-38.84 39-94.33 0-55.49-38.84-94.49-38.84-39-94.33-39-55.49 0-94.49 38.84-39 38.84-39 94.33 0 55.49 38.84 94.49 38.84 39 94.33 39Z"/>`,
+    // material symbols: manage_search (Apache 2.0) — botao "Ver voos" do BOX ja aceito
+    cancelar: `<path d="m332-285.33 148-148 148 148L674.67-332l-148-148 148-148L628-674.67l-148 148-148-148L285.33-628l148 148-148 148L332-285.33ZM480-80q-82.33 0-155.33-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.67T80-480q0-83 31.5-156t85.83-127q54.34-54 127.34-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82.33-31.5 155.33-31.5 73-85.5 127.34Q709-143 636-111.5T480-80Zm0-66.67q139.33 0 236.33-97.33t97-236q0-139.33-97-236.33t-236.33-97q-138.67 0-236 97-97.33 97-97.33 236.33 0 138.67 97.33 236 97.33 97.33 236 97.33ZM480-480Z"/>`,
+    // material symbols: cancel (Apache 2.0) — desfazer aceite do BOX
+    aceite: `<path d="M379.33-244 154-469.33 201.67-517l177.66 177.67 378.34-378.34L805.33-670l-426 426Z"/>`,
+    // material symbols: check (Apache 2.0) — botao "Aceitar" do BOX
+    malha: `<path d="M233.33-161.33 80-315.33l46.67-46L200-290v-470.67h66.67V-290l72.66-71.33 46.67 46-152.67 154Zm252.67-38V-266h394v66.67H486Zm0-247.34v-66.66h394v66.66H486ZM486-694v-66.67h394V-694H486Z"/>`,
+    // material symbols: list_arrow (Apache 2.0) — botao Malha, so-icone, na barra do topo
+    historico: `<path d="M186.67-120q-27.5 0-47.09-19.58Q120-159.17 120-186.67v-586.66q0-27.5 19.58-47.09Q159.17-840 186.67-840h192.66q7.67-35.33 35.84-57.67Q443.33-920 480-920t64.83 22.33Q573-875.33 580.67-840h192.66q27.5 0 47.09 19.58Q840-800.83 840-773.33v586.66q0 27.5-19.58 47.09Q800.83-120 773.33-120H186.67Zm0-66.67h586.66v-586.66H186.67v586.66ZM280-280h275.33v-66.67H280V-280Zm0-166.67h400v-66.66H280v66.66Zm0-166.66h400V-680H280v66.67ZM503.5-804.5q9.83-9.83 9.83-23.5t-9.83-23.5q-9.83-9.83-23.5-9.83t-23.5 9.83q-9.83 9.83-9.83 23.5t9.83 23.5q9.83 9.83 23.5 9.83t23.5-9.83ZM186.67-186.67v-586.66 586.66Z"/>`,
+    // material symbols: assignment (Apache 2.0) — botao Historico, so-icone, na barra do topo
+    turno: `<path d="M446.67-520h66.66v-200h-66.66v200ZM480-373.33q13.67 0 23.5-9.84 9.83-9.83 9.83-23.5 0-13.66-9.83-23.5Q493.67-440 480-440t-23.5 9.83q-9.83 9.84-9.83 23.5 0 13.67 9.83 23.5 9.83 9.84 23.5 9.84ZM480-168q129.33-118 191.33-214.17 62-96.16 62-169.83 0-115-73.5-188.17-73.5-73.16-179.83-73.16-106.33 0-179.83 73.16Q226.67-667 226.67-552q0 73.67 63 169.83Q352.67-286 480-168Zm0 88Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z"/>`,
+    // material symbols: fmd_bad (Apache 2.0) — botao Turno, so-icone, na barra do topo
+    arrastar: `<path d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-400q-33 0-56.5-23.5T280-480q0-33 23.5-56.5T360-560q33 0 56.5 23.5T440-480q0 33-23.5 56.5T360-400Zm240 0q-33 0-56.5-23.5T520-480q0-33 23.5-56.5T600-560q33 0 56.5 23.5T680-480q0 33-23.5 56.5T600-400ZM360-640q-33 0-56.5-23.5T280-720q0-33 23.5-56.5T360-800q33 0 56.5 23.5T440-720q0 33-23.5 56.5T360-640Zm240 0q-33 0-56.5-23.5T520-720q0-33 23.5-56.5T600-800q33 0 56.5 23.5T680-720q0 33-23.5 56.5T600-640Z"/>`,
+    // material symbols: drag_indicator (Apache 2.0) — alca de arrastar o cartao do alerta
+    thumb_up: `<path d="M716-120H272v-512l278-288 39 31q6 5 9 14t3 22v10l-45 211h299q24 0 42 18t18 42v81.84q0 7.16 1.5 14.66T915-461L789-171q-8.88 21.25-29.59 36.12Q738.69-120 716-120Zm-384-60h397l126-299v-93H482l53-249-203 214v427Zm0-427v427-427Zm-60-25v60H139v392h133v60H79v-512h193Z"/>`,
+    // material symbols: thumb_up (Apache 2.0) — botao "Aceitar" do card (BOX/TCX/TLC)
+    exclamacao: `<rect x="112" y="40" width="32" height="128" rx="16"/><circle cx="128" cy="208" r="20"/>`
+    // desenhado a mao (traco + bola), grade 256 igual ao check/x/lista — "tem log pra ver" nas linhas de Ponto Delta/Indice
+  };
+  function ico(nome, tam) {
+    const d = P[nome];
+    if (!d) return "";
+    const s = tam || 18;
+    const vb = VB[nome] || "0 0 256 256";
+    const corTipo = nome === "pousando" || nome === "decolando" ? ` ico-${nome}` : "";
+    return `<svg class="ico${corTipo}" width="${s}" height="${s}" viewBox="${vb}" fill="currentColor" aria-hidden="true" focusable="false">${d}</svg>`;
+  }
+  var ICONES = Object.keys(P);
+
+  // src/ui/components/menuLateral.js
+  init_modal();
+  init_bus();
+  function menuLateral(abas) {
+    return `<nav class="menu-lista">
+    ${abas.map(
+      (k) => `<button class="menu-item ${UI.tab === k ? "on" : ""}" onclick="irPara('${k}')">${ABA_TITULO[k] || k}</button>`
+    ).join("")}
+  </nav>`;
+  }
+  function botaoAbrirMenu() {
+    return `<button class="menu-abrir" onclick="toggleMenu()" aria-label="Abrir menu">${ico("lista", 18)}</button>`;
+  }
+  function elementoMenu() {
+    let m = $("menu-bg");
+    if (!m) {
+      m = document.createElement("div");
+      m.id = "menu-bg";
+      m.className = "modal-bg menu";
+      m.onclick = (e) => {
+        if (e.target === m) fecharMenu();
+      };
+      document.body.appendChild(m);
+    }
+    return m;
+  }
+  function esconderMenu(m) {
+    m.classList.remove("show");
+    if (m._timerFechar) clearTimeout(m._timerFechar);
+    const esconder = () => {
+      m.style.display = "none";
+      m._timerFechar = null;
+    };
+    if (movimentoReduzido()) esconder();
+    else m._timerFechar = setTimeout(esconder, DURACAO_SAIDA);
+  }
+  function sincronizarMenu(abas) {
+    const jaExiste = !!$("menu-bg");
+    if (!UI.menuAberto) {
+      if (jaExiste) esconderMenu($("menu-bg"));
+      return;
+    }
+    const m = elementoMenu();
+    if (m.style.display === "flex") return;
+    if (m._timerFechar) {
+      clearTimeout(m._timerFechar);
+      m._timerFechar = null;
+    }
+    m.innerHTML = `<div class="modal-box" onclick="event.stopPropagation()">${menuLateral(abas)}</div>`;
+    m.classList.remove("show");
+    m.style.display = "flex";
+    revelar(m);
+  }
+  function toggleMenu() {
+    UI.menuAberto = !UI.menuAberto;
+    guardarMenuAberto(UI.menuAberto);
+    bus.render();
+  }
+  function fecharMenu() {
+    if (!UI.menuAberto) return;
+    UI.menuAberto = false;
+    guardarMenuAberto(false);
+    const m = $("menu-bg");
+    if (m) esconderMenu(m);
+  }
 
   // src/ui/screens/telaInicial.js
   init_store();
@@ -2148,93 +2349,6 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
 
   // src/ui/components/voo.js
   init_dom();
-
-  // src/ui/components/icones.js
-  var VB = {
-    pousando: "0 -960 960 960",
-    decolando: "0 -960 960 960",
-    carreta: "0 -960 960 960",
-    esteira: "0 -960 960 960",
-    pacote: "0 -960 960 960",
-    "mala-duvida": "0 -960 960 960",
-    "mala-check": "0 -960 960 960",
-    alerta: "0 -960 960 960",
-    vervoos: "0 -960 960 960",
-    cancelar: "0 -960 960 960",
-    aceite: "0 -960 960 960",
-    malha: "0 -960 960 960",
-    historico: "0 -960 960 960",
-    turno: "0 -960 960 960",
-    arrastar: "0 -960 960 960",
-    thumb_up: "0 -960 960 960"
-  };
-  var P = {
-    "mala-check": `<path d="m696-150 141.33-142-28.66-28.67L696-207.33 638-266l-28.67 29.33L696-150Zm-337.33-46.67v-406h-57.34v406h57.34ZM481.33-130h-180q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-406q0-27 19.83-46.83t46.83-19.83h267.34v-144h-16q-27 0-46.84-19.84Q486-853 486-880h149.33v392.67q-17.33 6-34.16 14.66-16.84 8.67-32.5 20.67v-150.67H425.33v406h37.34q1.66 18 6.33 34.34Q473.67-146 481.33-130Zm380.84-245.5q57.16 57.17 57.16 138.83 0 81.67-57.16 138.84Q805-40.67 723.33-40.67q-81.66 0-138.83-57.16-57.17-57.17-57.17-138.84 0-81.66 57.17-138.83 57.17-57.17 138.83-57.17 81.67 0 138.84 57.17ZM392-400Zm-33.33 203.33v-406 406Zm66.66 0v-406 406Z"/>`,
-    // material symbols: carry_on_bag_checked (Apache 2.0) — selo "Pegar" (ja reservado)
-    "mala-duvida": `<path d="M400.67-720h144q0-30-21-50t-51-20q-30 0-51 19.83-21 19.84-21 50.17Zm-131.34 66.67h-50.66V-320h50.66v-333.33ZM73.33-120v-66.67H472q3.67 19.34 8.67 35 5 15.67 12.66 31.67h-420Zm246-533.33V-320h162q-5.66 16-8.66 32.67-3 16.66-4.67 34H218.67q-27 0-46.84-19.84Q152-293 152-320v-333.33q0-27 19.83-46.84Q191.67-720 218.67-720h132.66q0-51.33 35.41-85.67 35.42-34.33 86-34.33 50.59 0 85.93 34.33Q594-771.33 594-720h132.67q27 0 46.83 19.83 19.83 19.84 19.83 46.84V-492q-18.33-4.67-33.16-6.33-14.84-1.67-33.5-1.67v-153.33H676V-494q-14.67 3-26.67 6.5-12 3.5-23.33 8.17v-174H319.33Zm550.5 276.83q56.84 56.83 56.84 139.83 0 83-56.84 139.84Q813-40 730-40q-83 0-139.83-56.83-56.84-56.84-56.84-139.84t56.84-139.83Q647-433.33 730-433.33q83 0 139.83 56.83ZM750.17-114.57q7.83-7.91 7.83-19.5 0-11.6-7.91-19.43-7.9-7.83-19.5-7.83-11.59 0-19.42 7.9-7.84 7.91-7.84 19.5 0 11.6 7.91 19.43 7.9 7.83 19.5 7.83 11.59 0 19.43-7.9Zm-20.98-246.1q-24.86 0-45.02 14.17Q664-332.33 656-307.68l34.67 15.01Q693-306 703.83-315.33q10.84-9.34 25.8-9.34 16.04 0 25.2 8 9.17 8 9.17 24 0 11-6.67 19.17-6.66 8.17-14.66 16.17-7.34 6.66-14.5 13.33-7.17 6.67-12.17 14.67-3.67 6.66-4.83 12.86Q710-210.27 710-202v15.33h38.67v-10.63q0-11.7 6.33-21.2t14.82-17.77q14.85-12.4 23.85-24.4 9-12 9-32 0-30.81-20.53-49.4-20.54-18.6-52.95-18.6ZM269.33-653.33h50-50Zm0 0h-50.66 50.66Zm50 0H626 319.33Zm306.67 0h50-50Zm50 0h50.67H676Z"/>`,
-    // material symbols: checked_bag_question (Apache 2.0) — selo "Aceitar" (ainda ninguem confirmou)
-    carreta: `<path d="M150-599.33q-13.32 0-22.33-9.84-9-9.83-9-23.5 0-13.66 9-23.5Q136.68-666 150-666h139.33q27.78 0 47.56 19.5T360-599.33H150Zm83.25 372.66q52.75 0 89.75-36.92t37-89.66Q360-406 323.08-443t-89.67-37q-52.74 0-89.74 36.92-37 36.92-37 89.67 0 52.74 36.92 89.74 36.92 37 89.66 37Zm599.58-20.38q20.5-20.38 20.5-49.5t-20.38-49.62q-20.38-20.5-49.5-20.5t-49.62 20.39q-20.5 20.38-20.5 49.5 0 29.11 20.39 49.61 20.38 20.5 49.5 20.5 29.11 0 49.61-20.38Zm-599.42-39.62q-27.74 0-47.24-19.42-19.5-19.42-19.5-47.16 0-27.75 19.42-47.25t47.16-19.5q27.75 0 47.25 19.42t19.5 47.17q0 27.74-19.42 47.24-19.42 19.5-47.17 19.5Zm573.26-145q21.33 5 35.33 11.84 14 6.83 31.33 21.16v-254q0-28.33-19.16-47.5-19.17-19.16-47.5-19.16H541.33l-46.66-47.34 60-60L533.33-848 392-706.67l22 22L473.33-744 520-698.24V-598q0 38.78-26.83 66.39Q466.33-504 427.33-504h-73q19 15 30 29.67 11 14.66 23.67 37h19.33q65.34 0 112.34-47.67t47-113v-54.67h220v221ZM649-320q6-23.67 13.17-37.5 7.16-13.83 21.16-29.83H424q2.67 19.66 2.67 33.66 0 14-2.67 33.67h225Zm134.67 160q-57 0-97-39.44t-40-95.23q0-57.44 40.61-98.05t98.05-40.61q55.79 0 95.23 40.02Q920-353.29 920-296.67q0 57.34-39.67 97Q840.67-160 783.67-160ZM232-160q-80.33 0-136.17-56.55Q40-273.1 40-353.33q0-80.24 56.5-136.79t136.76-56.55q80.27 0 136.84 56.57 56.57 56.57 56.57 136.84 0 80.26-56.5 136.76Q313.67-160 232-160Zm393.67-360Z"/>`,
-    // material symbols: agriculture (Apache 2.0) — trator = Operador; icone da viagem ativa e do S.OP
-    check: `<path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z"/>`,
-    // phosphor: check-bold (MIT)
-    decolando: `<path d="M120-120v-66.67h720V-120H120Zm67.33-206.67L42-568.67 126.67-592 242-495.33l156.67-42.34-211.67-282 104-27.66 306.33 257L776.67-639q30-7.67 55.83 7.83t34.17 45.5q8.33 29.34-6.17 55.17-14.5 25.83-43.17 34.17l-630 169.66Z"/>`,
-    // material symbols: flight_takeoff (Apache 2.0)
-    esteira: `<path d="M200.67-120q-50 0-85-35t-35-85q0-50 35-85t85-35h560q50 0 85 35t35 85q0 50-35 85t-85 35h-560Zm0-66.67h560q22.66 0 38-15.5Q814-217.67 814-240t-15.33-37.83q-15.34-15.5-38-15.5h-560q-22.67 0-38 15.5-15.34 15.5-15.34 37.83t15.34 37.83q15.33 15.5 38 15.5ZM394-440q-14.17 0-23.75-9.58-9.58-9.59-9.58-23.75v-333.34q0-14.16 9.58-23.75Q379.83-840 394-840h333.33q14.17 0 23.75 9.58 9.59 9.59 9.59 23.75v333.34q0 14.16-9.59 23.75-9.58 9.58-23.75 9.58H394Zm33.33-66.67H694v-266.66H427.33v266.66Zm-348-20.66V-593h213v65.67h-213ZM480-646.67h161.33V-713H480v66.33Zm-319.33 0h137V-713h-137v66.33Zm266.66 140v-266.66 266.66Z"/>`,
-    // material symbols: conveyor_belt (Apache 2.0)
-    lista: `<path d="M228,128a12,12,0,0,1-12,12H40a12,12,0,0,1,0-24H216A12,12,0,0,1,228,128ZM40,76H216a12,12,0,0,0,0-24H40a12,12,0,0,0,0,24ZM216,180H40a12,12,0,0,0,0,24H216a12,12,0,0,0,0-24Z"/>`,
-    // phosphor: list-bold (MIT)
-    mais: `<path d="M228,128a12,12,0,0,1-12,12H140v76a12,12,0,0,1-24,0V140H40a12,12,0,0,1,0-24h76V40a12,12,0,0,1,24,0v76h76A12,12,0,0,1,228,128Z"/>`,
-    // phosphor: plus-bold (MIT)
-    pacote: `<path d="M266.67-120q-27.5 0-47.09-19.58Q200-159.17 200-186.67v-466.66q0-27.5 19.58-47.09Q239.17-720 266.67-720h96.66v-93.33q0-27.5 19.59-47.09Q402.5-880 430-880h100q27.5 0 47.08 19.58 19.59 19.59 19.59 47.09V-720h96.66q27.5 0 47.09 19.58Q760-680.83 760-653.33v466.66q0 27.5-19.58 47.09Q720.83-120 693.33-120q0 17-11.5 28.5T653.33-80q-17 0-28.5-11.5t-11.5-28.5H346.67q0 17-11.5 28.5T306.67-80q-17 0-28.5-11.5t-11.5-28.5Zm0-66.67h426.66v-466.66H266.67v466.66ZM363.33-240H430v-360h-66.67v360ZM530-240h66.67v-360H530v360ZM430-720h100v-93.33H430V-720Zm50 300Z"/>`,
-    // material symbols: luggage (Apache 2.0)
-    pousando: `<path d="M120-120v-66.67h720V-120H120Zm629.33-206.67L120-506.33v-282.34L204.67-765 254-622.67l155.33 44.34-35.66-351 103 30L607.33-521l179.34 51q23 7.33 38.16 26.67Q840-424 840-398.33q0 33-26.5 57.83t-64.17 13.83Z"/>`,
-    // material symbols: flight_land (Apache 2.0)
-    quadrado: `<path d="M208,28H48A20,20,0,0,0,28,48V208a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V48A20,20,0,0,0,208,28Zm-4,176H52V52H204Z"/>`,
-    // phosphor: square-bold (MIT)
-    quadradoMarcado: `<path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm-34.34,77.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/>`,
-    // phosphor: check-square-fill (MIT)
-    relogio: `<path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm68-84a12,12,0,0,1-12,12H128a12,12,0,0,1-12-12V72a12,12,0,0,1,24,0v44h44A12,12,0,0,1,196,128Z"/>`,
-    // phosphor: clock-bold (MIT)
-    seta: `<path d="M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z"/>`,
-    // phosphor: arrow-right-bold (MIT)
-    sino: `<path d="M225.29,165.93C216.61,151,212,129.57,212,104a84,84,0,0,0-168,0c0,25.58-4.59,47-13.27,61.93A20.08,20.08,0,0,0,30.66,186,19.77,19.77,0,0,0,48,196H84.18a44,44,0,0,0,87.64,0H208a19.77,19.77,0,0,0,17.31-10A20.08,20.08,0,0,0,225.29,165.93ZM128,212a20,20,0,0,1-19.6-16h39.2A20,20,0,0,1,128,212ZM54.66,172C63.51,154,68,131.14,68,104a60,60,0,0,1,120,0c0,27.13,4.48,50,13.33,68Z"/>`,
-    // phosphor: bell-bold (MIT)
-    sinoAtivo: `<path d="M224,71.1a8,8,0,0,1-10.78-3.42,94.13,94.13,0,0,0-33.46-36.91,8,8,0,1,1,8.54-13.54,111.46,111.46,0,0,1,39.12,43.09A8,8,0,0,1,224,71.1ZM35.71,72a8,8,0,0,0,7.1-4.32A94.13,94.13,0,0,1,76.27,30.77a8,8,0,1,0-8.54-13.54A111.46,111.46,0,0,0,28.61,60.32,8,8,0,0,0,35.71,72Zm186.1,103.94A16,16,0,0,1,208,200H167.2a40,40,0,0,1-78.4,0H48a16,16,0,0,1-13.79-24.06C43.22,160.39,48,138.28,48,112a80,80,0,0,1,160,0C208,138.27,212.78,160.38,221.81,175.94ZM150.62,200H105.38a24,24,0,0,0,45.24,0Z"/>`,
-    // phosphor: bell-ringing-fill (MIT)
-    x: `<path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/>`,
-    // phosphor: x-bold (MIT)
-    alerta: `<path d="M480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Zm0-421.33ZM160-200v-66.67h80v-296q0-83.66 49.67-149.5Q339.33-778 420-796v-24q0-25 17.5-42.5T480-880q23.61 0 40.14 15.5t19.19 37.83v4.34q-11.66 20.66-18 43.33-6.33 22.67-7.33 46.67-8.67-2-16.69-2.84-8.02-.83-17.31-.83-72 0-122.67 50.67-50.66 50.66-50.66 122.66v296h346.66v-275q16 4.67 32.84 6.84Q703-532.67 720-534v267.33h80V-200H160Zm467-446.41q-33-33.08-33-80.34Q594-774 627.08-807t80.33-33q47.26 0 80.26 33.08 33 33.08 33 80.33 0 47.26-33.08 80.26-33.08 33-80.34 33-47.25 0-80.25-33.08Z"/>`,
-    // material symbols: notifications_unread (Apache 2.0) — contagem de urgentes na linha do BOX
-    vervoos: `<path d="M80-200v-66.67h400V-200H80Zm0-206.67v-66.66h200v66.66H80Zm0-206.66V-680h200v66.67H80ZM833.33-200l-158-158Q650-339 620.5-329.5T560-320q-83 0-141.5-58.5T360-520q0-83 58.5-141.5T560-720q83 0 141.5 58.5T760-520q0 31-9.5 60.5T722-404.67l158 158L833.33-200ZM559.84-386.67q55.49 0 94.49-38.84 39-38.84 39-94.33 0-55.49-38.84-94.49-38.84-39-94.33-39-55.49 0-94.49 38.84-39 38.84-39 94.33 0 55.49 38.84 94.49 38.84 39 94.33 39Z"/>`,
-    // material symbols: manage_search (Apache 2.0) — botao "Ver voos" do BOX ja aceito
-    cancelar: `<path d="m332-285.33 148-148 148 148L674.67-332l-148-148 148-148L628-674.67l-148 148-148-148L285.33-628l148 148-148 148L332-285.33ZM480-80q-82.33 0-155.33-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.67T80-480q0-83 31.5-156t85.83-127q54.34-54 127.34-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82.33-31.5 155.33-31.5 73-85.5 127.34Q709-143 636-111.5T480-80Zm0-66.67q139.33 0 236.33-97.33t97-236q0-139.33-97-236.33t-236.33-97q-138.67 0-236 97-97.33 97-97.33 236.33 0 138.67 97.33 236 97.33 97.33 236 97.33ZM480-480Z"/>`,
-    // material symbols: cancel (Apache 2.0) — desfazer aceite do BOX
-    aceite: `<path d="M379.33-244 154-469.33 201.67-517l177.66 177.67 378.34-378.34L805.33-670l-426 426Z"/>`,
-    // material symbols: check (Apache 2.0) — botao "Aceitar" do BOX
-    malha: `<path d="M233.33-161.33 80-315.33l46.67-46L200-290v-470.67h66.67V-290l72.66-71.33 46.67 46-152.67 154Zm252.67-38V-266h394v66.67H486Zm0-247.34v-66.66h394v66.66H486ZM486-694v-66.67h394V-694H486Z"/>`,
-    // material symbols: list_arrow (Apache 2.0) — botao Malha, so-icone, na barra do topo
-    historico: `<path d="M186.67-120q-27.5 0-47.09-19.58Q120-159.17 120-186.67v-586.66q0-27.5 19.58-47.09Q159.17-840 186.67-840h192.66q7.67-35.33 35.84-57.67Q443.33-920 480-920t64.83 22.33Q573-875.33 580.67-840h192.66q27.5 0 47.09 19.58Q840-800.83 840-773.33v586.66q0 27.5-19.58 47.09Q800.83-120 773.33-120H186.67Zm0-66.67h586.66v-586.66H186.67v586.66ZM280-280h275.33v-66.67H280V-280Zm0-166.67h400v-66.66H280v66.66Zm0-166.66h400V-680H280v66.67ZM503.5-804.5q9.83-9.83 9.83-23.5t-9.83-23.5q-9.83-9.83-23.5-9.83t-23.5 9.83q-9.83 9.83-9.83 23.5t9.83 23.5q9.83 9.83 23.5 9.83t23.5-9.83ZM186.67-186.67v-586.66 586.66Z"/>`,
-    // material symbols: assignment (Apache 2.0) — botao Historico, so-icone, na barra do topo
-    turno: `<path d="M446.67-520h66.66v-200h-66.66v200ZM480-373.33q13.67 0 23.5-9.84 9.83-9.83 9.83-23.5 0-13.66-9.83-23.5Q493.67-440 480-440t-23.5 9.83q-9.83 9.84-9.83 23.5 0 13.67 9.83 23.5 9.83 9.84 23.5 9.84ZM480-168q129.33-118 191.33-214.17 62-96.16 62-169.83 0-115-73.5-188.17-73.5-73.16-179.83-73.16-106.33 0-179.83 73.16Q226.67-667 226.67-552q0 73.67 63 169.83Q352.67-286 480-168Zm0 88Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880q127 0 223.5 89T800-552q0 100-79.5 217.5T480-80Zm0-480Z"/>`,
-    // material symbols: fmd_bad (Apache 2.0) — botao Turno, so-icone, na barra do topo
-    arrastar: `<path d="M360-160q-33 0-56.5-23.5T280-240q0-33 23.5-56.5T360-320q33 0 56.5 23.5T440-240q0 33-23.5 56.5T360-160Zm240 0q-33 0-56.5-23.5T520-240q0-33 23.5-56.5T600-320q33 0 56.5 23.5T680-240q0 33-23.5 56.5T600-160ZM360-400q-33 0-56.5-23.5T280-480q0-33 23.5-56.5T360-560q33 0 56.5 23.5T440-480q0 33-23.5 56.5T360-400Zm240 0q-33 0-56.5-23.5T520-480q0-33 23.5-56.5T600-560q33 0 56.5 23.5T680-480q0 33-23.5 56.5T600-400ZM360-640q-33 0-56.5-23.5T280-720q0-33 23.5-56.5T360-800q33 0 56.5 23.5T440-720q0 33-23.5 56.5T360-640Zm240 0q-33 0-56.5-23.5T520-720q0-33 23.5-56.5T600-800q33 0 56.5 23.5T680-720q0 33-23.5 56.5T600-640Z"/>`,
-    // material symbols: drag_indicator (Apache 2.0) — alca de arrastar o cartao do alerta
-    thumb_up: `<path d="M716-120H272v-512l278-288 39 31q6 5 9 14t3 22v10l-45 211h299q24 0 42 18t18 42v81.84q0 7.16 1.5 14.66T915-461L789-171q-8.88 21.25-29.59 36.12Q738.69-120 716-120Zm-384-60h397l126-299v-93H482l53-249-203 214v427Zm0-427v427-427Zm-60-25v60H139v392h133v60H79v-512h193Z"/>`,
-    // material symbols: thumb_up (Apache 2.0) — botao "Aceitar" do card (BOX/TCX/TLC)
-    exclamacao: `<rect x="112" y="40" width="32" height="128" rx="16"/><circle cx="128" cy="208" r="20"/>`
-    // desenhado a mao (traco + bola), grade 256 igual ao check/x/lista — "tem log pra ver" nas linhas de Ponto Delta/Indice
-  };
-  function ico(nome, tam) {
-    const d = P[nome];
-    if (!d) return "";
-    const s = tam || 18;
-    const vb = VB[nome] || "0 0 256 256";
-    const corTipo = nome === "pousando" || nome === "decolando" ? ` ico-${nome}` : "";
-    return `<svg class="ico${corTipo}" width="${s}" height="${s}" viewBox="${vb}" fill="currentColor" aria-hidden="true" focusable="false">${d}</svg>`;
-  }
-  var ICONES = Object.keys(P);
-
-  // src/ui/components/voo.js
   var VAZIO = "\u2014";
   function partesVoo(v, tipo) {
     v = v || {};
@@ -7680,29 +7794,16 @@ Ele sai da lista de boxes dos operadores.`);
      ${acao || ""}
    </div>`;
   var botaoSaindo = (n, acao) => `<button class="primary passo-canto" ${n ? "" : "disabled"} onclick="${acao}">Saindo com<br>${n} destino${n === 1 ? "" : "s"}</button>`;
-  function barraOperador(abas) {
-    if (UI.barraFechada) {
-      return `<button class="op-barra-flutuante" onclick="toggleBarraOperador()" aria-label="Abrir menu">${ico("lista", 18)}</button>`;
-    }
-    const tem = (k) => abas.includes(k);
+  function barraOperador() {
     const vg = viagemAtiva();
     const n = vg ? 0 : marcadosOp();
     return `<nav class="op-barra">
-    <button class="op-barra-abrir" onclick="toggleBarraOperador()" aria-label="Esconder menu">${ico("lista", 18)}</button>
     <button class="op-barra-relogio${UI.janelaAberta ? " on" : ""}"
       onclick="toggleJanelaBarra()" aria-label="Filtrar por horario">${ico("relogio", 20)}</button>
-    ${tem("voos") ? `<button class="${UI.tab === "voos" ? "on" : ""}" onclick="irPara('voos')" aria-label="Malha">${ico("malha", 20)}</button>` : ""}
-    ${tem("minhas") ? `<button class="${UI.tab === "minhas" ? "on" : ""}" onclick="irPara('minhas')" aria-label="Hist\xF3rico">${ico("historico", 20)}</button>` : ""}
-    <button class="${UI.tab === "levar" ? "on" : ""}" onclick="irPara('levar')" aria-label="Turno">${ico("turno", 20)}</button>
     <button class="op-barra-mais${vg ? " ghost" : ""}" onclick="abrirNovaFolha()"
       aria-label="${vg ? "Pegar bags no caminho" : "Nova viagem"}">+${n ? ` <span class="cont">${n}</span>` : ""}</button>
     ${UI.janelaAberta ? janelaDropdown() : ""}
   </nav>`;
-  }
-  function toggleBarraOperador() {
-    if (!UI.barraFechada) UI.janelaAberta = false;
-    UI.barraFechada = !UI.barraFechada;
-    bus.render();
   }
   function janelaDropdown() {
     return `<div class="janela-backdrop" onclick="fecharJanelaBarra()"></div>
@@ -7726,10 +7827,12 @@ Ele sai da lista de boxes dos operadores.`);
   }
   function mudarOpDe(v) {
     UI.opDe = normHora(v);
+    guardarJanela(CHAVE_OP_DE, UI.opDe);
     bus.render();
   }
   function mudarOpAte(v) {
     UI.opAte = normHora(v);
+    guardarJanela(CHAVE_OP_ATE, UI.opAte);
     bus.render();
   }
   function urgenciaDoVoo(vooId) {
@@ -7796,6 +7899,7 @@ Ele sai da lista de boxes dos operadores.`);
       aviso('Acesse a viagem e use "+ Pegar bags no caminho".');
       return;
     }
+    fecharMenu();
     if (!marcadosOp()) UI.op = { sel: [] };
     UI.modalVivo = { tipo: "op" };
     bus.render();
@@ -8355,6 +8459,7 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
     );
   }
   function abrirPainelViagem() {
+    fecharMenu();
     UI.modalVivo = { tipo: "viagem" };
     bus.render();
   }
@@ -8941,10 +9046,12 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   }
   function mudarOcDe(v) {
     UI.ocDe = normHora(v);
+    guardarJanela(CHAVE_OC_DE, UI.ocDe);
     bus.render();
   }
   function mudarOcAte(v) {
     UI.ocAte = normHora(v);
+    guardarJanela(CHAVE_OC_ATE, UI.ocAte);
     bus.render();
   }
   async function assumirVoo2(id) {
@@ -9166,7 +9273,9 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   }
   function skeletonArranque() {
     return `
-    <header class="app"><h1>AIROPS-Modulo_Rampa</h1>
+    <header class="app">
+      ${botaoAbrirMenu()}
+      <h1>AIROPS-Modulo_Rampa</h1>
       <div class="who">
         <div class="skeleton skeleton-line" style="width:110px; margin-left:auto"></div>
         <div class="skeleton skeleton-line" style="width:70px; height:10px; margin-left:auto"></div>
@@ -9174,12 +9283,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     </header>
     <main id="main" role="status" aria-busy="true" aria-label="Carregando o AIROPS-Modulo_Rampa">
       ${skeletonCards(3)}
-    </main>
-    <nav class="tabs">
-      <div class="skeleton" style="flex:1; height:50px"></div>
-      <div class="skeleton" style="flex:1; height:50px"></div>
-      <div class="skeleton" style="flex:1; height:50px"></div>
-    </nav>`;
+    </main>`;
   }
 
   // src/ui/screens/telaPermissoes.js
@@ -9313,20 +9417,19 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const abas = abasDoUsuario();
     if (!abas.includes(UI.tab)) UI.tab = abas[0];
     const naOperador = UI.tab === "levar";
-    const nav = naOperador ? barraOperador(abas) : `<nav class="tabs">${abas.map(
-      (k) => `<button class="${UI.tab === k ? "on" : ""}" onclick="irPara('${k}')">${ABA_TITULO[k] || k}</button>`
-    ).join("")}</nav>`;
     app().innerHTML = `
-    <header class="app"><h1>AIROPS-Modulo_Rampa</h1>
+    <header class="app">
+      ${botaoAbrirMenu()}
+      <h1>AIROPS-Modulo_Rampa</h1>
       ${UI.filaOffline.length ? `<span class="fila-offline">Fila offline: ${UI.filaOffline.length} pendente${UI.filaOffline.length === 1 ? "" : "s"}</span>` : ""}
       <div class="who"><b>${esc(S.me.nome)}</b><span>${esc(S.me.perfil)} \xB7 v${esc(window.RAMPA_BUILD || "dev")}</span></div>
       <button class="small ghost" style="width:auto" onclick="sair()">Sair</button>
     </header>
-    ${naOperador ? nav : ""}
-    <main id="main" class="${naOperador ? "sem-nav-baixo" : ""}"></main>
-    ${naOperador ? "" : nav}`;
+    ${naOperador ? barraOperador() : ""}
+    <main id="main"></main>`;
     document.getElementById("main").innerHTML = conteudo(UI.tab);
     atualizarModalVivo();
+    sincronizarMenu(abas);
     religarAnimacoes();
   }
   function atualizarModalVivo() {
@@ -9356,6 +9459,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       localStorage.setItem(CHAVE_ABA, tab);
     } catch {
     }
+    fecharMenu();
     render3();
   }
   function renderSeguro() {
@@ -9531,6 +9635,7 @@ Sair mesmo assim?`
     recarregar,
     entrar,
     sair,
+    toggleMenu,
     // utilitarios usados em oninput/onchange
     normHora,
     mascaraHora,
@@ -9595,7 +9700,6 @@ Sair mesmo assim?`
     fecharJanelaBarra,
     mudarOpDe,
     mudarOpAte,
-    toggleBarraOperador,
     aceitarSolicitacao,
     pegarSolicitacao,
     cancelarSolicitacao,
