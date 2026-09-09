@@ -537,6 +537,12 @@
   .bxq-n{position:absolute; bottom:7px; left:6px;
     font-size:11px; font-weight:600; color:var(--muted)}
   .bxq.sel .bxq-n{color:#fff}
+  /* minutos para o proximo pouso — canto oposto ao .bxq-n. Peso e
+     contraste de .bxq-num (nao de .bxq-n): e informacao de decisao
+     ("preciso correr?"), nao contagem secundaria. */
+  .bxq-timer{position:absolute; bottom:7px; right:6px;
+    font-size:11px; font-weight:700; color:var(--text)}
+  .bxq.sel .bxq-timer{color:#fff}
   .bxq-legenda{margin-top:8px}
   /* selo de pouso no canto do quadrado — a grade compacta so mostra
      chegada (voosEmSolo), nunca saida, entao o icone e sempre "pousando"
@@ -695,9 +701,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 08/09/2026, 16:49:37
+     Gerado em: 09/09/2026, 10:49:09
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/09 16:49";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="09/09 10:49";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1116,10 +1122,9 @@
   });
 
   // src/config/regras.js
-  var ANTES_DO_POUSO_MIN, JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN;
+  var JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN;
   var init_regras = __esm({
     "src/config/regras.js"() {
-      ANTES_DO_POUSO_MIN = 15;
       JANELA_DESCARGA_ESTIMADA_MIN = 30;
       CCO_JANELA_ATRAS_MIN = 60;
       CCO_JANELA_FRENTE_MIN = 240;
@@ -1233,14 +1238,16 @@
   function ehSaida(v) {
     return !!(v.saida || v.destino);
   }
-  function pousandoOuPousou(v) {
+  function minutosParaPousar(v) {
     const tc = minutosDe(v.chegada);
-    return tc === null ? true : agoraMin() >= tc - ANTES_DO_POUSO_MIN;
+    if (tc === null) return null;
+    const restam = tc - agoraMin();
+    return restam > 0 ? restam : null;
   }
   function voosChegando() {
-    return D.voos.filter((v) => ehChegada(v) && pousandoOuPousou(v) && (dentroDoIntervalo(minutosDe(v.chegada), UI.opDe, UI.opAte) || pendenciaDeChegada(v.id))).sort((a, b) => {
+    return D.voos.filter((v) => ehChegada(v) && (dentroDoIntervalo(minutosDe(v.saida), UI.opDe, UI.opAte) || pendenciaDeChegada(v.id))).sort((a, b) => {
       var _a, _b;
-      return ((_a = minutosDe(b.chegada)) != null ? _a : 0) - ((_b = minutosDe(a.chegada)) != null ? _b : 0);
+      return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
     });
   }
   function voosSaindo(de, ate) {
@@ -2619,6 +2626,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       const est = estadoDoBox(b);
       const vs = porBox.get(b);
       const pend = vs.some((v) => pendenciaDeChegada(v.id));
+      const faltas = vs.map(minutosParaPousar).filter((m) => m != null);
+      const timer = faltas.length ? Math.min(...faltas) : null;
       if (compacta) {
         return `<div class="bxq-wrap" onclick="${fn}('${esc(b)}')">
       <span class="bxq-corner">${ico("pousando", 20)}</span>
@@ -2626,6 +2635,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       ${vs.length > 1 ? `<span class="bxq-n">${vs.length}</span>` : ""}
       <span class="bxq-num">${esc(b)}</span>
       ${pend ? `<span class="bxq-pt" title="bag em curso"></span>` : ""}
+      ${timer != null ? `<span class="bxq-timer">${timer}min</span>` : ""}
       <span class="bxq-faixa"></span>
     </div>
     </div>`;
@@ -2637,7 +2647,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     };
     const vazio = `<div class="card note">Nenhum voo no p\xE1tio nesta janela.</div>`;
     if (!boxes.length) return vazio;
-    const legenda = compacta ? `<p class="note bxq-legenda">\xE2mbar = ainda vai pousar \xB7 azul = descarregando \xB7 verde = descarga OK \xB7 ponto = bag em curso</p>` : "";
+    const legenda = compacta ? `<p class="note bxq-legenda">\xE2mbar = ainda vai pousar \xB7 azul = descarregando \xB7 verde = descarga OK \xB7 ponto = bag em curso \xB7 n\xFAmero = minutos para pousar</p>` : "";
     return `<div class="${compacta ? "bxq-grid" : "voo-grid"}">${boxes.map(btn).join("")}</div>${legenda}`;
   }
   function seletorHoras(de, ate, onDe, onAte) {
@@ -3248,7 +3258,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     </div>`;
     }).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
     const descarga = !pode("descarga_ok") ? "" : v.descarga_ok_em ? `<p class="note" style="margin-top:12px">Descarga confirmada ${hora(v.descarga_ok_em)} por ${esc(nomeDe(v.descarga_ok_por))}.</p>` : `<div style="margin-top:12px"><button class="ok" onclick="marcarDescargaDelta(${vooId})">Descarrega OK</button>
-         <p class="note" style="margin-top:6px">Confirma que o voo foi descarregado \u2014 ele sai da grade de boxes dos operadores.</p></div>`;
+         <p class="note" style="margin-top:6px">Confirma que o voo foi descarregado \u2014 fica registrado quem e quando. N\xE3o tira o voo da grade de boxes dos operadores (pode ainda ter bag parada ali).</p></div>`;
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>`;
     abrirModal(`${substituir}
     <h3>Delta \xB7 ${vooRotulo2(v, "chegada", { box: false })}</h3>${linhas}${descarga}
@@ -3258,7 +3268,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const v = voo(vooId) || {};
     const ok = await confirmar(`Marcar DESCARREGA OK do voo ${esc(v.voo_chegada || v.numero || "?")} (box ${esc(v.box || "?")})?
 
-Ele sai da lista de boxes dos operadores.`);
+Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de boxes dos operadores.`);
     if (!ok) return;
     try {
       await marcarDescargaVoo(vooId);
