@@ -701,9 +701,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 09/09/2026, 10:49:09
+     Gerado em: 09/09/2026, 13:25:07
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="09/09 10:49";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="09/09 13:25";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -834,6 +834,8 @@
         malhaOrdem: { col: null, dir: 1 },
         linhaEditando: null,
         // id do voo com a linha destravada
+        malhaEntradas: [],
+        // avisos de campo travado ignorado no ultimo import
         vDe: null,
         vAte: null,
         vHDe: "",
@@ -1237,6 +1239,14 @@
   }
   function ehSaida(v) {
     return !!(v.saida || v.destino);
+  }
+  function jaPousou(v) {
+    const tc = minutosDe(v.chegada);
+    return tc === null ? true : agoraMin() >= tc;
+  }
+  function jaDecolou(v) {
+    const ts = minutosDe(v.saida);
+    return ts === null ? false : agoraMin() > ts;
   }
   function minutosParaPousar(v) {
     const tc = minutosDe(v.chegada);
@@ -1794,8 +1804,22 @@
     const { data: ex } = await sb.from("voos").select("numero").eq("data", data).in("numero", numeros);
     return new Set((ex || []).map((x) => x.numero));
   }
-  async function gravarMalha(rows) {
-    return sb.from("voos").upsert(rows, { onConflict: "data,numero" });
+  async function importarMalhaDb(rows, entradas) {
+    const { data, error } = await sb.rpc("importar_malha", { p_linhas: rows });
+    if (error) return { error };
+    ((data == null ? void 0 : data.ignorados) || []).forEach((ig) => {
+      var _a, _b;
+      entradas == null ? void 0 : entradas.push({
+        vooId: ig.voo_id,
+        tipo: "malha",
+        texto: `voo ${ig.numero} \u2014 ${ig.campo}: mantido "${(_a = ig.valor_atual) != null ? _a : "\u2014"}" (malha trazia "${(_b = ig.valor_ignorado) != null ? _b : "\u2014"}")`
+      });
+    });
+    return { data, error: null };
+  }
+  async function destravarLadoVoo(vooId, lado) {
+    const { error } = await sb.rpc("destravar_lado_voo", { p_voo_id: vooId, p_lado: lado });
+    if (error) throw error;
   }
   async function assumirVoo(vooId) {
     const { error } = await sb.rpc("assumir_voo", { p_voo_id: vooId });
@@ -1968,6 +1992,22 @@
     });
   }
   var dm = (d) => d ? d.slice(8, 10) + "/" + d.slice(5, 7) : "";
+  function iconeLogMalha(v) {
+    const entradas = (UI.malhaEntradas || []).filter((e) => e.vooId === v.id);
+    if (!entradas.length) return "";
+    const resumo = entradas.map((e) => e.texto).join("\n");
+    return `<span class="log-ponto" title="${esc(resumo)}" onclick="verLogMalha(${v.id})">${ico("exclamacao", 16)}</span>`;
+  }
+  function verLogMalha(vooId) {
+    const entradas = (UI.malhaEntradas || []).filter((e) => e.vooId === vooId);
+    if (!entradas.length) return;
+    aviso(entradas.map((e) => e.texto).join("\n"), "Avisos da importa\xE7\xE3o da malha");
+  }
+  function blocoDestrava(v, lado, travado) {
+    if (v[`${lado}_destravada_em`]) return `<span class="note">destravado, aguardando reimporta\xE7\xE3o</span>`;
+    if (!travado) return "";
+    return `<button class="small ghost" style="width:auto" onclick="destravarLado(${v.id},'${lado}')">Destravar ${lado}</button>`;
+  }
   var temSaida = (v) => !!(v.saida || v.destino) || v.numero && v.numero !== v.voo_chegada;
   function linhaVoo(v, editar, posicionar) {
     const emEdicao = UI.linhaEditando === v.id;
@@ -1985,6 +2025,8 @@
     const botao = !podeAlgo ? "" : emEdicao ? `<button class="small ok" style="width:auto" onclick="UI.linhaEditando=null;render()">OK</button>` : `<button class="small ghost" style="width:auto" onclick="UI.linhaEditando=${v.id};render()">Editar</button>`;
     const btnApagar = emEdicao && editar ? `<button class="small ghost" style="width:auto;color:var(--red);border-color:var(--red)"
          onclick="apagarVoo(${v.id})">Apagar</button>` : "";
+    const destravaChegada = emEdicao && editar ? blocoDestrava(v, "chegada", !!v.chegada && jaPousou(v)) : "";
+    const destravaSaida = emEdicao && editar ? blocoDestrava(v, "saida", jaDecolou(v)) : "";
     return `<tr${emEdicao ? ' style="background:var(--surface2)"' : ""}>
     <td class="note">${dm(v.data)}</td>
     <td class="mono">${campo("voo_chegada", 64)}</td>
@@ -1999,7 +2041,7 @@
       onchange="mudarVoo(${v.id},'esteira',this.value)"></td>
     <td>${colunaOc}</td>
     <td>${v.descarga_ok_em ? `<span class="chip st-entregue">OK ${hora(v.descarga_ok_em)}</span>` : `<span class="note">\u2014</span>`}</td>
-    <td>${botao}${btnApagar}</td>
+    <td>${iconeLogMalha(v)}${botao}${btnApagar}${destravaChegada}${destravaSaida}</td>
   </tr>`;
   }
   function passaVista(v) {
@@ -2212,6 +2254,21 @@ Apagar deixaria esse hist\xF3rico \xF3rf\xE3o. Se ele n\xE3o vai mais operar, li
     if (UI.voosVista) await mudarVista();
     else await bus.recarregar();
   }
+  async function destravarLado(vooId, lado) {
+    const v = (UI.voosVista || D.voos).find((x) => x.id === vooId) || {};
+    const ok = await confirmar(`Destravar o lado ${lado} do voo ${esc(v.numero || v.voo_chegada || "?")}?
+
+A pr\xF3xima reimporta\xE7\xE3o da malha vai poder sobrescrever estes campos.`);
+    if (!ok) return;
+    try {
+      await destravarLadoVoo(vooId, lado);
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    aplicarLocal(vooId, { [`${lado}_destravada_em`]: (/* @__PURE__ */ new Date()).toISOString() });
+    bus.renderSeguro();
+  }
   async function posicionarOcTela(vooId, ocId) {
     try {
       await posicionarOc(vooId, ocId || null);
@@ -2256,6 +2313,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     return _libImportPromise;
   }
   async function importarMalha() {
+    var _a, _b, _c;
     const f = UI.malhaArquivo, log = $("mlog");
     if (!f) {
       if (log) log.textContent = "Escolha um arquivo primeiro.";
@@ -2314,7 +2372,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const numerosManha = rowsFinal.filter((r) => r.data === diaAmanha).map((r) => r.numero);
     const jaExistem = await numerosJaNaData(diaAmanha, numerosManha);
     const rowsGravar = rowsFinal.filter((r) => !(r.data === diaAmanha && jaExistem.has(r.numero)));
-    const { error } = await gravarMalha(rowsGravar);
+    UI.malhaEntradas = [];
+    const { data, error } = await importarMalhaDb(rowsGravar, UI.malhaEntradas);
     if (error) {
       if (log) log.textContent = "Erro ao gravar: " + error.message;
       return;
@@ -2324,7 +2383,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     if (UI.voosVista) await mudarVista();
     const log2 = $("mlog");
     const madrugada = rowsFinal.filter((r) => r.data === diaAmanha).length;
-    if (log2) log2.textContent = `${rowsGravar.length} voos importados para ${dia}${madrugada ? ` (${madrugada} de madrugada gravados como ${diaAmanha})` : ""}.`;
+    const ignorados = ((_a = data == null ? void 0 : data.ignorados) == null ? void 0 : _a.length) || 0;
+    if (log2) log2.textContent = `${(_b = data == null ? void 0 : data.inseridos) != null ? _b : 0} voo(s) novo(s), ${(_c = data == null ? void 0 : data.atualizados) != null ? _c : 0} atualizado(s) para ${dia}${madrugada ? ` (${madrugada} de madrugada gravados como ${diaAmanha})` : ""}${ignorados ? ` \u2014 ${ignorados} campo(s) mantido(s) por j\xE1 terem acontecido, veja o aviso na linha do voo.` : ""}.`;
   }
 
   // src/ui/screens/telaViagensCCO.js
@@ -9663,6 +9723,8 @@ Sair mesmo assim?`
     confirmarTroca,
     apagarVoo,
     adicionarVoo,
+    verLogMalha,
+    destravarLado,
     // solicitacoes
     criarSolTela,
     mudarSol,
