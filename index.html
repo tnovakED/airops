@@ -689,7 +689,15 @@
      linhas de baldes diferentes se misturam numa lista so. */
   .balde-delta{margin-top:10px; padding-top:6px; border-top:1px solid var(--line)}
   .balde-delta:first-child{margin-top:0; padding-top:0; border-top:none}
-  .balde-delta select, .balde-delta input[type="number"]{min-height:34px; font-size:14px}
+  .balde-delta input[type="number"]{min-height:34px; font-size:14px}
+
+  /* Arrastar conexao do Delta pra outra carreta (toque e segura, ver
+     arrastarConexaoDelta em telaPontos.js). touch-action:none so na
+     alca/checkbox, nao na linha toda, pra lista continuar rolando normal
+     no toque comum. */
+  .pt-alca, .pt-check{cursor:pointer; flex-shrink:0; touch-action:none; display:inline-flex}
+  .pt-linha.arrastando{opacity:.5}
+  .balde-delta.arrasto-alvo{outline:2px dashed var(--amber); outline-offset:2px; border-radius:8px}
 
   /* ---------- alerta piscando (bag solicitada) ---------- */
   @keyframes blinkbox{0%,100%{opacity:1} 50%{opacity:.25}}
@@ -743,9 +751,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 10/09/2026, 12:34:55
+     Gerado em: 10/09/2026, 14:09:34
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="10/09 12:34";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="10/09 14:09";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -851,6 +859,8 @@
         // ordem dos 3 cartoes do alerta (BOX/TCX/TLC); null = ainda nao lida do localStorage
         escolhaBox: null,
         // popover "ver voos" do card BOX: {tipo, box, sel:[]}
+        deltaSelecionados: null,
+        // selecao multipla no popup Ponto Delta: {vooId, ids:[]}
         // O que ele viu no lugar e nao levou, nesta viagem.
         //
         // Fica quieto na tela DELE enquanto a viagem esta aberta: com a
@@ -3138,6 +3148,13 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     );
     if (error) throw error;
   }
+  async function moverConexoesCarretaDelta(pontoDeltaIds, carretaId) {
+    const { error } = await sb.rpc(
+      "mover_conexoes_carreta_delta",
+      { p_ponto_delta_ids: pontoDeltaIds, p_carreta_id: carretaId }
+    );
+    if (error) throw error;
+  }
   async function definirBagQtdManualDelta(pontoDeltaId, qtd) {
     const { error } = await sb.rpc(
       "definir_bag_qtd_manual_delta",
@@ -3269,22 +3286,26 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     return !!p && p.status === "coletada";
   }
   function prd(pi) {
-    const p = pi.bag_qtd || 0;
+    const ajuste = deltaManualParaIndia(pi);
+    const p = (pi.bag_qtd || 0) + ajuste;
     const r = pi.qtd_recebida || 0;
-    return { p, r, d: r - p };
+    return { p, r, d: r - p, ajuste };
   }
-  function coluna(letra, cor, valor, titulo) {
+  function coluna(letra, cor, valor, titulo, extra) {
     return `<div style="text-align:center" title="${titulo}">
     <div style="font-size:11px;font-weight:700;color:${cor}">${letra}</div>
     <div class="mono" style="color:${cor}">${valor}</div>
+    ${extra || ""}
   </div>`;
   }
   function prdTag(pi) {
-    const { p, r, d } = prd(pi);
+    const { p, r, d, ajuste } = prd(pi);
     const dCor = d < 0 ? "var(--red)" : d > 0 ? "var(--amber)" : "var(--muted)";
     const dTxt = d > 0 ? "+" + d : String(d);
+    const pTitulo = ajuste ? `Previsto (importado) ${pi.bag_qtd || 0} ${ajuste > 0 ? "+" : ""}${ajuste} do Delta (l\xEDder)` : "Previsto (importado)";
+    const pExtra = ajuste ? `<div class="note" style="font-size:10px;color:var(--amber)">${ajuste > 0 ? "+" : ""}${ajuste} l\xEDder</div>` : "";
     return `<div style="display:flex;gap:10px;align-items:flex-end">
-    ${coluna("P", "var(--green)", p, "Previsto (importado)")}
+    ${coluna("P", "var(--green)", p, pTitulo, pExtra)}
     ${coluna("R", "var(--blue)", r, "Real (recebido)")}
     ${coluna("D", dCor, dTxt, "Diferen\xE7a (real \u2212 previsto)")}
   </div>`;
@@ -3463,6 +3484,17 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const candidatos = D.indias.filter((pi) => mesmoId(pi.voo_id, vSaida.id) && pi.voo_chegada_numero === v.voo_chegada);
     return candidatos.length === 1 ? candidatos[0].rct : null;
   }
+  function chegadasComNumero(numero) {
+    return D.voos.filter((v) => v.voo_chegada === numero || !v.voo_chegada && v.numero === numero);
+  }
+  function deltaManualParaIndia(pi) {
+    const viSaida = voo(pi.voo_id);
+    if (!viSaida) return 0;
+    const chegadas = chegadasComNumero(pi.voo_chegada_numero);
+    if (chegadas.length !== 1) return 0;
+    const candidatos = D.deltas.filter((pd) => mesmoId(pd.voo_id, chegadas[0].id) && pd.voo_saida_numero === viSaida.numero);
+    return candidatos.reduce((s, pd) => s + (pd.bag_qtd_manual || 0), 0);
+  }
   var BALDES_AUTO_DELTA = [
     { id: "imediatas", nome: "Imediatas" },
     { id: "umahora", nome: "~1h" },
@@ -3487,34 +3519,34 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     }
     return baldes;
   }
-  function linhaDeltaConexao(vooId, v, pd, editavel, carretasDoVoo) {
+  function linhaDeltaConexao(vooId, v, pd, editavel) {
+    var _a;
     const { tipo, vSaida } = classificarConexaoDelta(v, pd);
     const selo = SELO_DELTA[tipo];
-    const mover = editavel ? `<select onchange="moverConexaoDelta(${pd.id},this.value,${vooId})" style="width:auto" aria-label="Mover pra carreta">
-        <option value="" ${pd.carreta_id == null ? "selected" : ""}>Autom\xE1tico</option>
-        ${carretasDoVoo.map((c) => `<option value="${c.id}" ${mesmoId(c.id, pd.carreta_id) ? "selected" : ""}>${esc(c.nome)}</option>`).join("")}
-        <option value="__nova__">+ nova carreta\u2026</option>
-      </select>` : "";
-    const manual = editavel ? `<input type="number" inputmode="numeric" min="0" placeholder="+" title="Quantidade manual (soma ao previsto, nunca substitui)"
-        style="width:48px" value="${pd.bag_qtd_manual != null ? pd.bag_qtd_manual : ""}"
-        onchange="definirBagQtdManual(${pd.id},this.value,${vooId})">` : pd.bag_qtd_manual ? `<span class="note" title="Quantidade manual do l\xEDder, soma ao previsto">+${pd.bag_qtd_manual}</span>` : "";
+    const marcado = editavel && ((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) === vooId && UI.deltaSelecionados.ids.includes(pd.id);
+    const check = editavel ? `<span class="pt-check" data-pd-id="${pd.id}" onclick="alternarSelecaoDelta(${pd.id},${vooId})" aria-label="Selecionar">${ico(marcado ? "quadradoMarcado" : "quadrado", 20)}</span>` : "";
+    const alca = editavel ? `<span class="pt-alca" onpointerdown="arrastarConexaoDelta(event,${pd.id},${vooId})" aria-label="Arraste para mover pra outra carreta">${ico("arrastar", 18)}</span>` : "";
+    const salvo = pd.bag_qtd_manual != null ? String(pd.bag_qtd_manual) : "";
+    const manual = editavel ? `<input id="bagManual${pd.id}" type="number" inputmode="numeric" placeholder="+" title="Quantidade manual (soma ao previsto, nunca substitui) \u2014 pode ser negativa"
+        style="width:56px" value="${salvo}" oninput="this.nextElementSibling.disabled=(this.value===${JSON.stringify(salvo)})">
+       <button class="small ok" style="width:auto" disabled onclick="confirmarBagQtdManual(${pd.id},${vooId})" aria-label="Confirmar quantidade" title="Confirmar">${ico("aceite", 16)}</button>` : pd.bag_qtd_manual ? `<span class="note" title="Quantidade manual do l\xEDder, soma ao previsto">${pd.bag_qtd_manual > 0 ? "+" : ""}${pd.bag_qtd_manual}</span>` : "";
     return `
     <div class="pt-linha">
+      ${alca}${check}
       ${vooRotulo2(comoSaida(pd.destino, pd.voo_saida_numero, vSaida == null ? void 0 : vSaida.box), "saida", { box: tipo === "pp" })}
       <span class="grow"></span>
       ${selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : ""}
       ${tipo === "pp" ? `<button class="small ok" onclick="solicitarPPDelta(${vooId},${vSaida.id})">${ico("carreta", 16)} S.OP</button>` : ""}
       <span class="mono" style="color:var(--amber)">${pd.bag_qtd}</span>
       ${manual}
-      ${mover}
     </div>`;
   }
-  function blocoBaldeDelta(vooId, v, balde, editavel, carretasDoVoo) {
-    const linhas = balde.itens.length ? balde.itens.map((pd) => linhaDeltaConexao(vooId, v, pd, editavel, carretasDoVoo)).join("") : `<p class="note" style="margin:4px 0">Nada aqui.</p>`;
+  function blocoBaldeDelta(vooId, v, balde, editavel) {
+    const linhas = balde.itens.length ? balde.itens.map((pd) => linhaDeltaConexao(vooId, v, pd, editavel)).join("") : `<p class="note" style="margin:4px 0">Nada aqui.</p>`;
     const solicitar = balde.itens.length ? `<button class="small ghost" style="width:auto" onclick="solicitarCarretaDelta(${vooId},'${balde.chave}')">Solicitar</button>` : "";
     const excluir = editavel && balde.real && !balde.itens.length ? `<button class="small ghost" style="width:auto" onclick="excluirCarretaDeltaTela(${balde.real.id},${vooId})" aria-label="Excluir carreta" title="Excluir carreta vazia">${ico("x", 14)}</button>` : "";
     return `<div class="balde-delta">
-    <div class="list-line" style="border:none;padding:4px 0">
+    <div class="list-line" data-balde="${esc(balde.chave)}" style="border:none;padding:4px 0">
       <b class="grow">${esc(balde.nome)}</b>
       ${solicitar}${excluir}
     </div>
@@ -3529,25 +3561,8 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     } catch {
     }
   }
-  async function moverConexaoDelta(pontoDeltaId, valor, vooId) {
-    if (valor === "__nova__") {
-      abrirCriarCarretaDelta(vooId, pontoDeltaId);
-      return;
-    }
-    const pd = D.deltas.find((x) => mesmoId(x.id, pontoDeltaId));
-    const carretaAntiga = pd ? pd.carreta_id : null;
-    try {
-      await moverConexaoCarretaDelta(pontoDeltaId, valor === "" ? null : Number(valor));
-    } catch (e) {
-      await erro(e);
-      return;
-    }
-    await bus.recarregar();
-    await limparCarretaDeltaSeVazia(carretaAntiga);
-    abrirPontoDelta(vooId);
-  }
   async function definirBagQtdManual(pontoDeltaId, valor, vooId) {
-    const qtd = valor === "" ? null : Math.max(0, parseInt(valor, 10) || 0);
+    const qtd = valor === "" ? null : parseInt(valor, 10) || 0;
     try {
       await definirBagQtdManualDelta(pontoDeltaId, qtd);
     } catch (e) {
@@ -3555,6 +3570,101 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       return;
     }
     await bus.recarregar();
+    abrirPontoDelta(vooId);
+  }
+  async function confirmarBagQtdManual(pontoDeltaId, vooId) {
+    const campo = $(`bagManual${pontoDeltaId}`);
+    const valor = campo ? campo.value.trim() : "";
+    await definirBagQtdManual(pontoDeltaId, valor, vooId);
+  }
+  function alternarSelecaoDelta(pontoDeltaId, vooId) {
+    var _a;
+    if (((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) !== vooId) UI.deltaSelecionados = { vooId, ids: [] };
+    const ids = UI.deltaSelecionados.ids;
+    const i = ids.indexOf(pontoDeltaId);
+    i < 0 ? ids.push(pontoDeltaId) : ids.splice(i, 1);
+    abrirPontoDelta(vooId);
+  }
+  var ARRASTO_DELTA_MS = 450;
+  var ARRASTO_DELTA_TOLERANCIA_PX = 10;
+  function arrastarConexaoDelta(ev, pontoDeltaId, vooId) {
+    const alca = ev.currentTarget;
+    const linhaOrigem = alca.closest(".pt-linha");
+    const inicioX = ev.clientX, inicioY = ev.clientY;
+    const cancelarSeMoveu = (e) => {
+      if (Math.abs(e.clientX - inicioX) > ARRASTO_DELTA_TOLERANCIA_PX || Math.abs(e.clientY - inicioY) > ARRASTO_DELTA_TOLERANCIA_PX) {
+        pararDeEsperar();
+      }
+    };
+    const pararDeEsperar = () => {
+      clearTimeout(temporizador);
+      document.removeEventListener("pointermove", cancelarSeMoveu);
+      document.removeEventListener("pointerup", pararDeEsperar);
+    };
+    document.addEventListener("pointermove", cancelarSeMoveu);
+    document.addEventListener("pointerup", pararDeEsperar);
+    const temporizador = setTimeout(() => {
+      document.removeEventListener("pointermove", cancelarSeMoveu);
+      document.removeEventListener("pointerup", pararDeEsperar);
+      iniciarArrasto(ev, alca, linhaOrigem, pontoDeltaId, vooId);
+    }, ARRASTO_DELTA_MS);
+  }
+  function iniciarArrasto(evOriginal, alca, linhaOrigem, pontoDeltaId, vooId) {
+    var _a, _b;
+    const jaMarcado = ((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) === vooId && UI.deltaSelecionados.ids.includes(pontoDeltaId);
+    const idsArrastados = jaMarcado ? [...UI.deltaSelecionados.ids] : [pontoDeltaId];
+    (_b = alca.setPointerCapture) == null ? void 0 : _b.call(alca, evOriginal.pointerId);
+    const linhas = idsArrastados.map((id) => {
+      var _a2;
+      return (_a2 = document.querySelector(`.pt-check[data-pd-id="${id}"]`)) == null ? void 0 : _a2.closest(".pt-linha");
+    }).filter(Boolean);
+    (linhas.length ? linhas : [linhaOrigem]).forEach((l) => {
+      l == null ? void 0 : l.classList.add("arrastando");
+    });
+    let baldeAtual = null;
+    const marcarBaldeAlvo = (x, y) => {
+      var _a2;
+      const div = (_a2 = document.elementFromPoint(x, y)) == null ? void 0 : _a2.closest(".balde-delta");
+      if (div === baldeAtual) return;
+      baldeAtual == null ? void 0 : baldeAtual.classList.remove("arrasto-alvo");
+      baldeAtual = div;
+      baldeAtual == null ? void 0 : baldeAtual.classList.add("arrasto-alvo");
+    };
+    marcarBaldeAlvo(evOriginal.clientX, evOriginal.clientY);
+    const mover = (e) => marcarBaldeAlvo(e.clientX, e.clientY);
+    const soltar = async () => {
+      var _a2;
+      document.removeEventListener("pointermove", mover);
+      document.removeEventListener("pointerup", soltar);
+      document.removeEventListener("pointercancel", soltar);
+      linhas.forEach((l) => {
+        l.classList.remove("arrastando");
+      });
+      baldeAtual == null ? void 0 : baldeAtual.classList.remove("arrasto-alvo");
+      const chave = (_a2 = baldeAtual == null ? void 0 : baldeAtual.querySelector("[data-balde]")) == null ? void 0 : _a2.dataset.balde;
+      if (chave === void 0) return;
+      const carretaId = chave.startsWith("c") ? Number(chave.slice(1)) : null;
+      await concluirArrasto(idsArrastados, carretaId, vooId);
+    };
+    document.addEventListener("pointermove", mover);
+    document.addEventListener("pointerup", soltar);
+    document.addEventListener("pointercancel", soltar);
+  }
+  async function concluirArrasto(ids, carretaId, vooId) {
+    const antigas = [...new Set(ids.map((id) => {
+      var _a;
+      return (_a = D.deltas.find((x) => mesmoId(x.id, id))) == null ? void 0 : _a.carreta_id;
+    }).filter((c) => c != null))];
+    try {
+      if (ids.length === 1) await moverConexaoCarretaDelta(ids[0], carretaId);
+      else await moverConexoesCarretaDelta(ids, carretaId);
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    await bus.recarregar();
+    for (const antiga of antigas) await limparCarretaDeltaSeVazia(antiga);
+    UI.deltaSelecionados = null;
     abrirPontoDelta(vooId);
   }
   function abrirCriarCarretaDelta(vooId, pontoDeltaIdParaMover) {
@@ -3632,18 +3742,43 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     await bus.recarregar();
     abrirPontoDelta(vooId);
   }
+  async function solicitarCarretaVaziaDelta(vooId) {
+    const v = voo(vooId);
+    if (!v) return;
+    const ok = await confirmar(`Solicitar uma carreta vazia pro box ${esc(v.box || "?")}?`);
+    if (!ok) return;
+    const { error } = await criarSolicitacao({
+      tipo: "QTU",
+      voo_id: vooId,
+      descricao: `Carreta vazia \u2014 box ${v.box || "?"}`
+    });
+    if (error) {
+      await erro(error);
+      return;
+    }
+    await bus.recarregar();
+    abrirPontoDelta(vooId);
+  }
   function abrirPontoDelta(vooId) {
+    var _a;
     UI.modalVivo = null;
     const v = voo(vooId) || {};
     const editavel = pode("delta_carretas");
+    if (((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) !== vooId) UI.deltaSelecionados = { vooId, ids: [] };
     const lista = D.deltas.filter((pd) => pd.voo_id === vooId);
     const carretasDoVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId)).sort((a, b) => a.ordem - b.ordem || String(a.criada_em).localeCompare(String(b.criada_em)));
-    const linhas = lista.length ? agruparEmBaldesDelta(v, lista, carretasDoVoo).map((b) => blocoBaldeDelta(vooId, v, b, editavel, carretasDoVoo)).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
+    const linhas = lista.length ? agruparEmBaldesDelta(v, lista, carretasDoVoo).map((b) => blocoBaldeDelta(vooId, v, b, editavel)).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
     const descarga = !pode("descarga_ok") ? "" : v.descarga_ok_em ? `<p class="note" style="margin-top:12px">Descarga confirmada ${hora(v.descarga_ok_em)} por ${esc(nomeDe(v.descarga_ok_por))}.</p>` : `<div style="margin-top:12px"><button class="ok" onclick="marcarDescargaDelta(${vooId})">Descarrega OK</button>
          <p class="note" style="margin-top:6px">Confirma que o voo foi descarregado \u2014 fica registrado quem e quando. N\xE3o tira o voo da grade de boxes dos operadores (pode ainda ter bag parada ali).</p></div>`;
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>`;
+    const novaCarreta = editavel ? `<button class="small ghost" style="width:auto" onclick="abrirCriarCarretaDelta(${vooId},null)">${ico("mais", 14)} Nova carreta</button>` : "";
+    const carretaVazia = pode("sol_abrir") ? `<button class="small ghost" style="width:auto" onclick="solicitarCarretaVaziaDelta(${vooId})">${ico("carreta", 16)} +carreta vazia</button>` : "";
     abrirModal(`${substituir}
-    <h3>Delta \xB7 ${vooRotulo2(v, "chegada", { box: false })}</h3>${linhas}${descarga}
+    <div class="list-line" style="border:none;padding:0 0 6px">
+      <h3 class="grow" style="margin:0">Delta \xB7 ${vooRotulo2(v, "chegada", { box: false })}</h3>
+      ${novaCarreta}${carretaVazia}
+    </div>
+    ${linhas}${descarga}
     <div style="margin-top:12px">
       <button class="ghost" onclick="abrirPontoDelta(${vooId})">Atualizar</button>
       <button class="ghost" onclick="fecharModal()">Fechar</button>
@@ -10149,12 +10284,14 @@ Sair mesmo assim?`
     verLogAnomalias,
     verPontoDelta,
     verPontoIndia,
-    moverConexaoDelta,
-    definirBagQtdManual,
     abrirCriarCarretaDelta,
     confirmarCriarCarretaDelta,
     excluirCarretaDeltaTela,
     solicitarCarretaDelta,
+    alternarSelecaoDelta,
+    arrastarConexaoDelta,
+    confirmarBagQtdManual,
+    solicitarCarretaVaziaDelta,
     // painel de acessos
     alternarAcesso
   });
