@@ -760,9 +760,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 10/09/2026, 14:30:06
+     Gerado em: 10/09/2026, 15:27:52
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="10/09 14:30";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="10/09 15:27";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -3151,31 +3151,56 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
 
   // src/data/deltaCarretas.js
   init_supabase();
+  init_offline_sync();
   async function criarCarretaDelta(vooId, nome) {
     const { data, error } = await sb.rpc("criar_carreta_delta", { p_voo_id: vooId, p_nome: nome });
     if (error) throw error;
     return data;
   }
   async function moverConexaoCarretaDelta(pontoDeltaId, carretaId) {
-    const { error } = await sb.rpc(
-      "mover_conexao_carreta_delta",
-      { p_ponto_delta_id: pontoDeltaId, p_carreta_id: carretaId }
-    );
-    if (error) throw error;
+    try {
+      const { error } = await sb.rpc(
+        "mover_conexao_carreta_delta",
+        { p_ponto_delta_id: pontoDeltaId, p_carreta_id: carretaId }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("mover_conexao_carreta_delta", { pontoDeltaId, carretaId });
+        return;
+      }
+      throw e;
+    }
   }
   async function moverConexoesCarretaDelta(pontoDeltaIds, carretaId) {
-    const { error } = await sb.rpc(
-      "mover_conexoes_carreta_delta",
-      { p_ponto_delta_ids: pontoDeltaIds, p_carreta_id: carretaId }
-    );
-    if (error) throw error;
+    try {
+      const { error } = await sb.rpc(
+        "mover_conexoes_carreta_delta",
+        { p_ponto_delta_ids: pontoDeltaIds, p_carreta_id: carretaId }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("mover_conexoes_carreta_delta", { pontoDeltaIds, carretaId });
+        return;
+      }
+      throw e;
+    }
   }
   async function definirBagQtdManualDelta(pontoDeltaId, qtd) {
-    const { error } = await sb.rpc(
-      "definir_bag_qtd_manual_delta",
-      { p_ponto_delta_id: pontoDeltaId, p_qtd: qtd }
-    );
-    if (error) throw error;
+    try {
+      const { error } = await sb.rpc(
+        "definir_bag_qtd_manual_delta",
+        { p_ponto_delta_id: pontoDeltaId, p_qtd: qtd }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("definir_bag_qtd_manual_delta", { pontoDeltaId, qtd });
+        return;
+      }
+      throw e;
+    }
   }
   async function excluirCarretaDelta(id) {
     const { error } = await sb.rpc("excluir_carreta_delta", { p_id: id });
@@ -3658,7 +3683,6 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       baldeAtual = div;
       baldeAtual == null ? void 0 : baldeAtual.classList.add("arrasto-alvo");
     };
-    marcarBaldeAlvo(evOriginal.clientX, evOriginal.clientY);
     const mover = (e) => marcarBaldeAlvo(e.clientX, e.clientY);
     const soltar = async () => {
       var _a2;
@@ -10188,7 +10212,10 @@ Sair mesmo assim?`
     entregar_destino: (p) => entregarDestino(p.destId, p.vgId, p.qtd),
     marcar_local_bags: (p) => marcarLocalBags(p.vooDestinoId, p.vooOrigemId, p.local, p.box, p.status),
     baixar_local_bags: (p) => baixarLocalBags(p.vooDestinoId, p.vooOrigemId),
-    sinalizar_pronta: (p) => sinalizarProntaDb(p.setor, p.vooId, p.box, p.pontoIndiaId)
+    sinalizar_pronta: (p) => sinalizarProntaDb(p.setor, p.vooId, p.box, p.pontoIndiaId),
+    mover_conexao_carreta_delta: (p) => moverConexaoCarretaDelta(p.pontoDeltaId, p.carretaId),
+    mover_conexoes_carreta_delta: (p) => moverConexoesCarretaDelta(p.pontoDeltaIds, p.carretaId),
+    definir_bag_qtd_manual_delta: (p) => definirBagQtdManualDelta(p.pontoDeltaId, p.qtd)
   });
   iniciarOfflineSync();
   Object.assign(window, {
