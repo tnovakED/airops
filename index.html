@@ -35,7 +35,16 @@
     --header-h:46px;
     --barra-h:52px;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  /* Sem selecao de texto em lugar nenhum, de proposito (pedido do
+     Tiago, 10/09): num app de toque, com luva, segurar o dedo um pouco
+     mais pra arrastar (ver arrastarConexaoDelta, telaPontos.js) disparava
+     a selecao/menu de "copiar" nativo do navegador no meio do gesto,
+     competindo com o codigo e quebrando o arrasto. input/textarea saem
+     da regra logo abaixo — digitar (numero de bag, nome de carreta,
+     buscar em Acessos) continua precisando de cursor/selecao normal. */
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none; -webkit-touch-callout:none; user-select:none}
+  input, textarea{-webkit-user-select:text; user-select:text}
   /* UMA fonte no app inteiro: SUSE Mono, herdada do body. As tres
      familias de antes (Barlow, Barlow Condensed, IBM Plex Mono) saem
      junto com as ~20 declaracoes espalhadas que as repetiam — o que
@@ -751,9 +760,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 10/09/2026, 14:09:34
+     Gerado em: 10/09/2026, 14:30:06
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="10/09 14:09";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="10/09 14:30";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1043,8 +1052,14 @@
       m._timerFechar = null;
     }
     const jaVisivel = m.style.display === "flex" && typeof m.classList.contains === "function" && m.classList.contains("show");
+    const boxAntigo = jaVisivel ? m.querySelector(".modal-box") : null;
+    const scrollAntigo = boxAntigo ? boxAntigo.scrollTop : 0;
     m.innerHTML = `<div class="modal-box" onclick="event.stopPropagation()">${html}</div>`;
-    if (jaVisivel) return;
+    if (jaVisivel) {
+      const boxNovo = m.querySelector(".modal-box");
+      if (boxNovo) boxNovo.scrollTop = scrollAntigo;
+      return;
+    }
     m.classList.remove("show");
     m.style.display = "flex";
     revelar(m);
@@ -3541,16 +3556,25 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       ${manual}
     </div>`;
   }
+  var MATIZES_BALDE_DELTA = [205, 265, 335, 25, 145, 95];
+  function corBaldeDelta(chave) {
+    let h = 0;
+    for (let i = 0; i < chave.length; i++) h = h * 31 + chave.charCodeAt(i) >>> 0;
+    return MATIZES_BALDE_DELTA[h % MATIZES_BALDE_DELTA.length];
+  }
   function blocoBaldeDelta(vooId, v, balde, editavel) {
     const linhas = balde.itens.length ? balde.itens.map((pd) => linhaDeltaConexao(vooId, v, pd, editavel)).join("") : `<p class="note" style="margin:4px 0">Nada aqui.</p>`;
     const solicitar = balde.itens.length ? `<button class="small ghost" style="width:auto" onclick="solicitarCarretaDelta(${vooId},'${balde.chave}')">Solicitar</button>` : "";
     const excluir = editavel && balde.real && !balde.itens.length ? `<button class="small ghost" style="width:auto" onclick="excluirCarretaDeltaTela(${balde.real.id},${vooId})" aria-label="Excluir carreta" title="Excluir carreta vazia">${ico("x", 14)}</button>` : "";
+    const matiz = corBaldeDelta(balde.chave);
     return `<div class="balde-delta">
+    <div style="border-left:3px solid hsl(${matiz} 55% 45%); background:hsl(${matiz} 55% 45% / .1); border-radius:0 8px 8px 0; padding-left:8px">
     <div class="list-line" data-balde="${esc(balde.chave)}" style="border:none;padding:4px 0">
       <b class="grow">${esc(balde.nome)}</b>
       ${solicitar}${excluir}
     </div>
     ${linhas}
+    </div>
   </div>`;
   }
   async function limparCarretaDeltaSeVazia(carretaId) {
@@ -3588,6 +3612,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   var ARRASTO_DELTA_MS = 450;
   var ARRASTO_DELTA_TOLERANCIA_PX = 10;
   function arrastarConexaoDelta(ev, pontoDeltaId, vooId) {
+    ev.preventDefault();
     const alca = ev.currentTarget;
     const linhaOrigem = alca.closest(".pt-linha");
     const inicioX = ev.clientX, inicioY = ev.clientY;
@@ -3600,12 +3625,15 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       clearTimeout(temporizador);
       document.removeEventListener("pointermove", cancelarSeMoveu);
       document.removeEventListener("pointerup", pararDeEsperar);
+      document.removeEventListener("pointercancel", pararDeEsperar);
     };
     document.addEventListener("pointermove", cancelarSeMoveu);
     document.addEventListener("pointerup", pararDeEsperar);
+    document.addEventListener("pointercancel", pararDeEsperar);
     const temporizador = setTimeout(() => {
       document.removeEventListener("pointermove", cancelarSeMoveu);
       document.removeEventListener("pointerup", pararDeEsperar);
+      document.removeEventListener("pointercancel", pararDeEsperar);
       iniciarArrasto(ev, alca, linhaOrigem, pontoDeltaId, vooId);
     }, ARRASTO_DELTA_MS);
   }
