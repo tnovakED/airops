@@ -701,9 +701,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 09/09/2026, 13:25:07
+     Gerado em: 09/09/2026, 15:57:59
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="09/09 13:25";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="09/09 15:57";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1976,11 +1976,11 @@
       onclick="adicionarVoo()">+ Adicionar voo</button></div>` : ""}
   <div class="card tbl-wrap">${lista.length ? `
     <table><tr>
-      <th>Data</th><th>Cheg.</th><th>De</th>
-      <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('chegada')">Hora cheg ${UI.malhaOrdem.col === "chegada" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
-      <th>Sa\xEDda</th><th>Para</th>
-      <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('saida')">Hora sa\xEDda ${UI.malhaOrdem.col === "saida" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
-      <th>Prefixo</th><th>Box</th><th>Esteira</th><th>OC</th><th>Descarga</th><th></th></tr>
+      <th>Data</th><th>Cheg.</th><th>ARR</th>
+      <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('chegada')">STA ${UI.malhaOrdem.col === "chegada" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
+      <th>Sa\xEDda</th><th>TO</th>
+      <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('saida')">STD ${UI.malhaOrdem.col === "saida" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
+      <th>REG</th><th>Box</th><th>Esteira</th><th>OC</th><th>Descarga</th><th></th></tr>
     ${ordenar(lista).map((v) => linhaVoo(v, editar, posicionar)).join("")}</table>` : `<p class="note">Nenhum voo nesta data/filtro.</p>`}
   </div>`;
   }
@@ -3232,7 +3232,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   </div>
   <div class="board-title"><h2>Voos do dia</h2><span class="flip">${voos.length}</span></div>
   <div class="card tbl-wrap">${voos.length ? `
-    <table><tr><th></th><th>Cheg.</th><th>De</th><th>Sa\xEDda</th><th>Para</th><th></th></tr>
+    <table><tr><th></th><th>Cheg.</th><th>ARR</th><th>Sa\xEDda</th><th>TO</th><th></th></tr>
     ${voos.map(linhaPontoVoo).join("")}</table>` : `<p class="note">Nenhum voo na malha de hoje.</p>`}
   </div>`;
   }
