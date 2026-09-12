@@ -761,9 +761,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 10/09/2026, 16:37:00
+     Gerado em: 11/09/2026, 20:26:44
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="10/09 16:37";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="11/09 20:26";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -3547,18 +3547,51 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     if (min <= 60) return "umahora";
     return "maisdeuma";
   }
+  function baldesFixosDelta(carretasDoVoo) {
+    return BALDES_AUTO_DELTA.map((b) => {
+      const real = carretasDoVoo.find((c) => c.nome === b.nome);
+      return real ? { chave: `c${real.id}`, nome: real.nome, real } : { chave: b.id, nome: b.nome, real: null };
+    });
+  }
+  var ORDEM_BALDES_AUTO_DELTA = BALDES_AUTO_DELTA.map((b) => b.id);
   function agruparEmBaldesDelta(v, lista, carretasDoVoo) {
-    const baldes = BALDES_AUTO_DELTA.map((b) => ({ chave: b.id, nome: b.nome, real: null, itens: [] }));
-    for (const c of carretasDoVoo) baldes.push({ chave: `c${c.id}`, nome: c.nome, real: c, itens: [] });
+    const fixos = baldesFixosDelta(carretasDoVoo);
+    const idsFixos = new Set(fixos.filter((b) => b.real).map((b) => b.real.id));
+    const baldes = fixos.map((b) => ({ ...b, itens: [] }));
+    for (const c of carretasDoVoo) {
+      if (idsFixos.has(c.id)) continue;
+      baldes.push({ chave: `c${c.id}`, nome: c.nome, real: c, itens: [] });
+    }
     for (const pd of lista) {
       if (pd.carreta_id != null) {
         const alvo = baldes.find((b) => b.real && mesmoId(b.real.id, pd.carreta_id));
         (alvo || baldes[2]).itens.push(pd);
       } else {
-        baldes.find((b) => b.chave === baldeAutoDaConexao(v, pd)).itens.push(pd);
+        baldes[ORDEM_BALDES_AUTO_DELTA.indexOf(baldeAutoDaConexao(v, pd))].itens.push(pd);
       }
     }
     return baldes;
+  }
+  async function sincronizarBaldesAutoDelta(vooId) {
+    const semCarreta = D.deltas.filter((pd) => pd.voo_id === vooId && pd.carreta_id == null);
+    if (!semCarreta.length) return false;
+    const v = voo(vooId) || {};
+    const carretasDoVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId));
+    let mexeu = false;
+    for (const auto of BALDES_AUTO_DELTA) {
+      const ids = semCarreta.filter((pd) => baldeAutoDaConexao(v, pd) === auto.id).map((pd) => pd.id);
+      if (!ids.length) continue;
+      let carreta = carretasDoVoo.find((c) => c.nome === auto.nome);
+      if (!carreta) {
+        const novaId = await criarCarretaDelta(vooId, auto.nome);
+        carreta = { id: novaId, nome: auto.nome };
+        carretasDoVoo.push(carreta);
+      }
+      if (ids.length === 1) await moverConexaoCarretaDelta(ids[0], carreta.id);
+      else await moverConexoesCarretaDelta(ids, carreta.id);
+      mexeu = true;
+    }
+    return mexeu;
   }
   function linhaDeltaConexao(vooId, v, pd, editavel) {
     var _a;
@@ -3619,7 +3652,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       return;
     }
     await bus.recarregar();
-    abrirPontoDelta(vooId);
+    return abrirPontoDelta(vooId);
   }
   async function confirmarBagQtdManual(pontoDeltaId, vooId) {
     const campo = $(`bagManual${pontoDeltaId}`);
@@ -3632,7 +3665,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const ids = UI.deltaSelecionados.ids;
     const i = ids.indexOf(pontoDeltaId);
     i < 0 ? ids.push(pontoDeltaId) : ids.splice(i, 1);
-    abrirPontoDelta(vooId);
+    return abrirPontoDelta(vooId);
   }
   async function confirmarMoverSelecionados(vooId) {
     var _a;
@@ -3640,7 +3673,19 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     if (!ids.length) return;
     const campo = $("carretaAlvoSelecionados");
     const valor = campo ? campo.value : "";
-    const carretaId = valor === "" ? null : Number(valor);
+    if (!valor) return;
+    const auto = BALDES_AUTO_DELTA.find((b) => b.id === valor);
+    let carretaId;
+    if (auto) {
+      try {
+        carretaId = await criarCarretaDelta(vooId, auto.nome);
+      } catch (e) {
+        await erro(e);
+        return;
+      }
+    } else {
+      carretaId = Number(valor);
+    }
     const antigas = [...new Set(ids.map((id) => {
       var _a2;
       return (_a2 = D.deltas.find((x) => mesmoId(x.id, id))) == null ? void 0 : _a2.carreta_id;
@@ -3655,18 +3700,22 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     await bus.recarregar();
     for (const antiga of antigas) await limparCarretaDeltaSeVazia(antiga);
     UI.deltaSelecionados = null;
-    abrirPontoDelta(vooId);
+    return abrirPontoDelta(vooId);
   }
   function barraMoverSelecionadosDelta(vooId, carretasDoVoo) {
     var _a;
     const ids = ((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) === vooId ? UI.deltaSelecionados.ids : [];
     if (!ids.length) return "";
+    const fixos = baldesFixosDelta(carretasDoVoo);
+    const idsFixos = new Set(fixos.filter((b) => b.real).map((b) => b.real.id));
+    const extras = carretasDoVoo.filter((c) => !idsFixos.has(c.id));
+    const opcoes = [
+      ...fixos.map((b) => `<option value="${b.real ? b.real.id : b.chave}">${esc(b.nome)}</option>`),
+      ...extras.map((c) => `<option value="${c.id}">${esc(c.nome)}</option>`)
+    ].join("");
     return `<div class="barra-mover-delta">
     <span class="note grow">${ids.length} selecionado${ids.length === 1 ? "" : "s"}</span>
-    <select id="carretaAlvoSelecionados" style="width:auto">
-      <option value="">Autom\xE1tico</option>
-      ${carretasDoVoo.map((c) => `<option value="${c.id}">${esc(c.nome)}</option>`).join("")}
-    </select>
+    <select id="carretaAlvoSelecionados" style="width:auto">${opcoes}</select>
     <button class="small ok" style="width:auto" onclick="confirmarMoverSelecionados(${vooId})">${ico("aceite", 16)} Confirmar</button>
   </div>`;
   }
@@ -3705,7 +3754,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     }
     await bus.recarregar();
     await limparCarretaDeltaSeVazia(carretaAntiga);
-    abrirPontoDelta(vooId);
+    return abrirPontoDelta(vooId);
   }
   async function excluirCarretaDeltaTela(id, vooId) {
     const ok = await confirmar("Excluir essa carreta vazia?");
@@ -3717,7 +3766,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       return;
     }
     await bus.recarregar();
-    abrirPontoDelta(vooId);
+    return abrirPontoDelta(vooId);
   }
   async function solicitarCarretaDelta(vooId, chaveBalde) {
     const v = voo(vooId);
@@ -3743,7 +3792,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       return;
     }
     await bus.recarregar();
-    abrirPontoDelta(vooId);
+    return abrirPontoDelta(vooId);
   }
   async function solicitarCarretaVaziaDelta(vooId) {
     const v = voo(vooId);
@@ -3760,14 +3809,11 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       return;
     }
     await bus.recarregar();
-    abrirPontoDelta(vooId);
+    return abrirPontoDelta(vooId);
   }
-  function abrirPontoDelta(vooId) {
-    var _a;
-    UI.modalVivo = null;
+  function desenharPontoDelta(vooId) {
     const v = voo(vooId) || {};
     const editavel = pode("delta_carretas");
-    if (((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) !== vooId) UI.deltaSelecionados = { vooId, ids: [] };
     const lista = D.deltas.filter((pd) => pd.voo_id === vooId);
     const carretasDoVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId)).sort((a, b) => a.ordem - b.ordem || String(a.criada_em).localeCompare(String(b.criada_em)));
     const linhas = lista.length ? agruparEmBaldesDelta(v, lista, carretasDoVoo).map((b) => blocoBaldeDelta(vooId, v, b, editavel)).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
@@ -3788,6 +3834,21 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       <button class="ghost" onclick="fecharModal()">Fechar</button>
     </div>`);
   }
+  function abrirPontoDelta(vooId) {
+    var _a;
+    UI.modalVivo = null;
+    if (((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) !== vooId) UI.deltaSelecionados = { vooId, ids: [] };
+    desenharPontoDelta(vooId);
+    if (pode("delta_carretas")) {
+      return sincronizarBaldesAutoDelta(vooId).then(async (mexeu) => {
+        if (mexeu) {
+          await bus.recarregar();
+          desenharPontoDelta(vooId);
+        }
+      }).catch(() => {
+      });
+    }
+  }
   async function marcarDescargaDelta(vooId) {
     const v = voo(vooId) || {};
     const ok = await confirmar(`Marcar DESCARREGA OK do voo ${esc(v.voo_chegada || v.numero || "?")} (box ${esc(v.box || "?")})?
@@ -3801,7 +3862,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       return;
     }
     await bus.recarregar();
-    abrirPontoDelta(vooId);
+    return abrirPontoDelta(vooId);
   }
   async function solicitarPPDelta(vooChegadaId, vooSaidaId) {
     const v = voo(vooChegadaId);
