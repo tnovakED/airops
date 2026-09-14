@@ -761,9 +761,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 14/09/2026, 12:43:22
+     Gerado em: 14/09/2026, 15:20:45
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="14/09 12:43";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="14/09 15:20";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -873,6 +873,9 @@
         // -- vias null = passo 1 (quais carretas); objeto = passo 2 (pra onde vai)
         deltaSelecionados: null,
         // selecao multipla no popup Ponto Delta: {vooId, ids:[]}
+        olhoLugar: null,
+        // lugar (chave de lugarDaPronta) com a lista de carretas
+        // pendentes expandida no card do alerta BOX; null = fechado
         // O que ele viu no lugar e nao levou, nesta viagem.
         //
         // Fica quieto na tela DELE enquanto a viagem esta aberta: com a
@@ -1685,7 +1688,8 @@
     thumb_up: "0 -960 960 960",
     exclamacao: "0 -960 960 960",
     notificacao: "0 -960 960 960",
-    carregando: "0 -960 960 960"
+    carregando: "0 -960 960 960",
+    olho: "0 -960 960 960"
   };
   var P = {
     "mala-check": `<path d="m696-150 141.33-142-28.66-28.67L696-207.33 638-266l-28.67 29.33L696-150Zm-337.33-46.67v-406h-57.34v406h57.34ZM481.33-130h-180q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-406q0-27 19.83-46.83t46.83-19.83h267.34v-144h-16q-27 0-46.84-19.84Q486-853 486-880h149.33v392.67q-17.33 6-34.16 14.66-16.84 8.67-32.5 20.67v-150.67H425.33v406h37.34q1.66 18 6.33 34.34Q473.67-146 481.33-130Zm380.84-245.5q57.16 57.17 57.16 138.83 0 81.67-57.16 138.84Q805-40.67 723.33-40.67q-81.66 0-138.83-57.16-57.17-57.17-57.17-138.84 0-81.66 57.17-138.83 57.17-57.17 138.83-57.17 81.67 0 138.84 57.17ZM392-400Zm-33.33 203.33v-406 406Zm66.66 0v-406 406Z"/>`,
@@ -1744,8 +1748,10 @@
     // material symbols: info (Apache 2.0) — "tem log pra ver" nas linhas de Ponto Delta/Indice (e no log da malha, telaVoos.js). Antes era um traco+bola desenhado a mao.
     notificacao: `<path d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z"/>`,
     // material symbols: notifications (Apache 2.0) — sino do alerta BOX/TCX/TLC, ainda sem tela usando
-    carregando: `<path d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-155.5t86-127Q252-817 325-848.5T480-880q17 0 28.5 11.5T520-840q0 17-11.5 28.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160q133 0 226.5-93.5T800-480q0-17 11.5-28.5T840-520q17 0 28.5 11.5T880-480q0 82-31.5 155t-86 127.5q-54.5 54.5-127 86T480-80Z"/>`
+    carregando: `<path d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-155.5t86-127Q252-817 325-848.5T480-880q17 0 28.5 11.5T520-840q0 17-11.5 28.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160q133 0 226.5-93.5T800-480q0-17 11.5-28.5T840-520q17 0 28.5 11.5T880-480q0 82-31.5 155t-86 127.5q-54.5 54.5-127 86T480-80Z"/>`,
     // material symbols: progress_activity (Apache 2.0) — anel do spinner de importacao dos Pontos, ainda sem tela usando (gira via CSS, sem animacao no path)
+    olho: `<path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Z"/>`
+    // material symbols: visibility (Apache 2.0) — botao de expandir as carretas pendentes no card do alerta BOX (14/09/2026)
   };
   function ico(nome, tam) {
     const d = P[nome];
@@ -2943,7 +2949,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     }
   }
   async function cientePronta(id) {
-    return sb.from("prontas").update({ status: "ciente", ciente_por: S.me.id, ciente_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", id);
+    return sb.from("prontas").update({ status: "ciente", ciente_por: S.me.id, ciente_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", id).eq("status", "pronta");
   }
   async function baixarPronta(id) {
     return sb.from("prontas").update({ status: "coletada", coletada_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", id);
@@ -2956,6 +2962,9 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   }
   async function devolverProntasLoteDb(ids) {
     return sb.rpc("devolver_prontas_lote", { p_ids: ids });
+  }
+  async function cancelarSolicitacaoDeltaDb(ids) {
+    return sb.rpc("cancelar_solicitacao_delta", { p_ids: ids });
   }
   async function marcarProntaEntregueDb(pontoIndiaId) {
     return sb.from("prontas").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("ponto_india_id", pontoIndiaId).eq("status", "coletada");
@@ -3631,7 +3640,6 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       <span class="grow"></span>
       ${selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : ""}
       ${seloStatus ? `<span class="chip ${seloStatus.classe}" title="${esc(seloStatus.titulo)}">${seloStatus.texto}</span>` : ""}
-      ${tipo === "pp" ? `<button class="small ok" onclick="solicitarPPDelta(${vooId},${vSaida.id})">${ico("carreta", 16)} S.OP</button>` : ""}
       <span class="mono" style="color:var(--amber)">${pd.bag_qtd}</span>
       ${manual}
     </div>`;
@@ -3649,7 +3657,8 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const nPegas = porStatus("pega").length;
     const linhas = balde.itens.length ? balde.itens.map((pd) => linhaDeltaConexao(vooId, v, pd, editavel)).join("") : `<p class="note" style="margin:4px 0">Nada aqui.</p>`;
     const resumo = nSolicitadas || nPegas ? `<span class="note" style="margin-left:6px">${nSolicitadas ? `${nSolicitadas} aguardando` : ""}${nSolicitadas && nPegas ? " \xB7 " : ""}${nPegas ? `${nPegas} pego${nPegas === 1 ? "" : "s"}` : ""}</span>` : "";
-    const solicitar = livres.length ? `<button class="small ghost" style="width:auto" onclick="solicitarCarretaDelta(${vooId},'${balde.chave}')">Solicitar${nSolicitadas || nPegas ? ` (${livres.length})` : ""}</button>` : "";
+    const solicitar = livres.length ? `<button class="small ghost" style="width:auto" onclick="solicitarCarretaDelta(${vooId},'${balde.chave}')">${ico("carreta", 14)} S.OP${nSolicitadas || nPegas ? ` (${livres.length})` : ""}</button>` : "";
+    const cancelarSolicitacao2 = nSolicitadas ? `<button class="small ghost" style="width:auto" onclick="cancelarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Cancelar solicita\xE7\xE3o" title="Cancelar solicita\xE7\xE3o">${ico("cancelar", 14)}</button>` : "";
     const excluir = editavel && balde.real && !balde.itens.length ? `<button class="small ghost" style="width:auto" onclick="excluirCarretaDeltaTela(${balde.real.id},${vooId})" aria-label="Excluir carreta" title="Excluir carreta vazia">${ico("x", 14)}</button>` : "";
     const matiz = corBaldeDelta(balde.chave);
     return `<div class="balde-delta">
@@ -3657,7 +3666,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     <div class="list-line" style="border:none;padding:4px 0">
       <b class="grow">${esc(balde.nome)}</b>
       ${resumo}
-      ${solicitar}${excluir}
+      ${cancelarSolicitacao2}${solicitar}${excluir}
     </div>
     ${linhas}
     </div>
@@ -3836,6 +3845,30 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     await bus.recarregar();
     return abrirPontoDelta(vooId);
   }
+  async function cancelarCarretaDelta(vooId, chaveBalde) {
+    const v = voo(vooId);
+    if (!v) return;
+    const lista = D.deltas.filter((pd) => mesmoId(pd.voo_id, vooId));
+    const carretasDoVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId));
+    const balde = agruparEmBaldesDelta(v, lista, carretasDoVoo).find((b) => b.chave === chaveBalde);
+    const solicitadas = (balde == null ? void 0 : balde.itens.filter((pd) => statusConexaoDelta(pd) === "solicitada")) || [];
+    if (!solicitadas.length) {
+      await aviso("N\xE3o h\xE1 nada solicitado nessa carreta pra cancelar.");
+      return;
+    }
+    const ids = solicitadas.flatMap((pd) => D.prontas.filter((p) => mesmoId(p.ponto_delta_id, pd.id) && (p.status === "pronta" || p.status === "ciente")).map((p) => p.id));
+    const ok = await confirmar(`Cancelar a solicita\xE7\xE3o de ${ids.length} voo${ids.length === 1 ? "" : "s"} dessa carreta?
+
+O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
+    if (!ok) return;
+    const { error } = await cancelarSolicitacaoDeltaDb(ids);
+    if (error) {
+      await erro(error);
+      return;
+    }
+    await bus.recarregar();
+    return abrirPontoDelta(vooId);
+  }
   async function solicitarCarretaVaziaDelta(vooId) {
     const v = voo(vooId);
     if (!v) return;
@@ -3905,17 +3938,6 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     }
     await bus.recarregar();
     return abrirPontoDelta(vooId);
-  }
-  async function solicitarPPDelta(vooChegadaId, vooSaidaId) {
-    const v = voo(vooChegadaId);
-    if (!v) return;
-    const { error } = await sinalizarProntaDb("BOX", vooSaidaId, v.box, null);
-    if (error) {
-      await erro(error);
-      return;
-    }
-    await bus.recarregar();
-    abrirPontoDelta(vooChegadaId);
   }
   function conteudoPontoIndiaOC(vooId) {
     const v = voo(vooId) || {};
@@ -9683,22 +9705,37 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   </div>`;
   }
   function linhaLugar(tipo, s) {
-    const podeAceitar = s.ps.some((p) => p.status === "pronta");
-    const podeCancelar2 = s.ps.some((p) => p.status === "ciente");
+    const pendentes = s.ps.filter((p) => p.status === "pronta");
+    const meusCientes = s.ps.filter((p) => p.status === "ciente" && p.ciente_por === S.me.id);
     const totalVoos = contarVoosUnicos(s.ps);
     const urgentes = contarUrgentes(s.ps);
-    const idsAceitar = s.ps.filter((p) => p.status === "pronta").map((p) => p.id);
-    const idsCancelar = s.ps.filter((p) => p.status === "ciente").map((p) => p.id);
-    const principal = podeAceitar ? `<button class="alerta-acao primary" onclick="aceitarBox([${idsAceitar.join(",")}])" aria-label="Aceitar">${ico("thumb_up", 20)}</button>` : `<button class="alerta-acao ok" onclick="abrirEscolhaVoosBox('${tipo}',${s.box ? `'${esc(s.box)}'` : null})" aria-label="Ver voos">${ico("vervoos", 20)}</button>`;
-    const cancelar = podeCancelar2 ? `<button class="alerta-acao ghost" onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
+    const idsCancelar = meusCientes.map((p) => p.id);
+    const olho = pendentes.length ? `<button class="alerta-acao ghost" onclick="alternarOlhoLugar('${esc(s.lugar)}')" aria-label="Ver carretas">${ico("olho", 20)}</button>` : "";
+    const verVoos = meusCientes.length ? `<button class="alerta-acao ok" onclick="abrirEscolhaVoosBox('${tipo}',${s.box ? `'${esc(s.box)}'` : null})" aria-label="Ver voos">${ico("vervoos", 20)}</button>` : "";
+    const cancelar = meusCientes.length ? `<button class="alerta-acao ghost" onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
+    const aberto = UI.olhoLugar === s.lugar;
     return `<div class="list-line alerta-linha">
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       ${s.box ? `<span class="voo voo-saida"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(s.box)}</span></span>` : ico("pousando", 20)}
       <span class="alerta-contagem">${totalVoos} voo${totalVoos === 1 ? "" : "s"}</span>
       ${urgentes > 0 ? `<span class="alerta-urgentes">${ico("alerta", 16)} ${urgentes}</span>` : ""}
     </span>
-    ${cancelar}${principal}
+    ${cancelar}${olho}${verVoos}
+  </div>${aberto ? carretasParaAceitar(pendentes) : ""}`;
+  }
+  function carretasParaAceitar(pendentes) {
+    const grupos2 = carretasDoLugar(pendentes);
+    if (!grupos2.length) return "";
+    return `<div class="alerta-carretas">
+    ${grupos2.map((c) => `<div class="pt-linha" onclick="aceitarBox([${c.ps.map((p) => p.id).join(",")}])">
+      ${ico("quadrado", 20)}
+      <span class="grow">${esc(c.nome)} \xB7 ${c.ps.length} voo${c.ps.length === 1 ? "" : "s"}</span>
+    </div>`).join("")}
   </div>`;
+  }
+  function alternarOlhoLugar(lugar) {
+    UI.olhoLugar = UI.olhoLugar === lugar ? null : lugar;
+    bus.render();
   }
   function escolherSecaoBox(nome) {
     UI.alertaSecao = UI.alertaSecao === nome ? null : nome;
@@ -9856,6 +9893,13 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
         entrega_via: (_a = viaPorId == null ? void 0 : viaPorId[p.id]) != null ? _a : viaDaPronta(p),
         origem_box: p.box || null,
         origem_voo_id: o.vooOrigemId,
+        // Sem isto, uma pronta de TCX/TLC (sem box nenhum) ficava com
+        // origem_box E origem_setor os dois nulos, e a exibicao
+        // (origemDaPerna, corpoVoo, origemDe/origemCurta) caia no
+        // fallback do box de ONDE A VIAGEM COMECOU -- errado quando a
+        // viagem nasceu num BOX e essa perna foi pega da triagem no
+        // meio do caminho. Bug relatado pelo Tiago (14/09/2026).
+        origem_setor: p.setor === "TCX" || p.setor === "TLC" ? p.setor : null,
         ponto_india_id: o.pontoIndiaId
       };
     });
@@ -10588,6 +10632,7 @@ Sair mesmo assim?`
     escolhaAjuste,
     escolhaEsteira,
     escolhaVoltar,
+    alternarOlhoLugar,
     // OC
     assumirVoo: assumirVoo2,
     soltarVoo: soltarVoo2,
@@ -10612,7 +10657,6 @@ Sair mesmo assim?`
     solicitarBagIndia,
     cancelarBagIndia,
     marcarDescargaDelta,
-    solicitarPPDelta,
     abrirSubstituirPonto,
     substituirPonto,
     verLogPonto,
@@ -10623,6 +10667,7 @@ Sair mesmo assim?`
     confirmarCriarCarretaDelta,
     excluirCarretaDeltaTela,
     solicitarCarretaDelta,
+    cancelarCarretaDelta,
     alternarSelecaoDelta,
     confirmarMoverSelecionados,
     confirmarBagQtdManual,
