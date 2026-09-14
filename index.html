@@ -761,9 +761,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 14/09/2026, 10:36:19
+     Gerado em: 14/09/2026, 11:16:00
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="14/09 10:36";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="14/09 11:16";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -9389,6 +9389,15 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   function vooDoBoxOrigem(box) {
     return box ? desempatarBoxes(voosChegando()).find((v) => v.box === box) : null;
   }
+  function vooChegadaDaPronta(p, box) {
+    const pdId = p == null ? void 0 : p.ponto_delta_id;
+    if (pdId != null) {
+      const pd = D.deltas.find((x) => mesmoId(x.id, pdId));
+      const vc = pd ? voo(pd.voo_id) : null;
+      if (vc) return vc;
+    }
+    return vooDoBoxOrigem(box);
+  }
   function prontasEscolhaBox(e) {
     return e.sel.map((id) => D.prontas.find((p) => p.id === id)).filter(Boolean);
   }
@@ -9414,8 +9423,9 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     abrirModal(e.vias ? telaViasCarretas(e) : telaSelCarretas(e));
   }
   function telaSelCarretas(e) {
+    var _a;
     const grupos2 = carretasDoLugar(prontasDoLugar(e.tipo, e.box));
-    const voChegada = vooDoBoxOrigem(e.box);
+    const voChegada = vooChegadaDaPronta((_a = grupos2[0]) == null ? void 0 : _a.ps[0], e.box);
     const placaOrigem = voChegada ? vooRotulo2(voChegada, "chegada", { aviao: true, placa: e.box }) : `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(e.box)}</span></span>`;
     const titulo = e.box ? `Origem: ${placaOrigem}` : esc(e.tipo);
     const linhaVoo3 = (p) => {
@@ -9450,8 +9460,9 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     return `<div class="voo-btn ${ativa ? "sel" : ""}" style="padding:4px 10px" onclick="${onclick}"><span class="dcode">${id}</span></div>`;
   }
   function telaViasCarretas(e) {
+    var _a;
     const grupos2 = carretasDoLugar(prontasEscolhaBox(e));
-    const vo = vooDoBoxOrigem(e.box) || {};
+    const vo = vooChegadaDaPronta((_a = grupos2[0]) == null ? void 0 : _a.ps[0], e.box) || {};
     const totalPorCarreta = new Map(
       carretasDoLugar(prontasDoLugar(e.tipo, e.box)).map((c) => [c.chave, c.ps.length])
     );
@@ -9820,7 +9831,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
       };
     });
     if (esteira) {
-      const voChegada = vooDoBoxOrigem(p0.box);
+      const voChegada = vooChegadaDaPronta(p0, p0.box);
       linhas.push({
         viagem_id: vg.id,
         setor_destino: "ESTEIRA",
