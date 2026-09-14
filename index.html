@@ -761,9 +761,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 14/09/2026, 10:03:57
+     Gerado em: 14/09/2026, 10:36:19
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="14/09 10:03";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="14/09 10:36";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2954,6 +2954,9 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   async function devolverProntaDb(id) {
     return sb.from("prontas").update({ status: "pronta", ciente_por: null, ciente_em: null }).eq("id", id);
   }
+  async function devolverProntasLoteDb(ids) {
+    return sb.rpc("devolver_prontas_lote", { p_ids: ids });
+  }
   async function marcarProntaEntregueDb(pontoIndiaId) {
     return sb.from("prontas").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("ponto_india_id", pontoIndiaId).eq("status", "coletada");
   }
@@ -3209,10 +3212,15 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const { error } = await sb.rpc("excluir_carreta_delta", { p_id: id });
     if (error) throw error;
   }
-  async function solicitarCarretaDeltaDb(vooChegadaId, destinos, nome) {
+  async function solicitarCarretaDeltaDb(vooChegadaId, destinos, nome, pontoDeltaIds) {
     const { data, error } = await sb.rpc(
       "solicitar_carreta_delta",
-      { p_voo_chegada_id: vooChegadaId, p_destinos: destinos, p_carreta_nome: nome || null }
+      {
+        p_voo_chegada_id: vooChegadaId,
+        p_destinos: destinos,
+        p_carreta_nome: nome || null,
+        p_ponto_delta_ids: pontoDeltaIds || null
+      }
     );
     if (error) throw error;
     return data;
@@ -3780,15 +3788,24 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       await aviso("Essa carreta est\xE1 vazia.");
       return;
     }
-    const destinos = [...new Set(balde.itens.map((pd) => D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero)).filter(Boolean).map((x) => x.id))];
-    if (!destinos.length) {
+    const vistos = /* @__PURE__ */ new Set();
+    const pares = [];
+    for (const pd of balde.itens) {
+      const vd = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
+      if (!vd || vistos.has(vd.id)) continue;
+      vistos.add(vd.id);
+      pares.push({ destinoId: vd.id, pontoDeltaId: pd.id });
+    }
+    if (!pares.length) {
       await aviso("Nenhum voo de destino dessa carreta est\xE1 na malha.");
       return;
     }
+    const destinos = pares.map((p) => p.destinoId);
+    const pontoDeltaIds = pares.map((p) => p.pontoDeltaId);
     const ok = await confirmar(`Solicitar essa carreta \u2014 ${destinos.length} voo${destinos.length === 1 ? "" : "s"} de destino?`);
     if (!ok) return;
     try {
-      await solicitarCarretaDeltaDb(vooId, destinos, balde.nome);
+      await solicitarCarretaDeltaDb(vooId, destinos, balde.nome, pontoDeltaIds);
     } catch (e) {
       await erro(e);
       return;
@@ -9378,6 +9395,15 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   function todasComVia(e) {
     return e.sel.every((id) => !!e.vias[id]);
   }
+  function sobraDaCarreta(e) {
+    if (e.tipo !== "BOX") return [];
+    const sobra = [];
+    for (const c of carretasDoLugar(prontasDoLugar(e.tipo, e.box))) {
+      if (!c.ps.some((p) => e.sel.includes(p.id))) continue;
+      for (const p of c.ps) if (!e.sel.includes(p.id)) sobra.push(p.id);
+    }
+    return sobra;
+  }
   function abrirEscolhaVoosBox(tipo, box) {
     UI.escolhaBox = { tipo, box, sel: [], abertas: [], vias: null, ajuste: [], esteira: false };
     renderEscolhaVoosBox();
@@ -9426,6 +9452,9 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   function telaViasCarretas(e) {
     const grupos2 = carretasDoLugar(prontasEscolhaBox(e));
     const vo = vooDoBoxOrigem(e.box) || {};
+    const totalPorCarreta = new Map(
+      carretasDoLugar(prontasDoLugar(e.tipo, e.box)).map((c) => [c.chave, c.ps.length])
+    );
     const cartaoViaCarreta = (c, v) => {
       const ativa = c.ps.length > 0 && c.ps.every((p) => e.vias[p.id] === v.id);
       return `<div class="voo-btn ${ativa ? "sel" : ""}" onclick="escolhaViaCarreta('${c.chave}','${v.id}')">
@@ -9444,6 +9473,8 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     };
     const cartaoCarreta = (c) => {
       const ajusteAberto = e.ajuste.includes(c.chave);
+      const faltam2 = (totalPorCarreta.get(c.chave) || c.ps.length) - c.ps.length;
+      const avisoParcial = faltam2 > 0 ? `<p class="note" style="margin:6px 0 0;color:var(--amber)">${faltam2} voo${faltam2 === 1 ? "" : "s"} dessa carreta ${faltam2 === 1 ? "fica" : "ficam"} de fora e volta${faltam2 === 1 ? "" : "m"} pro l\xEDder posicionar de novo.</p>` : "";
       return `<div class="card" style="margin-bottom:12px">
       <p class="note" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.08em">${esc(c.nome)} \xB7 ${c.ps.length} voo${c.ps.length === 1 ? "" : "s"}</p>
       <div class="voo-grid">${VIAS.map((v) => cartaoViaCarreta(c, v)).join("")}</div>
@@ -9451,6 +9482,7 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
         <span class="note grow">${ajusteAberto ? "fechar" : "ajustar"} voo a voo</span>
       </div>
       ${ajusteAberto ? c.ps.map(linhaVooVia).join("") : ""}
+      ${avisoParcial}
     </div>`;
     };
     const cartaoEsteira = `<div class="voo-btn ${e.esteira ? "sel" : ""}" onclick="escolhaEsteira()">
@@ -9557,9 +9589,23 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
       viaPorId = e.vias;
       esteira = e.esteira;
     }
+    const sobra = sobraDaCarreta(e);
     UI.escolhaBox = null;
     fecharModal();
     await pegarProntas(ps, viaPorId, esteira);
+    if (sobra.length) {
+      try {
+        await devolverProntasLoteDb(sobra);
+      } catch (err) {
+        await erro([
+          "A viagem foi registrada, mas n\xE3o consegui devolver pro l\xEDder os voos que sobraram dessa carreta.",
+          "",
+          "Eles continuam reservados s\xF3 pra voc\xEA -- avise o l\xEDder pra reorganizar na m\xE3o.",
+          "",
+          `(${err.message || err})`
+        ].join("\n"));
+      }
+    }
     UI.modalVivo = { tipo: "viagem" };
     bus.recarregar();
   }
