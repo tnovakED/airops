@@ -795,10 +795,15 @@
      quebrava em duas linhas. Tudo escopado em .delta-popup. */
   .delta-popup .delta-topo{border:none; padding:0 0 6px; gap:6px}
   .delta-popup .delta-topo h3{margin:0; min-width:0}
-  /* botoes so-icone do cabecalho; a area de toque continua 42px de altura */
-  .delta-icone{width:auto; padding:0 8px; display:inline-flex; align-items:center; gap:2px;
+  /* Botoes da tela com 35px de altura e icones com 34px (15/09/2026, Tiago).
+     Vale pra todo botao pequeno do popup (topo, carreta, check, barra); os
+     botoes grandes do pe (Atualizar/Fechar, Descarrega OK) nao entram.
+     button.small no seletor: senao button.small{min-height:42px} ganha. */
+  .delta-popup button.small{min-height:35px; height:35px}
+  .delta-popup button.small .ico{width:34px; height:34px; margin-right:0}
+  .delta-icone{width:auto; padding:0 4px; display:inline-flex; align-items:center; gap:0;
     font-size:20px; font-weight:700; flex:none}
-  .delta-icone .ico{margin-right:0}
+  .delta-n{font-size:14px; font-weight:700; margin-left:2px}
   /* carreta = accordion. A faixa de cor vem da matiz (--matiz) de cada uma */
   .balde-cor{border-left:3px solid hsl(var(--matiz) 55% 45%); background:hsl(var(--matiz) 55% 45% / .1);
     border-radius:0 8px 8px 0; padding-left:6px}
@@ -816,15 +821,24 @@
   .delta-status.solicitado{color:var(--blue)}
   .delta-status.pega{color:var(--green)}
   .delta-qtd{flex:none; font-weight:700; color:var(--amber)}
-  .delta-manual{width:40px; min-height:34px; padding:2px 4px; font-size:15px; text-align:center; flex:none}
+  .delta-manual{width:40px; min-height:35px; height:35px; padding:2px 4px; font-size:15px; text-align:center; flex:none}
   /* button.delta-ok, nao so .delta-ok: button.small (width:auto) tinha mais
      peso e deixava o check com 20px, passando da borda (medido na vitrine). */
-  button.delta-ok{width:34px; min-height:34px; height:34px; padding:0; flex:none;
+  button.delta-ok{width:35px; min-height:35px; height:35px; padding:0; flex:none;
     display:inline-flex; align-items:center; justify-content:center}
   .delta-ok .ico{margin-right:0}
-  .barra-mover-delta .delta-alvo{flex:1 1 auto; min-width:0; width:auto; min-height:40px; font-size:15px}
+  .delta-manual-grupo{display:inline-flex; align-items:center; gap:4px; flex:none}
+  /* marcar = tocar na linha (sem quadradinho), fundo de selecionado igual a
+     folha da viagem nova; o padding lateral e o mesmo marcada ou nao, pra
+     linha nao pular de lugar ao marcar */
+  .delta-conexao{cursor:pointer; padding-left:4px; padding-right:4px; border-radius:8px}
+  .delta-conexao.sel{background:var(--accent-light)}
+  /* "ALOCAR EM:" + lista do tamanho do nome da carreta (nao estica) */
+  .delta-alocar{font-size:14px; font-weight:700; color:var(--text); flex:none}
+  .barra-mover-delta .delta-alvo{flex:none; width:auto; min-width:0; min-height:35px; height:35px;
+    padding:2px 6px; font-size:15px}
 
-  /* Barra "N selecionado(s)" do Ponto Delta -- so aparece com 1+
+  /* Barra "ALOCAR EM:" do Ponto Delta -- so aparece com 1+
      marcado (ver barraMoverSelecionadosDelta, telaPontos.js). Fixa no
      topo do popup enquanto rola a lista de baldes, senao marcar uma
      linha mais embaixo perde o Confirmar de vista. */
@@ -883,9 +897,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 14:35:14
+     Gerado em: 15/09/2026, 14:56:59
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 14:35";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 14:56";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1837,7 +1851,8 @@
     notificacao: "0 -960 960 960",
     carregando: "0 -960 960 960",
     olho: "0 -960 960 960",
-    reboque: "0 -960 960 960"
+    reboque: "0 -960 960 960",
+    campanha: "0 -960 960 960"
   };
   var P = {
     "mala-check": `<path d="m696-150 141.33-142-28.66-28.67L696-207.33 638-266l-28.67 29.33L696-150Zm-337.33-46.67v-406h-57.34v406h57.34ZM481.33-130h-180q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-406q0-27 19.83-46.83t46.83-19.83h267.34v-144h-16q-27 0-46.84-19.84Q486-853 486-880h149.33v392.67q-17.33 6-34.16 14.66-16.84 8.67-32.5 20.67v-150.67H425.33v406h37.34q1.66 18 6.33 34.34Q473.67-146 481.33-130Zm380.84-245.5q57.16 57.17 57.16 138.83 0 81.67-57.16 138.84Q805-40.67 723.33-40.67q-81.66 0-138.83-57.16-57.17-57.17-57.17-138.84 0-81.66 57.17-138.83 57.17-57.17 138.83-57.17 81.67 0 138.84 57.17ZM392-400Zm-33.33 203.33v-406 406Zm66.66 0v-406 406Z"/>`,
@@ -1900,8 +1915,10 @@
     // material symbols: progress_activity (Apache 2.0) — anel do spinner de importacao dos Pontos, ainda sem tela usando (gira via CSS, sem animacao no path)
     olho: `<path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Z"/>`,
     // material symbols: visibility (Apache 2.0) — botao de expandir as carretas pendentes no card do alerta BOX (14/09/2026)
-    reboque: `<path d="M782.67-100.67 735.33-148 792-204.67H470.67q-10.67 38-42.67 61t-70.67 23q-38.66 0-70.5-23-31.83-23-42.83-61h-44q-52 0-86-34t-34-86V-562h240.67v-131.33H80V-760h520q27 0 46.83 19.83 19.84 19.84 19.84 46.84v422h124.66l-56-56 47.34-48L920-238 782.67-100.67ZM387.33-562H600v-131.33H387.33V-562Zm7.17 359.83q14.83-14.83 14.83-37.16 0-22.34-14.83-37.17-14.83-14.83-37.17-14.83-22.33 0-37.16 14.83-14.84 14.83-14.84 37.17 0 22.33 14.84 37.16 14.83 14.84 37.16 14.84 22.34 0 37.17-14.84ZM244-271.33q11-38 42.83-62.34Q318.67-358 357.33-358 396-358 428-333.67q32 24.34 42.67 62.34H600v-224H146.67v170.66q0 23.67 14.83 38.5 14.83 14.84 38.5 14.84h44Zm0-224h-97.33H600 244Z"/>`
+    reboque: `<path d="M782.67-100.67 735.33-148 792-204.67H470.67q-10.67 38-42.67 61t-70.67 23q-38.66 0-70.5-23-31.83-23-42.83-61h-44q-52 0-86-34t-34-86V-562h240.67v-131.33H80V-760h520q27 0 46.83 19.83 19.84 19.84 19.84 46.84v422h124.66l-56-56 47.34-48L920-238 782.67-100.67ZM387.33-562H600v-131.33H387.33V-562Zm7.17 359.83q14.83-14.83 14.83-37.16 0-22.34-14.83-37.17-14.83-14.83-37.17-14.83-22.33 0-37.16 14.83-14.84 14.83-14.84 37.17 0 22.33 14.84 37.16 14.83 14.84 37.16 14.84 22.34 0 37.17-14.84ZM244-271.33q11-38 42.83-62.34Q318.67-358 357.33-358 396-358 428-333.67q32 24.34 42.67 62.34H600v-224H146.67v170.66q0 23.67 14.83 38.5 14.83 14.84 38.5 14.84h44Zm0-224h-97.33H600 244Z"/>`,
     // icones/carreta_37dp (Material Symbols, Apache 2.0) — a CARRETA de bag (reboque), nao o trator de "carreta" acima. Botoes Nova carreta e +carreta vazia do Ponto Delta (15/09/2026)
+    campanha: `<path d="M726.67-446.67v-66.66H880v66.66H726.67ZM776-160l-123.33-92 40-53.33 123.33 92L776-160Zm-81.33-495.33-40-53.34L776-800l40 53.33-121.33 91.34ZM206.67-200v-160h-60q-27.5 0-47.09-19.58Q80-399.17 80-426.67v-106.66q0-27.5 19.58-47.09Q119.17-600 146.67-600H320l200-120v480L320-360h-46.67v160h-66.66Zm246.66-158v-244L338-533.33H146.67v106.66H338L453.33-358ZM560-346v-268q27 24 43.5 58.5T620-480q0 41-16.5 75.5T560-346ZM300-480Z"/>`
+    // icones/campaign_37dp (Material Symbols, Apache 2.0) — megafone junto do trator no botao de chamar operador de cada carreta do Ponto Delta (15/09/2026)
   };
   function ico(nome, tam) {
     const d = P[nome];
@@ -3724,9 +3741,10 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   }
   var BALDES_AUTO_DELTA = [
     { id: "imediatas", nome: "Imediatas" },
-    { id: "umahora", nome: "~1h" },
+    { id: "umahora", nome: "de 1h", antigos: ["~1h"] },
     { id: "maisdeuma", nome: "Mais de 1h" }
   ];
+  var ehDoBalde = (carreta, balde) => carreta.nome === balde.nome || (balde.antigos || []).includes(carreta.nome);
   function baldeAutoDaConexao(v, pd) {
     const min = duracaoMin(rctDaConexaoDelta(v, pd));
     if (min <= 50) return "imediatas";
@@ -3735,8 +3753,8 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   }
   function baldesFixosDelta(carretasDoVoo) {
     return BALDES_AUTO_DELTA.map((b) => {
-      const real = carretasDoVoo.find((c) => c.nome === b.nome);
-      return real ? { chave: `c${real.id}`, nome: real.nome, real } : { chave: b.id, nome: b.nome, real: null };
+      const real = carretasDoVoo.find((c) => ehDoBalde(c, b));
+      return real ? { chave: `c${real.id}`, nome: b.nome, real } : { chave: b.id, nome: b.nome, real: null };
     });
   }
   var ORDEM_BALDES_AUTO_DELTA = BALDES_AUTO_DELTA.map((b) => b.id);
@@ -3773,7 +3791,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     for (const auto of BALDES_AUTO_DELTA) {
       const ids = semCarreta.filter((pd) => baldeAutoDaConexao(v, pd) === auto.id).map((pd) => pd.id);
       if (!ids.length) continue;
-      let carreta = carretasDoVoo.find((c) => c.nome === auto.nome);
+      let carreta = carretasDoVoo.find((c) => ehDoBalde(c, auto));
       if (!carreta) {
         const novaId = await criarCarretaDelta(vooId, auto.nome);
         carreta = { id: novaId, nome: auto.nome };
@@ -3795,14 +3813,13 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const selo = SELO_DELTA[tipo];
     const seloStatus = SELO_STATUS_DELTA[statusConexaoDelta(pd)];
     const marcado = editavel && ((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) === vooId && UI.deltaSelecionados.ids.includes(pd.id);
-    const check = editavel ? `<span class="pt-check" onclick="alternarSelecaoDelta(${pd.id},${vooId})" aria-label="Selecionar">${ico(marcado ? "quadradoMarcado" : "quadrado", 20)}</span>` : "";
     const salvo = pd.bag_qtd_manual != null ? String(pd.bag_qtd_manual) : "";
-    const manual = editavel ? `<input id="bagManual${pd.id}" class="delta-manual" type="number" inputmode="numeric" placeholder="+" title="Quantidade manual (soma ao previsto, nunca substitui) \u2014 pode ser negativa"
+    const manual = editavel ? `<span class="delta-manual-grupo" onclick="event.stopPropagation()"><input id="bagManual${pd.id}" class="delta-manual" type="number" inputmode="numeric" placeholder="+" title="Quantidade manual (soma ao previsto, nunca substitui) \u2014 pode ser negativa"
         value="${salvo}" oninput="this.nextElementSibling.disabled=(this.value===${JSON.stringify(salvo)})">
-       <button class="small ok delta-ok" disabled onclick="confirmarBagQtdManual(${pd.id},${vooId})" aria-label="Confirmar quantidade" title="Confirmar">${ico("aceite", 18)}</button>` : pd.bag_qtd_manual ? `<span class="note" title="Quantidade manual do l\xEDder, soma ao previsto">${pd.bag_qtd_manual > 0 ? "+" : ""}${pd.bag_qtd_manual}</span>` : "";
+       <button class="small ok delta-ok" disabled onclick="confirmarBagQtdManual(${pd.id},${vooId})" aria-label="Confirmar quantidade" title="Confirmar">${ico("aceite", 34)}</button></span>` : pd.bag_qtd_manual ? `<span class="note" title="Quantidade manual do l\xEDder, soma ao previsto">${pd.bag_qtd_manual > 0 ? "+" : ""}${pd.bag_qtd_manual}</span>` : "";
+    const abre = editavel ? `<div class="pt-linha delta-conexao${marcado ? " sel" : ""}" onclick="alternarSelecaoDelta(${pd.id},${vooId})">` : `<div class="pt-linha">`;
     return `
-    <div class="pt-linha">
-      ${check}
+    ${abre}
       ${vooRotulo2(comoSaida(pd.destino, pd.voo_saida_numero, vSaida == null ? void 0 : vSaida.box), "saida", { box: tipo === "pp" })}
       <span class="grow"></span>
       ${selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : ""}
@@ -3824,9 +3841,9 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const nPegas = porStatus("pega").length;
     const linhas = balde.itens.length ? balde.itens.map((pd) => linhaDeltaConexao(vooId, v, pd, editavel)).join("") : `<p class="note" style="margin:4px 0">Nada aqui.</p>`;
     const resumo = nSolicitadas || nPegas ? `<span class="note" style="margin-left:6px">${nSolicitadas ? `${nSolicitadas} aguardando` : ""}${nSolicitadas && nPegas ? " \xB7 " : ""}${nPegas ? `${nPegas} pego${nPegas === 1 ? "" : "s"}` : ""}</span>` : "";
-    const solicitar = livres.length ? `<button class="small ghost" style="width:auto" onclick="solicitarCarretaDelta(${vooId},'${balde.chave}')">${ico("carreta", 14)} S.OP${nSolicitadas || nPegas ? ` (${livres.length})` : ""}</button>` : "";
-    const cancelarSolicitacao2 = nSolicitadas ? `<button class="small ghost" style="width:auto" onclick="cancelarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Cancelar solicita\xE7\xE3o" title="Cancelar solicita\xE7\xE3o">${ico("cancelar", 14)}</button>` : "";
-    const excluir = editavel && balde.real && !balde.itens.length ? `<button class="small ghost" style="width:auto" onclick="excluirCarretaDeltaTela(${balde.real.id},${vooId})" aria-label="Excluir carreta" title="Excluir carreta vazia">${ico("x", 14)}</button>` : "";
+    const solicitar = livres.length ? `<button class="small ghost delta-icone" onclick="solicitarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Chamar operador" title="Chamar operador">${ico("carreta", 34)}${ico("campanha", 34)}${nSolicitadas || nPegas ? `<span class="delta-n">(${livres.length})</span>` : ""}</button>` : "";
+    const cancelarSolicitacao2 = nSolicitadas ? `<button class="small ghost delta-icone" onclick="cancelarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Cancelar solicita\xE7\xE3o" title="Cancelar solicita\xE7\xE3o">${ico("cancelar", 34)}</button>` : "";
+    const excluir = editavel && balde.real && !balde.itens.length ? `<button class="small ghost delta-icone" onclick="excluirCarretaDeltaTela(${balde.real.id},${vooId})" aria-label="Excluir carreta" title="Excluir carreta vazia">${ico("x", 34)}</button>` : "";
     const matiz = corBaldeDelta(balde.chave);
     const aberto = !baldeFechado(vooId, balde.chave);
     return `<div class="balde-delta">
@@ -3935,9 +3952,9 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       ...extras.map((c) => `<option value="${c.id}">${esc(c.nome)}</option>`)
     ].join("");
     return `<div class="barra-mover-delta">
-    <span class="note">${ids.length} selecionado${ids.length === 1 ? "" : "s"}</span>
+    <span class="delta-alocar">ALOCAR EM:</span>
     <select id="carretaAlvoSelecionados" class="delta-alvo">${opcoes}</select>
-    <button class="small ok delta-ok" onclick="confirmarMoverSelecionados(${vooId})" aria-label="Confirmar" title="Mover para esta carreta">${ico("aceite", 18)}</button>
+    <button class="small ok delta-ok" onclick="confirmarMoverSelecionados(${vooId})" aria-label="Confirmar" title="Mover para esta carreta">${ico("aceite", 34)}</button>
   </div>`;
   }
   function abrirCriarCarretaDelta(vooId, pontoDeltaIdParaMover) {
@@ -4079,8 +4096,8 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
     const descarga = !pode("descarga_ok") ? "" : v.descarga_ok_em ? `<p class="note" style="margin-top:12px">Descarga confirmada ${hora(v.descarga_ok_em)} por ${esc(nomeDe(v.descarga_ok_por))}.</p>` : `<div style="margin-top:12px"><button class="ok" onclick="marcarDescargaDelta(${vooId})">Descarrega OK</button>
          <p class="note" style="margin-top:6px">Confirma que o voo foi descarregado \u2014 fica registrado quem e quando. N\xE3o tira o voo da grade de boxes dos operadores (pode ainda ter bag parada ali).</p></div>`;
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>`;
-    const novaCarreta = editavel ? `<button class="small ghost delta-icone" onclick="abrirCriarCarretaDelta(${vooId},null)" aria-label="Nova carreta" title="Nova carreta">+${ico("reboque", 22)}${ico("malha", 20)}</button>` : "";
-    const carretaVazia = pode("sol_abrir") ? `<button class="small primary delta-icone" onclick="solicitarCarretaVaziaDelta(${vooId})" aria-label="Pedir carreta vazia" title="Pedir carreta vazia">${ico("reboque", 24)}</button>` : "";
+    const novaCarreta = editavel ? `<button class="small ghost delta-icone" onclick="abrirCriarCarretaDelta(${vooId},null)" aria-label="Nova carreta" title="Nova carreta">+${ico("reboque", 34)}${ico("malha", 34)}</button>` : "";
+    const carretaVazia = pode("sol_abrir") ? `<button class="small primary delta-icone" onclick="solicitarCarretaVaziaDelta(${vooId})" aria-label="Pedir carreta vazia" title="Pedir carreta vazia">${ico("reboque", 34)}</button>` : "";
     abrirModal(`<div class="delta-popup">${substituir}
     <div class="list-line delta-topo">
       <h3 class="grow">Delta \xB7 ${vooRotulo2(v, "chegada", { box: false })}</h3>
@@ -11215,14 +11232,14 @@ Sair mesmo assim?`
       seletor: ".balde-delta .list-line",
       grupo: "delta",
       arquivo: "screens/telaPontos.js",
-      desc: "Topo de uma carreta: nome, resumo (aguardando/pego) e os bot\xF5es S.OP, cancelar e excluir."
+      desc: "Topo de uma carreta: nome, quantidade, resumo (aguardando/pego) e os bot\xF5es chamar operador (trator + megafone), cancelar e excluir."
     },
     {
-      nome: "quadradinho-selecao",
-      seletor: ".pt-check",
+      nome: "alocar-em",
+      seletor: ".delta-alocar",
       grupo: "delta",
       arquivo: "screens/telaPontos.js",
-      desc: "O quadradinho no come\xE7o da conex\xE3o, para marcar e mover para outra carreta."
+      desc: '"ALOCAR EM:" na barra de mover, antes da lista de carretas.'
     },
     {
       nome: "campo-qtd-manual",
@@ -11236,14 +11253,14 @@ Sair mesmo assim?`
       seletor: ".balde-delta .pt-linha",
       grupo: "delta",
       arquivo: "screens/telaPontos.js",
-      desc: "Uma conex\xE3o dentro da carreta: quadradinho, voo de sa\xEDda, selos (PP/TST, solicitado/pego), quantidade e campo manual."
+      desc: "Uma conex\xE3o dentro da carreta: voo de sa\xEDda, selos (PP/TST, solicitado/pego), quantidade e campo manual. Toque na linha marca (fundo azul)."
     },
     {
       nome: "carreta-do-delta",
       seletor: ".balde-delta",
       grupo: "delta",
       arquivo: "screens/telaPontos.js",
-      desc: "Uma carreta (Imediatas, ~1h, Mais de 1h ou criada \xE0 m\xE3o), com a faixa de cor na esquerda."
+      desc: "Uma carreta (Imediatas, de 1h, Mais de 1h ou criada \xE0 m\xE3o), com a faixa de cor na esquerda. Tocar no nome abre/fecha."
     },
     // ---- basicas ----
     {
