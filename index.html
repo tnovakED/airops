@@ -368,6 +368,27 @@
   .st-aceita{background:rgba(47,102,144,.15); color:var(--amber)}
   .st-cancelada{background:rgba(194,59,59,.14); color:var(--red)}
 
+  /* ---------- lista de destinos (folha do Operador) ----------
+     15/09/2026, pedido do Tiago: voos de saida um embaixo do outro, sem
+     cara de botao (era a .voo-grid logo abaixo) e sem quadradinho.
+     Marcado = fundo --accent-light, o mesmo "selecionado" do resto do
+     app, sem borda nem sombra. Bags e hora vem colados na placa (gap
+     12px: o selo amarelo sai 8px pra direita da placa e nao pode cobrir
+     o numero). padding 10px em cima deixa lugar pro selo, que sobe 8px. */
+  .destino-lista{margin-top:10px}
+  /* .pt-linha.destino-linha, nao so .destino-linha: a regra .pt-linha
+     vem mais abaixo no arquivo e, com o mesmo peso, ganhava o gap e o
+     padding (visto no print: bags a 8px da placa, fundo colado no texto). */
+  /* 15/09/2026: mais apertada a pedido do Tiago (era 10px em cima e em
+     baixo). Em cima fica 8px porque o selo sobe 8px acima da placa — com
+     menos, ele sairia da linha e da faixa azul do marcado. */
+  .pt-linha.destino-linha{flex-wrap:nowrap; cursor:pointer; gap:12px; padding:8px 8px 3px}
+  .destino-linha.sel{background:var(--accent-light); border-radius:10px}
+  .destino-info{flex:none; display:flex; align-items:center; gap:10px;
+    font-size:15px; color:var(--muted)}
+  .destino-bags{display:inline-flex; align-items:center; gap:2px;
+    font-weight:600; color:var(--text)}
+
   /* ---------- grade de voos (operador) ---------- */
   .voo-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px}
   .voo-btn{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px; text-align:center; cursor:pointer}
@@ -783,9 +804,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 09:55:05
+     Gerado em: 15/09/2026, 10:27:32
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 09:55";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 10:27";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2845,6 +2866,20 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       return `<div class="voo-btn ${sel.includes(v.id) ? "sel" : ""}" onclick="${fn}(${v.id})">
       <div class="linha-c">${vooRotulo2(v, "saida", { aviao: true })}</div>
       <div class="dhora">${partiu ? `<span class="voo-partiu">${ico("decolando", 14)}${ico("aceite", 14)}${v._bag != null ? ` ${v._bag}` : ""}</span>` : `${esc(v.saida || "")}${v._bag != null ? ` \xB7 ${v._bag} bag${v._bag === 1 ? "" : "s"}` : ""}`}&nbsp;</div>
+    </div>`;
+    }).join("")}
+  </div>`;
+  }
+  function listaDestinos(cands, sel, fn) {
+    return `<div class="destino-lista">
+    ${cands.map((v) => {
+      const ts = minutosDe(v.saida);
+      const partiu = ts !== null && agoraMin() > ts;
+      const marcado = sel.includes(v.id);
+      const bags = v._bag != null ? `<span class="destino-bags">${v._bag}${ico("pacote", 16)}</span>` : "";
+      return `<div class="pt-linha destino-linha${marcado ? " sel" : ""}" onclick="${fn}(${v.id})">
+      ${vooRotulo2(v, "saida", { aviao: true })}
+      <span class="destino-info">${bags}${partiu ? `<span class="voo-partiu">${ico("decolando", 14)}${ico("aceite", 14)}</span>` : `<span class="destino-hora">${esc(v.saida || "")}</span>`}</span>
     </div>`;
     }).join("")}
   </div>`;
@@ -8671,7 +8706,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       "QUAL DESTINO?",
       "Toque em todos os destinos que voc\xEA est\xE1 levando.",
       botaoSaindo(st.sel.length, acaoConfirmar)
-    ) + gradeDestinos(candidatos, [], st.sel, togDestSel);
+    ) + listaDestinos(candidatos, st.sel, togDestSel);
   }
   var quantosDestinos = (n) => n === 1 ? "o destino j\xE1 marcado" : `os ${n} destinos j\xE1 marcados`;
   async function abrirFolhaOp(origem) {
@@ -8779,7 +8814,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const outros = todos.filter((v) => !idsConex.has(v.id));
     const escondidos = candidatosDestinoJanela([vooOrigem]).length - todos.length;
     const legenda = via === "PP" ? "Voos que voc\xEA vai levar direto no box deles." : `Voos cujas bags voc\xEA vai deixar na ${via}. Elas continuam sendo desses voos \u2014 quem for buscar depois sabe que est\xE3o na ${via}.`;
-    const grade = (lista) => gradeDestinos(lista, [], g[via], pre === "op" ? "togDest" : "togDestPU");
+    const grade = (lista) => listaDestinos(lista, g[via], pre === "op" ? "togDest" : "togDestPU");
     const rotOrigem = esc((vo.origem || "") + "-" + (vo.voo_chegada || vo.numero || "?"));
     const linhaTodos = (lista, rotulo) => {
       if (lista.length < 2) return "";
@@ -10757,6 +10792,41 @@ Sair mesmo assim?`
       grupo: "boxes",
       arquivo: "components/grades.js",
       desc: "A grade de 4 colunas com os quadrados dos boxes."
+    },
+    {
+      nome: "bags-do-destino",
+      seletor: ".destino-bags",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Quantidade de bags com o \xEDcone de mala, na ponta da linha de destino."
+    },
+    {
+      nome: "hora-do-destino",
+      seletor: ".destino-hora",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Hor\xE1rio de sa\xEDda do voo, na ponta da linha de destino."
+    },
+    {
+      nome: "info-do-destino",
+      seletor: ".destino-info",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "A ponta direita da linha de destino: hora (ou aviso de j\xE1 decolou) e bags."
+    },
+    {
+      nome: "linha-de-destino",
+      seletor: ".destino-linha",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Um voo de sa\xEDda na folha do Operador: quadradinho, voo, hora e bags."
+    },
+    {
+      nome: "lista-de-destinos",
+      seletor: ".destino-lista",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "A lista de voos de sa\xEDda, um embaixo do outro, na folha da viagem nova."
     },
     {
       nome: "estado-descarga",
