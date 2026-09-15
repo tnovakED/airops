@@ -761,9 +761,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 14/09/2026, 15:20:45
+     Gerado em: 15/09/2026, 08:17:52
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="14/09 15:20";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 08:17";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2171,17 +2171,17 @@
   }
   async function mudarVoo(id, campo, valor) {
     valor = campo === "chegada" || campo === "saida" ? normHora(valor) : valor.trim();
-    const alvo = valor || null;
+    const alvo2 = valor || null;
     const lista = UI.voosVista || D.voos;
     const trocaveis = { box: "BOX", prefixo: "PREFIXO", voo_chegada: "VOO DE CHEGADA", numero: "VOO DE SA\xCDDA" };
-    if (alvo && trocaveis[campo]) {
-      const outros = lista.filter((v) => v.id !== id && String(v[campo] || "") === String(alvo));
+    if (alvo2 && trocaveis[campo]) {
+      const outros = lista.filter((v) => v.id !== id && String(v[campo] || "") === String(alvo2));
       if (outros.length) {
-        abrirEscolhaTroca(id, campo, alvo, outros);
+        abrirEscolhaTroca(id, campo, alvo2, outros);
         return;
       }
     }
-    await gravarCampo(id, campo, alvo);
+    await gravarCampo(id, campo, alvo2);
   }
   var BLOCO_DO_CAMPO = { voo_chegada: "chegada", prefixo: "chegada", numero: "saida" };
   function rotacaoTexto(vooChegada, vooSaida, box) {
@@ -2190,10 +2190,10 @@
     const b = box ? `, no box ${esc(box)}` : "";
     return `${c} (chegando) ${s}${b}`;
   }
-  function resultadoDaTroca(campo, eu, outro, alvo) {
+  function resultadoDaTroca(campo, eu, outro, alvo2) {
     if (campo === "box") {
       return [
-        rotacaoTexto(eu.voo_chegada, eu.numero, alvo),
+        rotacaoTexto(eu.voo_chegada, eu.numero, alvo2),
         rotacaoTexto(outro.voo_chegada, outro.numero, eu.box)
       ];
     }
@@ -2208,14 +2208,14 @@
       rotacaoTexto(eu.voo_chegada, outro.numero, eu.box)
     ];
   }
-  function abrirEscolhaTroca(id, campo, alvo, outros) {
+  function abrirEscolhaTroca(id, campo, alvo2, outros) {
     const lista = UI.voosVista || D.voos;
     const eu = lista.find((v) => v.id === id) || {};
     const rot = { box: "BOX", prefixo: "PREFIXO", voo_chegada: "VOO DE CHEGADA", numero: "VOO DE SA\xCDDA" }[campo];
     const opcoes = outros.map((o) => {
-      const [linha1, linha2] = resultadoDaTroca(campo, eu, o, alvo);
+      const [linha1, linha2] = resultadoDaTroca(campo, eu, o, alvo2);
       return `<button class="primary" style="margin-bottom:8px;text-align:left"
-      onclick="confirmarTroca(${id},'${campo}','${esc(alvo)}',${o.id})">
+      onclick="confirmarTroca(${id},'${campo}','${esc(alvo2)}',${o.id})">
       Trocar
       <span style="display:block;font-size:12px;opacity:.85;margin-top:4px">
         O voo ${linha1}</span>
@@ -2226,25 +2226,25 @@
     if (campo !== "numero") {
       let dica;
       if (campo === "box") {
-        const jaNoBox = lista.filter((v) => v.id !== id && String(v.box || "") === String(alvo)).map((v) => v.numero || v.voo_chegada || "?");
-        dica = jaNoBox.length ? `os voos ${esc(jaNoBox.join(", "))} v\xE3o sair no box ${esc(alvo)} \u2014 use quando o voo de chegada mais tarde est\xE1 programado para esse box` : `use quando o voo de chegada mais tarde est\xE1 programado para o box ${esc(alvo)}`;
+        const jaNoBox = lista.filter((v) => v.id !== id && String(v.box || "") === String(alvo2)).map((v) => v.numero || v.voo_chegada || "?");
+        dica = jaNoBox.length ? `os voos ${esc(jaNoBox.join(", "))} v\xE3o sair no box ${esc(alvo2)} \u2014 use quando o voo de chegada mais tarde est\xE1 programado para esse box` : `use quando o voo de chegada mais tarde est\xE1 programado para o box ${esc(alvo2)}`;
       } else {
-        dica = `os dois ficam com ${esc(alvo)} \u2014 use quando o outro voo chega mais tarde`;
+        dica = `os dois ficam com ${esc(alvo2)} \u2014 use quando o outro voo chega mais tarde`;
       }
       manter = `<button style="margin-bottom:8px;text-align:left"
-      onclick="confirmarTroca(${id},'${campo}','${esc(alvo)}',null)">
-      S\xF3 colocar ${esc(alvo)} neste voo
+      onclick="confirmarTroca(${id},'${campo}','${esc(alvo2)}',null)">
+      S\xF3 colocar ${esc(alvo2)} neste voo
       <span style="display:block;font-size:12px;opacity:.75;margin-top:4px">${dica}</span></button>`;
     }
-    abrirModal(`<h3>${rot} ${esc(alvo)} j\xE1 est\xE1 em uso</h3>
+    abrirModal(`<h3>${rot} ${esc(alvo2)} j\xE1 est\xE1 em uso</h3>
     <p class="note">Escolha o que fazer:</p>
     ${opcoes}${manter}
     <button class="ghost" onclick="fecharModal();render()">Desfazer a edi\xE7\xE3o</button>`);
   }
-  async function confirmarTroca(id, campo, alvo, outroId) {
+  async function confirmarTroca(id, campo, alvo2, outroId) {
     fecharModal();
     if (outroId == null) {
-      await gravarCampo(id, campo, alvo);
+      await gravarCampo(id, campo, alvo2);
       return;
     }
     const bloco = BLOCO_DO_CAMPO[campo];
@@ -2269,14 +2269,14 @@
       forcarDesenho();
       return;
     }
-    const r2 = await alterarVoo(id, { box: alvo, oc_posicionado_id: ocOutro });
+    const r2 = await alterarVoo(id, { box: alvo2, oc_posicionado_id: ocOutro });
     if (r2.error) {
       await erro(r2.error);
       await bus.recarregar();
       forcarDesenho();
       return;
     }
-    aplicarLocal(id, { box: alvo, oc_posicionado_id: ocOutro });
+    aplicarLocal(id, { box: alvo2, oc_posicionado_id: ocOutro });
     aplicarLocal(outro.id, { box: boxEu, oc_posicionado_id: ocEu });
     forcarDesenho();
   }
@@ -2285,14 +2285,14 @@
     (_b = (_a = document.activeElement) == null ? void 0 : _a.blur) == null ? void 0 : _b.call(_a);
     bus.render();
   }
-  async function gravarCampo(id, campo, alvo) {
-    const { error } = await alterarVoo(id, { [campo]: alvo });
+  async function gravarCampo(id, campo, alvo2) {
+    const { error } = await alterarVoo(id, { [campo]: alvo2 });
     if (error) {
       await erro(error);
       await bus.recarregar();
       return;
     }
-    aplicarLocal(id, { [campo]: alvo });
+    aplicarLocal(id, { [campo]: alvo2 });
     bus.renderSeguro();
   }
   function aplicarLocal(id, campos) {
@@ -2591,9 +2591,9 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     ${ds.map((d) => {
       const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
       const parou = !chegouNoVoo(d);
-      const alvo = parou ? ` <span class="note">\u2192 ${esc(d.entrega_via)}</span>` : "";
+      const alvo2 = parou ? ` <span class="note">\u2192 ${esc(d.entrega_via)}</span>` : "";
       return `<div class="list-line">
-        <span class="mono grow" style="${d.status === "entregue" ? "color:var(--muted)" : ""}">${origemDe(d, vg)} \xB7 ${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}${alvo}</span>
+        <span class="mono grow" style="${d.status === "entregue" ? "color:var(--muted)" : ""}">${origemDe(d, vg)} \xB7 ${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}${alvo2}</span>
         <span class="chip st-${d.status === "entregue" && parou ? "aceita" : d.status}">${d.status === "entregue" && parou ? "na " + esc(d.entrega_via) : ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
       </div>`;
     }).join("")}</div>`;
@@ -3041,12 +3041,12 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       if (!mIndia && !mDelta) continue;
       const tipo = mIndia ? "india" : "delta";
       const vooNome = (mIndia || mDelta)[1];
-      const alvo = tipo === "india" ? D.voos.find((v) => v.data === dia && v.numero === vooNome) : D.voos.find((v) => v.data === dia && v.voo_chegada === vooNome);
-      if (!alvo) continue;
-      const chave = `${alvo.id}:${tipo}`;
+      const alvo2 = tipo === "india" ? D.voos.find((v) => v.data === dia && v.numero === vooNome) : D.voos.find((v) => v.data === dia && v.voo_chegada === vooNome);
+      if (!alvo2) continue;
+      const chave = `${alvo2.id}:${tipo}`;
       if (vistos.has(chave)) continue;
       vistos.add(chave);
-      alvos.push({ vooId: alvo.id, tipo });
+      alvos.push({ vooId: alvo2.id, tipo });
     }
     return alvos;
   }
@@ -3083,15 +3083,15 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
           semVoo(`${f.name}: ${r.erro}`);
           continue;
         }
-        const alvo = D.voos.find((v) => v.data === dia && v.numero === vooNome);
-        if (!alvo) {
+        const alvo2 = D.voos.find((v) => v.data === dia && v.numero === vooNome);
+        if (!alvo2) {
           semVoo(`${f.name}: voo de sa\xEDda ${vooNome} n\xE3o est\xE1 na malha de ${dia} \u2014 importe a malha antes.`);
           continue;
         }
-        const rotulo = `${alvo.destino || "\u2014"}-${vooNome}`;
+        const rotulo = `${alvo2.destino || "\u2014"}-${vooNome}`;
         const anota = (msg) => {
           log.push(msg);
-          entradas == null ? void 0 : entradas.push({ vooId: alvo.id, tipo: "india", texto: msg });
+          entradas == null ? void 0 : entradas.push({ vooId: alvo2.id, tipo: "india", texto: msg });
         };
         if (r.vooCabecalho && r.vooCabecalho !== vooNome) {
           anota(`Aviso: nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho diz ${r.vooCabecalho}. Confira se foi extra\xEDdo certo.`);
@@ -3100,7 +3100,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
           anota("Esse voo n\xE3o possui voos de conex\xE3o.");
           continue;
         }
-        const { data, error } = await reconciliarPontoIndiaDb(dia, alvo.id, r.conexoes);
+        const { data, error } = await reconciliarPontoIndiaDb(dia, alvo2.id, r.conexoes);
         if (error) {
           anota(`Erro ao gravar \xCDndia - voo ${rotulo}: ${error.message}`);
           continue;
@@ -3118,15 +3118,15 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
           semVoo(`${f.name}: ${r.erro}`);
           continue;
         }
-        const alvo = D.voos.find((v) => v.data === dia && v.voo_chegada === vooNome);
-        if (!alvo) {
+        const alvo2 = D.voos.find((v) => v.data === dia && v.voo_chegada === vooNome);
+        if (!alvo2) {
           semVoo(`${f.name}: voo de chegada ${vooNome} n\xE3o est\xE1 na malha de ${dia} \u2014 importe a malha antes.`);
           continue;
         }
-        const rotulo = `${alvo.origem || "\u2014"}-${vooNome}`;
+        const rotulo = `${alvo2.origem || "\u2014"}-${vooNome}`;
         const anota = (msg) => {
           log.push(msg);
-          entradas == null ? void 0 : entradas.push({ vooId: alvo.id, tipo: "delta", texto: msg });
+          entradas == null ? void 0 : entradas.push({ vooId: alvo2.id, tipo: "delta", texto: msg });
         };
         if (r.vooCabecalho && r.vooCabecalho !== vooNome) {
           anota(`Aviso: nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho diz ${r.vooCabecalho}. Confira se foi extra\xEDdo certo.`);
@@ -3135,7 +3135,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
           anota("Esse voo n\xE3o possui voos para conectar.");
           continue;
         }
-        const { data, error } = await reconciliarPontoDeltaDb(dia, alvo.id, r.conexoes);
+        const { data, error } = await reconciliarPontoDeltaDb(dia, alvo2.id, r.conexoes);
         if (error) {
           anota(`Erro ao gravar Delta - voo ${rotulo}: ${error.message}`);
           continue;
@@ -3583,8 +3583,8 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     }
     for (const pd of lista) {
       if (pd.carreta_id != null) {
-        const alvo = baldes.find((b) => b.real && mesmoId(b.real.id, pd.carreta_id));
-        (alvo || baldes[2]).itens.push(pd);
+        const alvo2 = baldes.find((b) => b.real && mesmoId(b.real.id, pd.carreta_id));
+        (alvo2 || baldes[2]).itens.push(pd);
       } else {
         baldes[ORDEM_BALDES_AUTO_DELTA.indexOf(baldeAutoDaConexao(v, pd))].itens.push(pd);
       }
@@ -7484,15 +7484,15 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     flex: 1
   };
   var _convertToUnit = function _convertToUnit2(target, property, value, unit) {
-    var curValue = parseFloat(value) || 0, curUnit = (value + "").trim().substr((curValue + "").length) || "px", style = _tempDiv.style, horizontal = _horizontalExp.test(property), isRootSVG = target.tagName.toLowerCase() === "svg", measureProperty = (isRootSVG ? "client" : "offset") + (horizontal ? "Width" : "Height"), amount = 100, toPixels = unit === "px", toPercent = unit === "%", px, parent, cache, isSVG;
+    var curValue = parseFloat(value) || 0, curUnit = (value + "").trim().substr((curValue + "").length) || "px", style = _tempDiv.style, horizontal = _horizontalExp.test(property), isRootSVG = target.tagName.toLowerCase() === "svg", measureProperty = (isRootSVG ? "client" : "offset") + (horizontal ? "Width" : "Height"), amount = 100, toPixels = unit === "px", toPercent = unit === "%", px2, parent, cache, isSVG;
     if (unit === curUnit || !curValue || _nonConvertibleUnits[unit] || _nonConvertibleUnits[curUnit]) {
       return curValue;
     }
     curUnit !== "px" && !toPixels && (curValue = _convertToUnit2(target, property, value, "px"));
     isSVG = target.getCTM && _isSVG(target);
     if ((toPercent || curUnit === "%") && (_transformProps[property] || ~property.indexOf("adius"))) {
-      px = isSVG ? target.getBBox()[horizontal ? "width" : "height"] : target[measureProperty];
-      return _round(toPercent ? curValue / px * amount : curValue / 100 * px);
+      px2 = isSVG ? target.getBBox()[horizontal ? "width" : "height"] : target[measureProperty];
+      return _round(toPercent ? curValue / px2 * amount : curValue / 100 * px2);
     }
     style[horizontal ? "width" : "height"] = amount + (toPixels ? curUnit : unit);
     parent = unit !== "rem" && ~property.indexOf("adius") || unit === "em" && target.appendChild && !isRootSVG ? target : target.parentNode;
@@ -7509,13 +7509,13 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       if (toPercent && (property === "height" || property === "width")) {
         var v = target.style[property];
         target.style[property] = amount + unit;
-        px = target[measureProperty];
+        px2 = target[measureProperty];
         v ? target.style[property] = v : _removeProperty(target, property);
       } else {
         (toPercent || curUnit === "%") && !_nonStandardLayouts[_getComputedProperty(parent, "display")] && (style.position = _getComputedProperty(target, "position"));
         parent === target && (style.position = "static");
         parent.appendChild(_tempDiv);
-        px = _tempDiv[measureProperty];
+        px2 = _tempDiv[measureProperty];
         parent.removeChild(_tempDiv);
         style.position = "absolute";
       }
@@ -7525,7 +7525,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
         cache.width = parent[measureProperty];
       }
     }
-    return _round(toPixels ? px * curValue / amount : px && curValue ? amount / px * curValue : 0);
+    return _round(toPixels ? px2 * curValue / amount : px2 && curValue ? amount / px2 * curValue : 0);
   };
   var _get = function _get2(target, property, unit, uncache) {
     var value;
@@ -7815,7 +7815,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     if ("x" in cache && !uncache && !cache.uncache) {
       return cache;
     }
-    var style = target.style, invertedScaleX = cache.scaleX < 0, px = "px", deg = "deg", cs = getComputedStyle(target), origin = _getComputedProperty(target, _transformOriginProp) || "0", x, y, z, scaleX, scaleY, rotation, rotationX, rotationY, skewX, skewY, perspective, xOrigin, yOrigin, matrix, angle, cos, sin, a, b, c, d, a12, a22, t1, t2, t3, a13, a23, a33, a42, a43, a32;
+    var style = target.style, invertedScaleX = cache.scaleX < 0, px2 = "px", deg = "deg", cs = getComputedStyle(target), origin = _getComputedProperty(target, _transformOriginProp) || "0", x, y, z, scaleX, scaleY, rotation, rotationX, rotationY, skewX, skewY, perspective, xOrigin, yOrigin, matrix, angle, cos, sin, a, b, c, d, a12, a22, t1, t2, t3, a13, a23, a33, a42, a43, a32;
     x = y = z = rotation = rotationX = rotationY = skewX = skewY = perspective = 0;
     scaleX = scaleY = 1;
     cache.svg = !!(target.getCTM && _isSVG(target));
@@ -7933,9 +7933,9 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       }
     }
     uncache = uncache || cache.uncache;
-    cache.x = x - ((cache.xPercent = x && (!uncache && cache.xPercent || (Math.round(target.offsetWidth / 2) === Math.round(-x) ? -50 : 0))) ? target.offsetWidth * cache.xPercent / 100 : 0) + px;
-    cache.y = y - ((cache.yPercent = y && (!uncache && cache.yPercent || (Math.round(target.offsetHeight / 2) === Math.round(-y) ? -50 : 0))) ? target.offsetHeight * cache.yPercent / 100 : 0) + px;
-    cache.z = z + px;
+    cache.x = x - ((cache.xPercent = x && (!uncache && cache.xPercent || (Math.round(target.offsetWidth / 2) === Math.round(-x) ? -50 : 0))) ? target.offsetWidth * cache.xPercent / 100 : 0) + px2;
+    cache.y = y - ((cache.yPercent = y && (!uncache && cache.yPercent || (Math.round(target.offsetHeight / 2) === Math.round(-y) ? -50 : 0))) ? target.offsetHeight * cache.yPercent / 100 : 0) + px2;
+    cache.z = z + px2;
     cache.scaleX = _round(scaleX);
     cache.scaleY = _round(scaleY);
     cache.rotation = _round(rotation) + deg;
@@ -7943,7 +7943,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     cache.rotationY = _round(rotationY) + deg;
     cache.skewX = skewX + deg;
     cache.skewY = skewY + deg;
-    cache.transformPerspective = perspective + px;
+    cache.transformPerspective = perspective + px2;
     if (cache.zOrigin = parseFloat(origin.split(" ")[2]) || !uncache && cache.zOrigin || 0) {
       style[_transformOriginProp] = _firstTwoOnly(origin);
     }
@@ -8785,13 +8785,13 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   function alternarTodosDaVia(st) {
     const lista = conexoesDaVia(st).map((v) => v.id);
     if (!lista.length) return;
-    const alvo = grupos(st)[st.via];
-    const todos = lista.every((id) => alvo.includes(id));
+    const alvo2 = grupos(st)[st.via];
+    const todos = lista.every((id) => alvo2.includes(id));
     for (const id of lista) {
-      const i = alvo.indexOf(id);
+      const i = alvo2.indexOf(id);
       if (todos) {
-        if (i >= 0) alvo.splice(i, 1);
-      } else if (i < 0) alvo.push(id);
+        if (i >= 0) alvo2.splice(i, 1);
+      } else if (i < 0) alvo2.push(id);
     }
     bus.render();
   }
@@ -9313,8 +9313,8 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
     if (atual < 0) return ordem;
     const nova = ordem.slice();
     nova.splice(atual, 1);
-    const alvo = Math.max(0, Math.min(indiceDestino, nova.length));
-    nova.splice(alvo, 0, tipoArrastado);
+    const alvo2 = Math.max(0, Math.min(indiceDestino, nova.length));
+    nova.splice(alvo2, 0, tipoArrastado);
     return nova;
   }
   function ordemAlertaValida(v) {
@@ -9683,14 +9683,14 @@ ${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
   function contarUrgentes(ps) {
     return ps.filter((p) => {
       const v = voo(p.voo_destino_id) || {};
-      const alvo = minutosDe(v.saida);
-      return alvo != null && corTimer(alvo - agoraMin()) === "timer-vermelho";
+      const alvo2 = minutosDe(v.saida);
+      return alvo2 != null && corTimer(alvo2 - agoraMin()) === "timer-vermelho";
     }).length;
   }
   function timerAlerta(v) {
-    const alvo = minutosDe(v.saida);
-    if (alvo == null) return "";
-    const restam = alvo - agoraMin();
+    const alvo2 = minutosDe(v.saida);
+    if (alvo2 == null) return "";
+    const restam = alvo2 - agoraMin();
     const txt = restam <= 0 ? "partiu" : `${restam}min`;
     return ` <span class="op-timer ${corTimer(restam)}">${esc(txt)}</span>`;
   }
@@ -10513,6 +10513,715 @@ Sair mesmo assim?`
     location.reload();
   }
 
+  // src/ui/pecas.js
+  var PECAS = [
+    // ---- identificacao de voo (src/ui/components/voo.js) ----
+    {
+      nome: "par-de-voos",
+      seletor: ".voo-par",
+      grupo: "voo",
+      arquivo: "components/voo.js",
+      desc: "Chegada \u2192 sa\xEDda numa linha s\xF3: de onde a bag veio e para onde vai."
+    },
+    {
+      nome: "seta-do-par",
+      seletor: ".voo-seta",
+      grupo: "voo",
+      arquivo: "components/voo.js",
+      desc: "A seta entre os dois voos do par."
+    },
+    {
+      nome: "selo-pouso-decolagem",
+      seletor: ".voo-corner",
+      grupo: "voo",
+      arquivo: "components/voo.js",
+      desc: "Bolinha verde (pousando) ou amarela (decolando) presa no canto da placa."
+    },
+    {
+      nome: "placa-box",
+      seletor: ".voo-box",
+      grupo: "voo",
+      arquivo: "components/voo.js",
+      desc: "O quadrado com borda que mostra o n\xFAmero do box."
+    },
+    {
+      nome: "aeroporto",
+      seletor: ".voo-apt",
+      grupo: "voo",
+      arquivo: "components/voo.js",
+      desc: "As 3 letras do aeroporto (YYY). Origem se chega, destino se sai."
+    },
+    {
+      nome: "hifen-do-voo",
+      seletor: ".voo-sep",
+      grupo: "voo",
+      arquivo: "components/voo.js",
+      desc: "O tra\xE7o entre aeroporto e n\xFAmero do voo."
+    },
+    {
+      nome: "numero-do-voo",
+      seletor: ".voo-num",
+      grupo: "voo",
+      arquivo: "components/voo.js",
+      desc: "Os 4 d\xEDgitos do voo (XXXX)."
+    },
+    {
+      nome: "hora-do-voo",
+      seletor: ".voo-hora",
+      grupo: "voo",
+      arquivo: "components/voo.js",
+      desc: "Hor\xE1rio pequeno depois do voo."
+    },
+    {
+      nome: "voo-partiu",
+      seletor: ".voo-partiu",
+      grupo: "voo",
+      arquivo: "components/grades.js",
+      desc: "Aviso amarelo: o voo j\xE1 decolou e ainda tem bag no ch\xE3o."
+    },
+    {
+      nome: "rotulo-voo",
+      seletor: ".voo",
+      grupo: "voo",
+      arquivo: "components/voo.js",
+      desc: "O conjunto YYY-XXXX [BOX]. Azul-escuro = chegada, azul = sa\xEDda."
+    },
+    // ---- cartao de alerta (src/ui/screens/telaOperador.js) ----
+    {
+      nome: "botao-quadrado",
+      seletor: ".alerta-acao",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Bot\xE3o s\xF3 com \xEDcone, quadrado (Aceitar, Cancelar, Ver voos, olho)."
+    },
+    {
+      nome: "timer-do-voo",
+      seletor: ".op-timer",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Quanto falta para o voo sair. Muda de cor: azul \u2192 laranja \u2192 amarelo \u2192 vermelho."
+    },
+    {
+      nome: "contagem-urgentes",
+      seletor: ".alerta-urgentes",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "N\xFAmero vermelho de voos com timer vencendo, na linha."
+    },
+    {
+      nome: "contagem-voos",
+      seletor: ".alerta-contagem",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Quantos voos aquele lugar tem, em cinza."
+    },
+    {
+      nome: "sino-urgente",
+      seletor: ".card-urgentes",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Sino vermelho balan\xE7ando no topo do cart\xE3o, com o total de urgentes."
+    },
+    {
+      nome: "lugar",
+      seletor: ".lugar",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "A palavra grande do cart\xE3o (BOX, TCX, TLC). Tamb\xE9m \xE9 a al\xE7a de arrastar."
+    },
+    {
+      nome: "aba-de-secao",
+      seletor: ".lugar-linha .deg",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Cada bot\xE3ozinho de se\xE7\xE3o no topo do cart\xE3o."
+    },
+    {
+      nome: "cabeca-do-cartao",
+      seletor: ".lugar-linha",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "A faixa de cima do cart\xE3o: abas de se\xE7\xE3o \xE0 esquerda, sino e lugar \xE0 direita."
+    },
+    {
+      nome: "miolo-da-linha",
+      seletor: ".alerta-linha > .grow",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "A parte esquerda da linha do alerta (voo, timer, contagens), que estica at\xE9 os bot\xF5es."
+    },
+    {
+      nome: "linha-do-alerta",
+      seletor: ".alerta-linha",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Uma demanda: voo, timer e os bot\xF5es quadrados na ponta."
+    },
+    {
+      nome: "carretas-do-alerta",
+      seletor: ".alerta-carretas",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Lista de carretas que aparece ao tocar no olho."
+    },
+    {
+      nome: "lista-do-alerta",
+      seletor: ".alerta-lista",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "A lista rol\xE1vel de linhas dentro do cart\xE3o."
+    },
+    {
+      nome: "cartao-alerta",
+      seletor: ".card.alerta",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "O cart\xE3o inteiro de um lugar (BOX, TCX ou TLC), com borda laranja."
+    },
+    // ---- grade de boxes (src/ui/components/grades.js) ----
+    {
+      nome: "selo-do-quadrado",
+      seletor: ".bxq-corner",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Bolinha verde de pouso no canto do quadrado do box."
+    },
+    {
+      nome: "numero-do-box",
+      seletor: ".bxq-num",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "O n\xFAmero grande no meio do quadrado."
+    },
+    {
+      nome: "faixa-de-descarga",
+      seletor: ".bxq-faixa",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Faixa colorida embaixo: \xE2mbar vai pousar, azul descarregando, verde OK."
+    },
+    {
+      nome: "ponto-bag-em-curso",
+      seletor: ".bxq-pt",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Pontinho laranja no canto: tem bag em curso."
+    },
+    {
+      nome: "minutos-para-pousar",
+      seletor: ".bxq-timer",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Minutos que faltam para o pr\xF3ximo pouso, no canto de baixo."
+    },
+    {
+      nome: "voos-no-box",
+      seletor: ".bxq-n",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Quantos voos dividem aquele box, no canto de baixo."
+    },
+    {
+      nome: "quadrado-box",
+      seletor: ".bxq",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Um box na grade compacta."
+    },
+    {
+      nome: "grade-de-boxes",
+      seletor: ".bxq-grid",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "A grade de 4 colunas com os quadrados dos boxes."
+    },
+    {
+      nome: "estado-descarga",
+      seletor: ".bx-estado",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Texto pequeno do estado (descarregando, descarga OK...) no cart\xE3o de voo."
+    },
+    {
+      nome: "cartao-de-voo",
+      seletor: ".voo-btn",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Cart\xE3o toc\xE1vel de um voo ou destino, na grade larga."
+    },
+    {
+      nome: "grade-de-voos",
+      seletor: ".voo-grid",
+      grupo: "boxes",
+      arquivo: "components/grades.js",
+      desc: "Grade de cart\xF5es de voo/destino."
+    },
+    // ---- casca: cabecalho, barra do operador, menu ----
+    {
+      nome: "botao-menu",
+      seletor: ".menu-abrir",
+      grupo: "casca",
+      arquivo: "components/menuLateral.js",
+      desc: "As tr\xEAs linhas no canto do cabe\xE7alho, que abrem o menu."
+    },
+    {
+      nome: "item-do-menu",
+      seletor: ".menu-item",
+      grupo: "casca",
+      arquivo: "components/menuLateral.js",
+      desc: "Cada op\xE7\xE3o do menu lateral."
+    },
+    {
+      nome: "menu-lateral",
+      seletor: ".menu-lista",
+      grupo: "casca",
+      arquivo: "components/menuLateral.js",
+      desc: "O menu que desliza da esquerda."
+    },
+    {
+      nome: "aviso-sem-internet",
+      seletor: ".fila-offline",
+      grupo: "casca",
+      arquivo: "core/render.js",
+      desc: "P\xEDlula no cabe\xE7alho quando h\xE1 a\xE7\xF5es esperando internet."
+    },
+    {
+      nome: "cabecalho",
+      seletor: "header.app",
+      grupo: "casca",
+      arquivo: "core/render.js",
+      desc: "A faixa fixa do topo: menu, nome do app, quem est\xE1 logado."
+    },
+    {
+      nome: "botao-relogio",
+      seletor: ".op-barra-relogio",
+      grupo: "casca",
+      arquivo: "screens/telaOperador.js",
+      desc: "Bot\xE3o do rel\xF3gio na barra do Operador (filtro de hor\xE1rio)."
+    },
+    {
+      nome: "botao-nova-viagem",
+      seletor: ".op-barra-mais",
+      grupo: "casca",
+      arquivo: "screens/telaOperador.js",
+      desc: "O bot\xE3o + da barra do Operador."
+    },
+    {
+      nome: "filtro-horario",
+      seletor: ".janela-drop",
+      grupo: "casca",
+      arquivo: "screens/telaOperador.js",
+      desc: "A caixinha De / At\xE9 que cai do rel\xF3gio."
+    },
+    {
+      nome: "barra-do-operador",
+      seletor: ".op-barra",
+      grupo: "casca",
+      arquivo: "screens/telaOperador.js",
+      desc: "A barra fixa logo abaixo do cabe\xE7alho, na tela do Operador."
+    },
+    {
+      nome: "viagem-reduzida",
+      seletor: ".op-viagem-reduzido",
+      grupo: "casca",
+      arquivo: "screens/telaOperador.js",
+      desc: "A p\xEDlula azul com a carreta e as placas das paradas da viagem em andamento."
+    },
+    // ---- janelas ----
+    {
+      nome: "x-da-folha",
+      seletor: ".folha-x",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: "O X redondo que flutua acima da folha."
+    },
+    {
+      nome: "pergunta-da-folha",
+      seletor: ".folha-pergunta",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: 'A pergunta grande do passo ("De qual box?").'
+    },
+    {
+      nome: "trilha-da-folha",
+      seletor: ".folha-trilha",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: "As respostas j\xE1 dadas, pequenas e toc\xE1veis, no topo da folha."
+    },
+    {
+      nome: "degrau",
+      seletor: ".deg",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: "Bot\xE3ozinho de uma resposta na trilha."
+    },
+    {
+      nome: "botoes-da-janela",
+      seletor: ".modal-acoes",
+      grupo: "janela",
+      arquivo: "components/modal.js",
+      desc: "A fileira de bot\xF5es no p\xE9 da janela (Cancelar / Confirmar)."
+    },
+    {
+      nome: "janela",
+      seletor: ".modal-box",
+      grupo: "janela",
+      arquivo: "components/modal.js",
+      desc: "A caixa branca de qualquer popup, folha ou painel."
+    },
+    {
+      nome: "fundo-escuro",
+      seletor: ".modal-bg",
+      grupo: "janela",
+      arquivo: "components/modal.js",
+      desc: "O escurecido atr\xE1s de uma janela aberta."
+    },
+    // ---- basicas ----
+    {
+      nome: "contador",
+      seletor: ".cont",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "C\xEDrculo escuro com um n\xFAmero branco (quantos marcados)."
+    },
+    {
+      nome: "chip",
+      seletor: ".chip",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "P\xEDlula colorida de status (A caminho, Entregue, Pendente...)."
+    },
+    {
+      nome: "etiqueta-codigo",
+      seletor: ".dcode",
+      grupo: "base",
+      arquivo: "components/grades.js",
+      desc: "C\xF3digo grande de setor (TCX, TLC, ESTEIRA) dentro de cart\xE3o."
+    },
+    {
+      nome: "hora-pequena",
+      seletor: ".dhora",
+      grupo: "base",
+      arquivo: "components/grades.js",
+      desc: "Linha pequena em cinza embaixo do c\xF3digo ou do voo."
+    },
+    {
+      nome: "icone",
+      seletor: "svg.ico",
+      grupo: "base",
+      arquivo: "components/icones.js",
+      desc: "Qualquer \xEDcone desenhado."
+    },
+    {
+      nome: "botao-principal",
+      seletor: "button.primary",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Bot\xE3o cheio azul: a a\xE7\xE3o principal."
+    },
+    {
+      nome: "botao-verde",
+      seletor: "button.ok",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Bot\xE3o cheio verde: confirmar/pegar."
+    },
+    {
+      nome: "botao-vazado",
+      seletor: "button.ghost",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Bot\xE3o sem fundo, s\xF3 borda: a\xE7\xE3o secund\xE1ria."
+    },
+    {
+      nome: "botao-pequeno",
+      seletor: "button.small",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Bot\xE3o mais baixo e estreito."
+    },
+    {
+      nome: "botao",
+      seletor: "button",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Bot\xE3o padr\xE3o: cinza-claro, letra mai\xFAscula, ocupa a largura toda."
+    },
+    {
+      nome: "campo",
+      seletor: "input, select",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Caixa de digitar ou de escolher."
+    },
+    {
+      nome: "nome-do-campo",
+      seletor: "label",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "O texto pequeno em cima de um campo."
+    },
+    {
+      nome: "linha-com-marcar",
+      seletor: ".pt-linha",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Linha toc\xE1vel com quadradinho de marcar."
+    },
+    {
+      nome: "linha-de-lista",
+      seletor: ".list-line",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Linha gen\xE9rica de lista, com tra\xE7o embaixo."
+    },
+    {
+      nome: "titulo-de-secao",
+      seletor: ".board-title",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "T\xEDtulo cinza com uma linha fina esticada at\xE9 o fim."
+    },
+    {
+      nome: "nota",
+      seletor: ".note",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Texto pequeno em cinza, de explica\xE7\xE3o."
+    },
+    {
+      nome: "carregando",
+      seletor: ".skeleton",
+      grupo: "base",
+      arquivo: "components/skeleton.js",
+      desc: "Barra cinza pulsando enquanto o dado n\xE3o chegou."
+    },
+    {
+      nome: "cartao",
+      seletor: ".card",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Caixa branca com borda e canto arredondado."
+    },
+    {
+      nome: "tabela",
+      seletor: "table",
+      grupo: "base",
+      arquivo: "(v\xE1rias telas)",
+      desc: "Tabela (malha, CCO)."
+    }
+  ];
+  function pecaDe(el, casa2) {
+    for (const p of PECAS) {
+      if (casa2(el, p.seletor)) return p;
+    }
+    return null;
+  }
+
+  // src/core/modoPecas.js
+  init_dom();
+  var eHashPecas = () => {
+    let h = location.hash;
+    try {
+      h = decodeURIComponent(h);
+    } catch {
+    }
+    return h.toLowerCase() === "#pecas" || h.toLowerCase() === "#pe\xE7as";
+  };
+  var ligado = false;
+  var interceptar = true;
+  var alvo = null;
+  var casa = (el, sel) => el.nodeType === 1 && typeof el.matches === "function" && el.matches(sel);
+  var doModo = (el) => {
+    var _a;
+    return !!((_a = el == null ? void 0 : el.closest) == null ? void 0 : _a.call(el, "#pecas-painel"));
+  };
+  function estilo() {
+    const contornos = PECAS.map((p) => p.seletor.split(",").map((s) => `.modo-pecas ${s.trim()}`).join(",")).join(",\n");
+    return `${contornos}{outline:1px dashed rgba(194,59,59,.5); outline-offset:-1px}
+.modo-pecas #pecas-painel, .modo-pecas #pecas-painel *{outline:none}
+#pecas-caixa{position:fixed; z-index:99998; pointer-events:none; box-sizing:border-box;
+  border-style:solid; border-color:rgba(31,138,76,.38); outline:2px solid #C23B3B}
+#pecas-painel{position:fixed; left:0; right:0; bottom:0; z-index:99999; max-height:46vh; overflow-y:auto;
+  background:#10161c; color:#e8edf1; font:13px/1.35 ui-monospace,Consolas,"Roboto Mono",monospace;
+  padding:8px 10px 10px; border-top:2px solid #C23B3B; -webkit-user-select:text; user-select:text}
+#pecas-painel *{font:inherit; text-transform:none; letter-spacing:0}
+#pecas-painel .pp-topo{display:flex; align-items:center; gap:6px}
+#pecas-painel .pp-nome{flex:1; font-weight:700; font-size:16px; color:#ffb4a8}
+#pecas-painel button{width:auto; min-height:32px; padding:2px 8px; border-radius:6px;
+  background:#26313b; color:#e8edf1; border:1px solid #3a4854; font-weight:600}
+#pecas-painel button.on{background:#C23B3B; border-color:#C23B3B}
+#pecas-painel .pp-desc{color:#b9c4cc; margin:2px 0 4px}
+#pecas-painel .pp-cadeia{display:flex; flex-wrap:wrap; gap:4px; margin:4px 0}
+#pecas-painel .pp-cadeia button{min-height:26px; padding:0 6px; font-weight:400}
+#pecas-painel table{width:100%; border-collapse:collapse; font-size:13px}
+#pecas-painel td{padding:1px 0; border:0; vertical-align:top}
+#pecas-painel td:first-child{color:#8fa0ad; width:48%}
+#pecas-painel .pp-aviso{color:#ffd27a; margin-top:4px; word-break:break-all}`;
+  }
+  function px(v) {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? Math.round(n * 10) / 10 : 0;
+  }
+  function lados(cs, prop) {
+    const t = px(cs[`${prop}Top`]), r = px(cs[`${prop}Right`]), b = px(cs[`${prop}Bottom`]), l = px(cs[`${prop}Left`]);
+    if (t === r && r === b && b === l) return `${t}px`;
+    if (t === b && r === l) return `${t}px ${r}px  (cima/baixo, lados)`;
+    return `${t}px ${r}px ${b}px ${l}px  (cima, direita, baixo, esquerda)`;
+  }
+  function cadeia(el) {
+    const lista = [];
+    for (let e = el; e && e.nodeType === 1 && e !== document.body; e = e.parentElement) {
+      const p = pecaDe(e, casa);
+      if (!p) continue;
+      if (lista.length && lista[lista.length - 1].p === p) continue;
+      lista.push({ el: e, p });
+      if (lista.length >= 6) break;
+    }
+    return lista;
+  }
+  function painel() {
+    let p = document.getElementById("pecas-painel");
+    if (!p) {
+      p = document.createElement("div");
+      p.id = "pecas-painel";
+      p.addEventListener("click", cliqueNoPainel);
+      document.body.appendChild(p);
+    }
+    return p;
+  }
+  var cadeiaAtual = [];
+  function botaoModo() {
+    return `<button data-pp="modo" class="${interceptar ? "on" : ""}">${interceptar ? "tocar = ver nome" : "tocar = usar o app"}</button>`;
+  }
+  function mostrarInicio() {
+    painel().innerHTML = `<div class="pp-topo"><span class="pp-nome">MODO PE\xC7AS</span>${botaoModo()}<button data-pp="sair">sair</button></div>
+    <div class="pp-desc">Toque em qualquer coisa da tela para ver o nome e as medidas. O contorno vermelho tracejado marca as pe\xE7as que j\xE1 t\xEAm nome.</div>`;
+  }
+  function mostrar(el) {
+    cadeiaAtual = cadeia(el);
+    const sel = cadeiaAtual.length ? cadeiaAtual[0].el : el;
+    const peca = cadeiaAtual.length ? cadeiaAtual[0].p : null;
+    desenharCaixa(sel);
+    const cs = getComputedStyle(sel);
+    const r = sel.getBoundingClientRect();
+    const letraEsp = cs.letterSpacing === "normal" ? "0" : `${px(cs.letterSpacing)}px`;
+    const gap = cs.display.indexOf("flex") >= 0 || cs.display.indexOf("grid") >= 0 ? `${px(cs.rowGap)}px entre linhas \xB7 ${px(cs.columnGap)}px entre itens` : "\u2014 (n\xE3o organiza itens)";
+    const classes = (sel.getAttribute("class") || "").trim();
+    const inline = sel.getAttribute("style");
+    const nome = peca ? peca.nome : "(sem nome ainda)";
+    const desc = peca ? peca.desc : `Elemento <${sel.tagName.toLowerCase()}>${classes ? ` com classe "${classes}"` : ""}. Pe\xE7a ainda fora do dicion\xE1rio \u2014 d\xE1 pra pedir pela classe.`;
+    painel().innerHTML = `<div class="pp-topo"><span class="pp-nome">${esc(nome)}</span>${botaoModo()}<button data-pp="sair">sair</button></div>
+    <div class="pp-desc">${esc(desc)}</div>
+    ${cadeiaAtual.length > 1 ? `<div class="pp-cadeia">dentro de: ${cadeiaAtual.slice(1).map((c, i) => `<button data-pp="subir" data-i="${i + 1}">${esc(c.p.nome)}</button>`).join("")}</div>` : ""}
+    <table>
+      <tr><td>tamanho</td><td>${Math.round(r.width)} \xD7 ${Math.round(r.height)} px</td></tr>
+      <tr><td>margem interna (verde)</td><td>${lados(cs, "padding")}</td></tr>
+      <tr><td>espa\xE7o entre itens</td><td>${gap}</td></tr>
+      <tr><td>margem externa</td><td>${lados(cs, "margin")}</td></tr>
+      <tr><td>letra</td><td>${px(cs.fontSize)}px \xB7 peso ${esc(cs.fontWeight)} \xB7 ${cs.fontStyle === "italic" ? "it\xE1lico \xB7 " : ""}espa\xE7amento ${letraEsp}</td></tr>
+      <tr><td>altura da linha</td><td>${cs.lineHeight === "normal" ? "normal" : `${px(cs.lineHeight)}px`}</td></tr>
+      <tr><td>mai\xFAsculas for\xE7adas</td><td>${cs.textTransform === "uppercase" ? "sim" : "n\xE3o"}</td></tr>
+      <tr><td>quebra de linha</td><td>${cs.flexWrap === "wrap" ? "pode quebrar (wrap)" : cs.whiteSpace === "nowrap" ? "n\xE3o quebra" : "normal"}</td></tr>
+      <tr><td>onde mexer</td><td>${esc(peca ? `${peca.seletor} em estilos.css \xB7 montado em ${peca.arquivo}` : classes ? `.${classes.split(/\s+/).join(" .")}` : sel.tagName.toLowerCase())}</td></tr>
+    </table>
+    ${inline ? `<div class="pp-aviso">\u26A0 estilo escrito dentro da tela, ganha do estilos.css: ${esc(inline)}</div>` : ""}`;
+  }
+  function desenharCaixa(el) {
+    alvo = el;
+    let c = document.getElementById("pecas-caixa");
+    if (!c) {
+      c = document.createElement("div");
+      c.id = "pecas-caixa";
+      document.body.appendChild(c);
+    }
+    reposicionar();
+  }
+  function reposicionar() {
+    const c = document.getElementById("pecas-caixa");
+    if (!c) return;
+    if (!(alvo == null ? void 0 : alvo.isConnected)) {
+      c.style.display = "none";
+      return;
+    }
+    const r = alvo.getBoundingClientRect();
+    const cs = getComputedStyle(alvo);
+    c.style.display = "block";
+    c.style.left = `${r.left}px`;
+    c.style.top = `${r.top}px`;
+    c.style.width = `${r.width}px`;
+    c.style.height = `${r.height}px`;
+    c.style.borderWidth = `${cs.paddingTop} ${cs.paddingRight} ${cs.paddingBottom} ${cs.paddingLeft}`;
+  }
+  function cliqueNoPainel(e) {
+    var _a, _b;
+    const b = (_b = (_a = e.target).closest) == null ? void 0 : _b.call(_a, "[data-pp]");
+    if (!b) return;
+    const acao = b.getAttribute("data-pp");
+    if (acao === "sair") {
+      if (eHashPecas()) location.hash = "";
+      else desligar();
+      return;
+    }
+    if (acao === "modo") {
+      interceptar = !interceptar;
+      b.className = interceptar ? "on" : "";
+      b.textContent = interceptar ? "tocar = ver nome" : "tocar = usar o app";
+      return;
+    }
+    if (acao === "subir") {
+      const c = cadeiaAtual[Number(b.getAttribute("data-i"))];
+      if (c == null ? void 0 : c.el.isConnected) mostrar(c.el);
+    }
+  }
+  function aoTocar(e) {
+    if (!interceptar || doModo(e.target)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    mostrar(e.target);
+  }
+  function barrarInicio(e) {
+    if (!interceptar || doModo(e.target)) return;
+    e.stopPropagation();
+  }
+  function ligar() {
+    if (ligado) return;
+    ligado = true;
+    interceptar = true;
+    document.documentElement.classList.add("modo-pecas");
+    const s = document.createElement("style");
+    s.id = "pecas-estilo";
+    s.textContent = estilo();
+    document.head.appendChild(s);
+    window.addEventListener("click", aoTocar, true);
+    window.addEventListener("pointerdown", barrarInicio, true);
+    window.addEventListener("scroll", reposicionar, { capture: true, passive: true });
+    window.addEventListener("resize", reposicionar);
+    mostrarInicio();
+  }
+  function desligar() {
+    var _a;
+    if (!ligado) return;
+    ligado = false;
+    alvo = null;
+    document.documentElement.classList.remove("modo-pecas");
+    window.removeEventListener("click", aoTocar, true);
+    window.removeEventListener("pointerdown", barrarInicio, true);
+    window.removeEventListener("scroll", reposicionar, { capture: true });
+    window.removeEventListener("resize", reposicionar);
+    for (const id of ["pecas-estilo", "pecas-painel", "pecas-caixa"]) {
+      const el = document.getElementById(id);
+      (_a = el == null ? void 0 : el.parentNode) == null ? void 0 : _a.removeChild(el);
+    }
+  }
+  function iniciarModoPecas() {
+    if (typeof location === "undefined" || typeof window === "undefined" || !window.addEventListener) return;
+    const aplicar = () => eHashPecas() ? ligar() : desligar();
+    window.addEventListener("hashchange", aplicar);
+    aplicar();
+  }
+
   // src/main.js
   init_horas();
   init_modal();
@@ -10676,6 +11385,7 @@ Sair mesmo assim?`
     alternarAcesso
   });
   boot();
+  iniciarModoPecas();
 })();
 
 </script>
