@@ -31,6 +31,9 @@
        nao le como "amarelo" de bater o olho) — pousar/decolar precisa da
        propria identidade visual, sem emprestar significado de outro estado. */
     --verde-claro:#8BC34A; --amarelo:#F2C94C;
+    /* 15/09/2026: verde pro numero pequeno sobre --accent-light (.deg-qtd).
+       --green ali da 2.2:1 de contraste e some no sol; este da 5.3:1. */
+    --verde-escuro:#0E4A28;
     --text:#16425B; --muted:rgba(22,66,91,.62); /* yale-blue */
     --header-h:46px;
     --barra-h:52px;
@@ -384,8 +387,14 @@
      menos, ele sairia da linha e da faixa azul do marcado. */
   .pt-linha.destino-linha{flex-wrap:nowrap; cursor:pointer; gap:12px; padding:8px 8px 3px}
   .destino-linha.sel{background:var(--accent-light); border-radius:10px}
-  .destino-info{flex:none; display:flex; align-items:center; gap:10px;
+  /* A info estica ate a borda: bags ficam coladas na placa e a hora vai
+     pra ponta direita (margin-left:auto). Voo que ja decolou: os icones
+     ficam antes da hora, na cor do icone de mala (--text) em vez do
+     amarelo — .ico-decolando tem cor propria, por isso o seletor longo. */
+  .destino-info{flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:10px;
     font-size:15px; color:var(--muted)}
+  .destino-hora{margin-left:auto; display:inline-flex; align-items:center; gap:4px; flex:none}
+  .destino-linha .voo-partiu, .destino-linha .voo-partiu .ico{color:var(--text)}
   .destino-bags{display:inline-flex; align-items:center; gap:2px;
     font-weight:600; color:var(--text)}
 
@@ -562,7 +571,8 @@
     background:var(--bg); border:1px solid var(--line)}
 
   .folha-cabeca{flex:none}
-  .folha-carga{font-size:18px;
+  /* 15/09/2026: negrito e, quando e BAG, com o icone de mala (Tiago). */
+  .folha-carga{font-size:18px; font-weight:700; display:inline-flex; align-items:center; gap:6px;
     letter-spacing:.12em; color:var(--muted)}
 
   /* Trilha: o que ja foi respondido, pequeno e tocavel. E o que
@@ -579,6 +589,15 @@
      em 390px e o ultimo cai sozinho na linha de baixo. */
   .deg-n{min-width:38px; padding:0}
   .deg-x{color:var(--muted); font-size:15px}
+  /* Quantidade marcada ao lado de PP/TCX/TLC na trilha (15/09/2026,
+     Tiago): so o numero, menor, sem circulo, verde escuro (branco foi
+     testado e sumia no azul-claro do marcado: 2:1). */
+  .deg-qtd{font-size:12px; font-weight:700; color:var(--verde-escuro); margin-left:2px}
+  /* Trilha da folha mais apertada (15/09/2026, Tiago): menos espaco
+     entre os botoes e dos lados do texto, pra linha DESTINO (PP TCX TLC
+     EST) caber numa linha so. Altura do toque (min-height 38px) nao muda. */
+  .folha-trilha .deg-linha{gap:3px}
+  .folha-trilha .deg{padding:0 6px}
 
   /* A pergunta do passo, grande: e a unica coisa que precisa ser lida
      de relance, sem parar o trator. */
@@ -634,6 +653,18 @@
   .passo-cab .passo-txt{flex:1 1 auto; min-width:0}
   .passo-canto{flex:0 0 auto; width:auto; min-height:56px; padding:8px 12px;
     font-size:15px; line-height:1.15; text-align:right; white-space:normal}
+  /* .passo-sair: "Sair:" em cima, "1 destino" embaixo (15/09/2026). Numa
+     linha so foi testado: o botao ia a 175px e espremia o titulo em duas
+     linhas e a nota em tres. Quebrado, fica estreito como antes. */
+  /* Nota logo embaixo do titulo do passo, colada nele (15/09/2026, Tiago:
+     "no limite da linha de QUAIS VOOS?"). Antes: 10px de margem do titulo. */
+  .passo-cab .folha-pergunta{margin-bottom:0}
+  .passo-nota{margin:0}
+  /* Rotulo de secao logo abaixo do cabecalho do passo ("CONEXOES DO ..."),
+     colado na nota de cima (15/09/2026). O -10px cancela o margin-bottom
+     do .passo-cab — so fecha enquanto titulo+nota forem mais altos que o
+     botao do canto (hoje 63px contra 56px). Era estilo escrito na tela. */
+  .passo-secao{margin:-10px 0 0; text-transform:uppercase; letter-spacing:.08em}
   /* Box com mais de um voo: as opcoes aparecem AQUI, no mesmo canto do
      "Confirmar" de sempre — nao mais um popover grudado no quadrado do
      box (bug relatado pelo Tiago, 08/09: um popover preso a um
@@ -804,9 +835,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 10:27:32
+     Gerado em: 15/09/2026, 12:25:56
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 10:27";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 12:25";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2879,7 +2910,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       const bags = v._bag != null ? `<span class="destino-bags">${v._bag}${ico("pacote", 16)}</span>` : "";
       return `<div class="pt-linha destino-linha${marcado ? " sel" : ""}" onclick="${fn}(${v.id})">
       ${vooRotulo2(v, "saida", { aviao: true })}
-      <span class="destino-info">${bags}${partiu ? `<span class="voo-partiu">${ico("decolando", 14)}${ico("aceite", 14)}</span>` : `<span class="destino-hora">${esc(v.saida || "")}</span>`}</span>
+      <span class="destino-info">${bags}<span class="destino-hora">${partiu ? `<span class="voo-partiu">${ico("decolando", 14)}${ico("aceite", 14)}</span>` : ""}${esc(v.saida || "")}</span></span>
     </div>`;
     }).join("")}
   </div>`;
@@ -8466,7 +8497,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       let bt = VIAS.map((x) => {
         const q = g[x.id].length;
         return degrau(
-          q ? `${x.id} <span class="cont">${q}</span>` : x.id,
+          q ? `${x.id}<span class="deg-qtd">${q}</span>` : x.id,
           q > 0,
           `${abrirVia}('${x.id}')`,
           st.via === x.id ? "atual" : ""
@@ -8474,7 +8505,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       }).join("");
       if ((st.carga || "BAG") === "BAG")
         bt += degrau(
-          `ESTEIRA${vo.esteira ? " " + esc(vo.esteira) : ""}`,
+          `EST${vo.esteira ? " " + esc(vo.esteira) : ""}`,
           !!st.esteira,
           `${esteiraAcao}()`,
           st.via === "ESTEIRA" ? "atual" : ""
@@ -8509,11 +8540,11 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   var passoCab = (titulo, nota, acao) => `<div class="passo-cab">
      <div class="passo-txt">
        <h2 class="folha-pergunta">${titulo}</h2>
-       ${nota ? `<p class="note" style="margin:0">${nota}</p>` : ""}
+       ${nota ? `<p class="note passo-nota">${nota}</p>` : ""}
      </div>
      ${acao || ""}
    </div>`;
-  var botaoSaindo = (n, acao) => `<button class="primary passo-canto" ${n ? "" : "disabled"} onclick="${acao}">Saindo com<br>${n} destino${n === 1 ? "" : "s"}</button>`;
+  var botaoSaindo = (n, acao) => `<button class="primary passo-canto passo-sair" ${n ? "" : "disabled"} onclick="${acao}">Sair:<br>${n} destino${n === 1 ? "" : "s"}</button>`;
   function barraOperador() {
     const vg = viagemAtiva();
     const n = vg ? 0 : marcadosOp();
@@ -8644,7 +8675,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   function folhaOperador() {
     return `<button class="ghost folha-x" onclick="fecharFolhaOp()" aria-label="Fechar">\u2715</button>
     <div class="folha-alca" aria-hidden="true"></div>
-    <div class="folha-cabeca"><span class="folha-carga">${UI.op.carga ? esc(UI.op.carga) : "Nova viagem"}</span></div>
+    <div class="folha-cabeca"><span class="folha-carga">${UI.op.carga ? esc(UI.op.carga) : "Nova viagem"}${UI.op.carga === "BAG" ? ico("pacote", 20) : ""}</span></div>
     ${trilhaFolha()}
     <div class="folha-corpo">${corpoFolha()}</div>`;
   }
@@ -8828,7 +8859,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
          O Ponto Delta do ${rotOrigem} n\xE3o foi importado \u2014 mostrando todos os voos do turno.
        </div>
        ${linhaTodos(todos, `os ${todos.length} voos do turno`)}
-       ${grade(todos)}` : `<p class="note" style="margin:10px 0 0;text-transform:uppercase;letter-spacing:.08em">Conex\xF5es do ${rotOrigem}</p>
+       ${grade(todos)}` : `<p class="note passo-secao">Conex\xF5es do ${rotOrigem}</p>
        ${daConexao.length ? linhaTodos(daConexao, `as ${daConexao.length} conex\xF5es do ${rotOrigem}`) + grade(daConexao) : `<div class="card note">${conex.length ? "Todas as conex\xF5es deste voo j\xE1 est\xE3o em outra op\xE7\xE3o." : "Este voo n\xE3o tem conex\xE3o no Ponto Delta \u2014 a bagagem dele \xE9 toda local (esteira)."}</div>`}
        ${conex.foraDaMalha ? `<p class="note" style="margin-top:8px">${conex.foraDaMalha} voo${conex.foraDaMalha === 1 ? "" : "s"} do Delta n\xE3o est\xE1${conex.foraDaMalha === 1 ? "" : "\xE3o"} na malha de hoje.</p>` : ""}
        ${outros.length ? `
@@ -10635,7 +10666,7 @@ Sair mesmo assim?`
       seletor: ".voo-partiu",
       grupo: "voo",
       arquivo: "components/grades.js",
-      desc: "Aviso amarelo: o voo j\xE1 decolou e ainda tem bag no ch\xE3o."
+      desc: "Avi\xE3o + check: o voo j\xE1 decolou e ainda tem bag no ch\xE3o. Amarelo na grade da Triagem; na lista da folha do Operador, na cor do \xEDcone de mala, antes do hor\xE1rio."
     },
     {
       nome: "rotulo-voo",
@@ -10805,14 +10836,14 @@ Sair mesmo assim?`
       seletor: ".destino-hora",
       grupo: "boxes",
       arquivo: "components/grades.js",
-      desc: "Hor\xE1rio de sa\xEDda do voo, na ponta da linha de destino."
+      desc: "Hor\xE1rio de sa\xEDda, sempre na ponta direita da linha de destino. Se o voo j\xE1 decolou, os \xEDcones de decolagem v\xEAm antes dele."
     },
     {
       nome: "info-do-destino",
       seletor: ".destino-info",
       grupo: "boxes",
       arquivo: "components/grades.js",
-      desc: "A ponta direita da linha de destino: hora (ou aviso de j\xE1 decolou) e bags."
+      desc: "O que vem depois do voo na linha de destino: bags colado na placa e o hor\xE1rio na ponta direita."
     },
     {
       nome: "linha-de-destino",
@@ -10936,11 +10967,46 @@ Sair mesmo assim?`
       desc: 'A pergunta grande do passo ("De qual box?").'
     },
     {
+      nome: "botao-sair",
+      seletor: ".passo-sair",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: 'Bot\xE3o azul no canto do passo: "Sair: 1 destino". Termina a viagem com o que foi marcado.'
+    },
+    {
+      nome: "nota-do-passo",
+      seletor: ".passo-nota",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: "Explica\xE7\xE3o pequena colada embaixo da pergunta do passo."
+    },
+    {
+      nome: "secao-do-passo",
+      seletor: ".passo-secao",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: 'R\xF3tulo em mai\xFAsculas logo abaixo do cabe\xE7alho do passo ("CONEX\xD5ES DO GRU-1709").'
+    },
+    {
+      nome: "carga-da-folha",
+      seletor: ".folha-carga",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: "O que est\xE1 sendo levado, no topo da folha (BAG com \xEDcone de mala)."
+    },
+    {
       nome: "trilha-da-folha",
       seletor: ".folha-trilha",
       grupo: "janela",
       arquivo: "screens/telaOperador.js",
       desc: "As respostas j\xE1 dadas, pequenas e toc\xE1veis, no topo da folha."
+    },
+    {
+      nome: "quantidade-da-via",
+      seletor: ".deg-qtd",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: "N\xFAmero pequeno e branco ao lado de PP/TCX/TLC na trilha: quantos voos j\xE1 marcados ali."
     },
     {
       nome: "degrau",
