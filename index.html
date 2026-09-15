@@ -251,6 +251,15 @@
      Altura do alvo de toque (min-height) nao muda — so a largura. */
   .lugar-linha .deg-linha{flex:1 1 auto; margin-top:0; gap:3px}
   .lugar-linha .deg-linha .deg{padding:0 8px}
+  /* 15/09/2026: espacamento entre letras 0.1px em tudo que fica na
+     cabeca-do-cartao (abas de secao e o LUGAR) — pedido do Tiago, que
+     leu 0.9px no modo pecas. Em px, nao em em: ele pediu o numero. */
+  .lugar-linha .deg, .lugar-linha .lugar{letter-spacing:.1px}
+  /* 15/09/2026: espacamento entre letras -1px no rotulo de voo, so
+     dentro dos cartoes de alerta (BOX/TCX/TLC). O .voo das outras telas
+     nao muda. .voo-apt e .voo-box tem letter-spacing proprio e nao
+     herdam isto — so o numero do voo e o hifen encolhem. */
+  .card.alerta .voo{letter-spacing:-1px}
   /* A propria palavra e o gatilho de arrastar (pedido do Tiago, 31/08 —
      antes era um botao de alca dedicado, tirado pra sobrar espaco pras
      abas de secao). touch-action:none so aqui, igual a alca tinha: o
@@ -303,9 +312,19 @@
      .primary/.ok/.ghost (ja existentes), aqui so forma e tamanho. Zera o
      margin-right que "button .ico" da pra icone+texto — aqui o icone e
      sozinho, centralizado. */
-  .alerta-acao{flex:0 0 auto; width:52px; height:52px; min-height:52px; padding:0;
-    border-radius:12px; display:flex; align-items:center; justify-content:center}
-  .alerta-acao .ico{margin-right:0}
+  /* 15/09/2026: 34x34 com icone 34x34, medidas pedidas pelo Tiago no
+     modo pecas (era 52x52 com icone de 20). O ::after estica a area de
+     TOQUE, invisivel: o botao se ve com 34, mas o dedo de luva acerta em
+     37x40 (skill ajuste-visual). Pra DIREITA nao estica: o ultimo botao
+     encosta na borda da .alerta-lista, que rola (overflow-y:auto), e 3px
+     pra fora dela viravam barra de rolagem horizontal (visto no print).
+     O icone nao encolhe (flex:none): sem isso a borda de 1px do botao
+     apertava ele pra 32 de largura. */
+  .alerta-acao{flex:0 0 auto; width:34px; height:34px; min-height:34px; padding:0;
+    border-radius:12px; display:flex; align-items:center; justify-content:center;
+    position:relative}
+  .alerta-acao::after{content:""; position:absolute; top:-3px; bottom:-3px; left:-3px; right:0}
+  .alerta-acao .ico{margin-right:0; width:34px; height:34px; flex:none}
 
   /* Contagem de VOOS (nao bags) do lugar — sempre visivel, tom neutro:
      e contexto, nao alarme. Convive com .alerta-urgentes (so aparece
@@ -761,9 +780,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 08:17:52
+     Gerado em: 15/09/2026, 09:19:44
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 08:17";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 09:19";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
