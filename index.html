@@ -793,7 +793,14 @@
      Pedido do Tiago a partir da vitrine: a janela rolava pro lado (58-94px),
      "+carreta vazia" e o Confirmar da barra saiam cortados, e cada conexao
      quebrava em duas linhas. Tudo escopado em .delta-popup. */
-  .delta-popup .delta-topo{border:none; padding:0 0 6px; gap:6px}
+  /* Cabecalho preso no topo da janela ao rolar (15/09/2026, Tiago): titulo,
+     botoes e ALOCAR VOOS EM. O margin negativo cancela o padding de 16px do
+     .modal-box pra encostar na borda de cima e cobrir a largura toda; o fundo
+     solido e pra carreta nao aparecer por baixo quando rola. */
+  .delta-cabeca{position:sticky; top:-16px; z-index:2; background:var(--surface);
+    margin:-16px -16px 8px; padding:4px 16px 0; border-bottom:1px solid var(--line)}
+  .delta-cabeca .barra-mover-delta{position:static; border-bottom:none; margin-bottom:0; padding:4px 0 6px}
+  .delta-popup .delta-topo{border:none; padding:0; gap:6px}
   .delta-popup .delta-topo h3{margin:0; min-width:0}
   /* Botoes da tela com 35px de altura e icones com 34px (15/09/2026, Tiago).
      Vale pra todo botao pequeno do popup (topo, carreta, check, barra); os
@@ -834,8 +841,12 @@
   .delta-conexao{cursor:pointer; padding-left:4px; padding-right:4px; border-radius:8px}
   .delta-conexao.sel{background:var(--accent-light)}
   /* "ALOCAR EM:" + lista do tamanho do nome da carreta (nao estica) */
-  .delta-alocar{font-size:14px; font-weight:700; color:var(--text); flex:none}
-  .barra-mover-delta .delta-alvo{flex:none; width:auto; min-width:0; min-height:35px; height:35px;
+  /* 12px e gap 6: "ALOCAR VOOS EM:" a 14px + lista + check passava 4px da
+     janela a 360px (medido). A lista pode ENCOLHER (flex 0 1) se o nome da
+     carreta for comprido, pra nao voltar a rolar pro lado. */
+  .delta-alocar{font-size:12px; font-weight:700; color:var(--text); flex:none}
+  .delta-cabeca .barra-mover-delta{gap:6px}
+  .barra-mover-delta .delta-alvo{flex:0 1 auto; width:auto; min-width:80px; min-height:35px; height:35px;
     padding:2px 6px; font-size:15px}
 
   /* Barra "ALOCAR EM:" do Ponto Delta -- so aparece com 1+
@@ -897,9 +908,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 14:56:59
+     Gerado em: 15/09/2026, 15:12:31
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 14:56";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 15:12";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -3940,10 +3951,10 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     UI.deltaSelecionados = null;
     return abrirPontoDelta(vooId);
   }
-  function barraMoverSelecionadosDelta(vooId, carretasDoVoo) {
+  function barraMoverSelecionadosDelta(vooId, carretasDoVoo, editavel) {
     var _a;
+    if (!editavel) return "";
     const ids = ((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) === vooId ? UI.deltaSelecionados.ids : [];
-    if (!ids.length) return "";
     const fixos = baldesFixosDelta(carretasDoVoo);
     const idsFixos = new Set(fixos.filter((b) => b.real).map((b) => b.real.id));
     const extras = carretasDoVoo.filter((c) => !idsFixos.has(c.id));
@@ -3952,9 +3963,9 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       ...extras.map((c) => `<option value="${c.id}">${esc(c.nome)}</option>`)
     ].join("");
     return `<div class="barra-mover-delta">
-    <span class="delta-alocar">ALOCAR EM:</span>
+    <span class="delta-alocar">ALOCAR VOOS EM:</span>
     <select id="carretaAlvoSelecionados" class="delta-alvo">${opcoes}</select>
-    <button class="small ok delta-ok" onclick="confirmarMoverSelecionados(${vooId})" aria-label="Confirmar" title="Mover para esta carreta">${ico("aceite", 34)}</button>
+    <button class="small ok delta-ok"${ids.length ? "" : " disabled"} onclick="confirmarMoverSelecionados(${vooId})" aria-label="Confirmar" title="Mover os voos marcados para esta carreta">${ico("aceite", 34)}</button>
   </div>`;
   }
   function abrirCriarCarretaDelta(vooId, pontoDeltaIdParaMover) {
@@ -4098,12 +4109,13 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>`;
     const novaCarreta = editavel ? `<button class="small ghost delta-icone" onclick="abrirCriarCarretaDelta(${vooId},null)" aria-label="Nova carreta" title="Nova carreta">+${ico("reboque", 34)}${ico("malha", 34)}</button>` : "";
     const carretaVazia = pode("sol_abrir") ? `<button class="small primary delta-icone" onclick="solicitarCarretaVaziaDelta(${vooId})" aria-label="Pedir carreta vazia" title="Pedir carreta vazia">${ico("reboque", 34)}</button>` : "";
-    abrirModal(`<div class="delta-popup">${substituir}
+    abrirModal(`<div class="delta-popup"><div class="delta-cabeca">${substituir}
     <div class="list-line delta-topo">
-      <h3 class="grow">Delta \xB7 ${vooRotulo2(v, "chegada", { box: false })}</h3>
+      <h3 class="grow">Delta ${vooRotulo2(v, "chegada", { box: false })}</h3>
       ${novaCarreta}${carretaVazia}
     </div>
-    ${barraMoverSelecionadosDelta(vooId, carretasDoVoo)}
+    ${barraMoverSelecionadosDelta(vooId, carretasDoVoo, editavel)}
+    </div>
     ${linhas}${descarga}
     <div style="margin-top:12px">
       <button class="ghost" onclick="abrirPontoDelta(${vooId})">Atualizar</button>
