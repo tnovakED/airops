@@ -848,9 +848,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 13:25:31
+     Gerado em: 15/09/2026, 13:56:10
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 13:25";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 13:56";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -8635,9 +8635,10 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const paradas = [];
     for (const d of ds) {
       const urg = urgenciaDoVoo(d.voo_destino_id);
-      if (naTriagem(d)) {
-        const ja = paradas.find((p) => p.via === d.entrega_via);
-        if (!ja) paradas.push({ via: d.entrega_via, urg });
+      if (noMonte(d)) {
+        const chave = chaveMonte(d, vg);
+        const ja = paradas.find((p) => p.via === chave);
+        if (!ja) paradas.push({ via: chave, urg });
         else if (urg < ja.urg) ja.urg = urg;
       } else {
         paradas.push({ destino: d, urg });
@@ -8647,7 +8648,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     return paradas;
   }
   function boxDaParada(p) {
-    if (p.via) return p.via;
+    if (p.via) return placaMonte(p.via);
     const d = p.destino;
     if (d && !d.setor_destino && chegouNoVoo(d)) {
       const v = voo(d.voo_destino_id) || {};
@@ -9081,6 +9082,17 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   }
   var TRIAGENS = ["TCX", "TLC"];
   var naTriagem = (d) => TRIAGENS.indexOf(d.entrega_via) >= 0 && !!d.voo_destino_id;
+  var naEsteiraComVoo = (d) => d.entrega_via === "ESTEIRA" && !!d.voo_destino_id;
+  var noMonte = (d) => naTriagem(d) || naEsteiraComVoo(d);
+  function chaveMonte(d, vg) {
+    var _a;
+    if (naTriagem(d)) return d.entrega_via;
+    return `ESTEIRA:${((_a = vooDeOrigem(d, vg)) == null ? void 0 : _a.esteira) || "?"}`;
+  }
+  var numEsteira = (chave) => chave.startsWith("ESTEIRA:") ? chave.slice(8) : null;
+  var nomeMonte = (chave) => numEsteira(chave) != null ? `EST ${numEsteira(chave)}` : chave;
+  var placaMonte = (chave) => numEsteira(chave) != null ? `E-${numEsteira(chave)}` : chave;
+  var textoMonte = (chave) => numEsteira(chave) != null ? `Esteira ${numEsteira(chave)}` : chave;
   function gruposDiretos(ds) {
     const porVoo = /* @__PURE__ */ new Map();
     const itens = [];
@@ -9169,15 +9181,15 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       <span class="grow" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         ${bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : ""}
         ${vooRotulo2(d.voo_destino_id ? voo(d.voo_destino_id) || {} : {}, "saida", { box: false })}
-        <span class="voo voo-larga"><span class="voo-box">${esc(via)}</span></span>
+        <span class="voo voo-larga"><span class="voo-box">${esc(nomeMonte(via))}</span></span>
       </span>
     </div>`;
     };
     return `
       <div class="card">
         <div class="list-line" style="border:none;padding:0">
-          <span class="grow">${setorRotulo(via)} <span class="note">\xB7 ${ds.length} voo${ds.length === 1 ? "" : "s"}</span></span>
-          <button class="ok" style="width:auto" onclick="entregarTriagem('${via}',${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
+          <span class="grow">${setorRotulo(nomeMonte(via))} <span class="note">\xB7 ${ds.length} voo${ds.length === 1 ? "" : "s"}</span></span>
+          <button class="ok" style="width:auto" onclick="entregarTriagem('${esc(via)}',${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
         </div>
         ${ds.map(linha).join("")}
       </div>`;
@@ -9186,12 +9198,17 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   function conteudoPainelViagem(vg) {
     if (UI.pu) return folhaColeta(vg);
     const ds = destinosDe(vg.id);
-    const diretosPendentes = ds.filter((d) => !naTriagem(d) && d.status !== "entregue");
+    const diretosPendentes = ds.filter((d) => !noMonte(d) && d.status !== "entregue");
+    const montePendente = ds.filter((d) => noMonte(d) && d.status !== "entregue");
+    const chavesMonte = [
+      ...TRIAGENS,
+      ...new Set(montePendente.filter(naEsteiraComVoo).map((d) => chaveMonte(d, vg)))
+    ];
     const feitas = ds.filter((d) => d.status === "entregue");
     return `
     <div class="board-title"><h2>Viagem em andamento</h2><span class="chip st-a_caminho">A caminho</span></div>
     ${gruposDiretos(diretosPendentes).map((x) => cartaoVooDestino(x, vg)).join("")}
-    ${TRIAGENS.map((via) => cartaoTriagem(via, ds.filter((d) => naTriagem(d) && d.entrega_via === via && d.status !== "entregue"), vg)).join("")}
+    ${chavesMonte.map((chave) => cartaoTriagem(chave, montePendente.filter((d) => chaveMonte(d, vg) === chave), vg)).join("")}
     ${feitas.length ? `<button class="ghost" style="margin-top:8px" onclick="abrirEntregasFeitas(${vg.id})">${ico("aceite", 16)} Ver entregas feitas (${feitas.length})</button>` : ""}
     <button onclick="UI.pu={origem:null,boxOrigem:null,vooOrigemId:null,sel:[]};render()">+ Pegar bags no caminho</button>
     ${podeCancelar(vg) ? `<button class="ghost" style="margin-top:8px" onclick="cancelarViagem(${vg.id})">Cancelar viagem</button>` : ""}`;
@@ -9382,7 +9399,8 @@ Destino: ${esc(inf.num)}`);
     }
   }
   function pernasDaTriagem(vgId, via) {
-    return destinosDe(vgId).filter((d) => d.entrega_via === via && !!d.voo_destino_id && d.status !== "entregue");
+    const vg = D.viagens.find((x) => x.id === vgId) || {};
+    return destinosDe(vgId).filter((d) => noMonte(d) && d.status !== "entregue" && chaveMonte(d, vg) === via);
   }
   async function entregarTriagem(via, vgId) {
     const ds = pernasDaTriagem(vgId, via);
@@ -9391,7 +9409,7 @@ Destino: ${esc(inf.num)}`);
     const ok = await confirmar(
       `TEM CERTEZA da ENTREGA?
 
-${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(via)}`
+${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(textoMonte(via))}`
     );
     if (!ok) return;
     await entregarDestinos(ds.map((d) => d.id), vgId);
@@ -11085,6 +11103,51 @@ Sair mesmo assim?`
       grupo: "janela",
       arquivo: "components/modal.js",
       desc: "O escurecido atr\xE1s de uma janela aberta."
+    },
+    // ---- ponto delta do lider (src/ui/screens/telaPontos.js) ----
+    // Antes das basicas: .balde-delta .list-line tem que vencer .list-line,
+    // e o campo da quantidade manual tem que vencer "input, select".
+    {
+      nome: "barra-mover",
+      seletor: ".barra-mover-delta",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: 'Faixa que aparece no topo com 1+ conex\xE3o marcada: "N selecionados", a lista de carretas e Confirmar.'
+    },
+    {
+      nome: "cabeca-da-carreta",
+      seletor: ".balde-delta .list-line",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Topo de uma carreta: nome, resumo (aguardando/pego) e os bot\xF5es S.OP, cancelar e excluir."
+    },
+    {
+      nome: "quadradinho-selecao",
+      seletor: ".pt-check",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "O quadradinho no come\xE7o da conex\xE3o, para marcar e mover para outra carreta."
+    },
+    {
+      nome: "campo-qtd-manual",
+      seletor: 'input[id^="bagManual"]',
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: 'Campo "+" da quantidade manual do l\xEDder (soma ao previsto, pode ser negativa), com o \u2713 ao lado.'
+    },
+    {
+      nome: "conexao-do-delta",
+      seletor: ".balde-delta .pt-linha",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Uma conex\xE3o dentro da carreta: quadradinho, voo de sa\xEDda, selos (PP/TST, solicitado/pego), quantidade e campo manual."
+    },
+    {
+      nome: "carreta-do-delta",
+      seletor: ".balde-delta",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Uma carreta (Imediatas, ~1h, Mais de 1h ou criada \xE0 m\xE3o), com a faixa de cor na esquerda."
     },
     // ---- basicas ----
     {
