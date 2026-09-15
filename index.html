@@ -398,6 +398,24 @@
   .destino-bags{display:inline-flex; align-items:center; gap:2px;
     font-weight:600; color:var(--text)}
 
+  /* Linha da esteira no passo EST (15/09/2026): mesmo formato das linhas de
+     voo — voo que chegou · BAGs p/ BSB · EST [n]. O numero da esteira fica
+     num quadrado azul de 34px com letra branca (pedido do Tiago). O -10px
+     de cima cancela o respiro do .passo-cab, como .passo-secao faz; logo,
+     a secao "CONEXOES" que vem depois nao precisa cancelar de novo. */
+  .esteira-lista{margin:-10px 0 4px}
+  .esteira-lista + .passo-secao{margin-top:0}
+  .esteira-info{flex:1 1 auto; display:flex; align-items:center; gap:10px;
+    font-size:15px; font-weight:700; color:var(--text)}
+  .esteira-est{margin-left:auto; display:inline-flex; align-items:center; gap:6px}
+  /* Mesmo "EST [n]" no fim de cada voo MARCADO no passo EST: diz para qual
+     esteira aquele voo vai (15/09/2026). Fica depois da hora. */
+  .destino-est{flex:none; display:inline-flex; align-items:center; gap:4px;
+    font-size:15px; font-weight:700; color:var(--text)}
+  .esteira-quad{display:inline-flex; align-items:center; justify-content:center;
+    min-width:34px; height:34px; padding:0 6px; border-radius:6px;
+    background:var(--amber); color:#fff; font-size:18px; font-weight:700}
+
   /* ---------- grade de voos (operador) ---------- */
   .voo-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px}
   .voo-btn{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px; text-align:center; cursor:pointer}
@@ -682,11 +700,6 @@
     letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
   .deg.atual{border-color:var(--blue); box-shadow:0 0 0 1px var(--blue) inset}
 
-  /* ---------- esteira: para onde a bag local vai ---------- */
-  .esteira-card{border:2px solid var(--blue); border-radius:12px;
-    background:var(--surface); padding:16px; margin-bottom:10px}
-  .esteira-dest{font-weight:700;
-    font-size:30px; letter-spacing:.04em; color:var(--text); line-height:1.05}
 
   .folha-pergunta{font-size:26px; line-height:1.1; margin:2px 0 10px;
     letter-spacing:.02em}
@@ -835,9 +848,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 12:41:37
+     Gerado em: 15/09/2026, 13:25:31
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 12:41";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 13:25";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2634,6 +2647,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
 
   // src/ui/screens/telaViagensCCO.js
   init_regras();
+  var nomeVia = (via) => via === "ESTEIRA" ? "Esteira" : via;
   function faltam(v) {
     const t = minutosDe(v.saida);
     return t === null ? null : t - agoraMin();
@@ -2662,12 +2676,13 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const aberto = UI.coordAberto === v.id;
     const cor = corDoTempo(min);
     const naTriagem2 = ds.filter((d) => d.status === "entregue" && (d.entrega_via === "TCX" || d.entrega_via === "TLC"));
+    const naEsteira = ds.filter((d) => d.status === "entregue" && d.entrega_via === "ESTEIRA");
     const resumo = pend.length ? pend.map((d) => {
       const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
-      const via = chegouNoVoo(d) ? "" : " \u2192 " + d.entrega_via;
+      const via = chegouNoVoo(d) ? "" : " \u2192 " + nomeVia(d.entrega_via);
       return `${origemCurta(d, vg)} ${nomeDe(vg.operador_id)}${via}`;
-    }).join(" \xB7 ") : naTriagem2.length ? `parada na ${naTriagem2[0].entrega_via} \u2014 falta levar ao voo` : ds.length ? "tudo entregue" : "nada a caminho";
-    const chip = pend.length ? `<span class="chip st-a_caminho">${pend.length} a caminho</span>` : naTriagem2.length ? `<span class="chip st-aceita">na ${naTriagem2[0].entrega_via}</span>` : ds.length ? `<span class="chip st-entregue">entregue</span>` : `<span class="chip" style="border-color:var(--line);color:var(--muted)">sem viagem</span>`;
+    }).join(" \xB7 ") : naTriagem2.length ? `parada na ${naTriagem2[0].entrega_via} \u2014 falta levar ao voo` : naEsteira.length ? "na Esteira" : ds.length ? "tudo entregue" : "nada a caminho";
+    const chip = pend.length ? `<span class="chip st-a_caminho">${pend.length} a caminho</span>` : naTriagem2.length ? `<span class="chip st-aceita">na ${naTriagem2[0].entrega_via}</span>` : naEsteira.length ? `<span class="chip st-entregue">na Esteira</span>` : ds.length ? `<span class="chip st-entregue">entregue</span>` : `<span class="chip" style="border-color:var(--line);color:var(--muted)">sem viagem</span>`;
     const tempo = min === null ? `<span class="note">\u2014</span>` : min < 0 ? `<div style="font-size:22px;font-weight:600;color:var(--red);line-height:1">${min}</div>
        <div class="note" style="font-size:11px">atrasado</div>` : `<div style="font-size:22px;font-weight:600;color:${cor};line-height:1">${min}</div>
        <div class="note" style="font-size:11px">min</div>`;
@@ -2691,10 +2706,10 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     ${ds.map((d) => {
       const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
       const parou = !chegouNoVoo(d);
-      const alvo2 = parou ? ` <span class="note">\u2192 ${esc(d.entrega_via)}</span>` : "";
+      const alvo2 = parou ? ` <span class="note">\u2192 ${esc(nomeVia(d.entrega_via))}</span>` : "";
       return `<div class="list-line">
         <span class="mono grow" style="${d.status === "entregue" ? "color:var(--muted)" : ""}">${origemDe(d, vg)} \xB7 ${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}${alvo2}</span>
-        <span class="chip st-${d.status === "entregue" && parou ? "aceita" : d.status}">${d.status === "entregue" && parou ? "na " + esc(d.entrega_via) : ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
+        <span class="chip st-${d.status === "entregue" && parou ? "aceita" : d.status}">${d.status === "entregue" && parou ? "na " + esc(nomeVia(d.entrega_via)) : ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
       </div>`;
     }).join("")}</div>`;
   }
@@ -2926,7 +2941,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     }).join("")}
   </div>`;
   }
-  function listaDestinos(cands, sel, fn) {
+  function listaDestinos(cands, sel, fn, tagMarcado) {
     return `<div class="destino-lista">
     ${cands.map((v) => {
       const ts = minutosDe(v.saida);
@@ -2935,7 +2950,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       const bags = v._bag != null ? `<span class="destino-bags">${v._bag}${ico("pacote", 16)}</span>` : "";
       return `<div class="pt-linha destino-linha${marcado ? " sel" : ""}" onclick="${fn}(${v.id})">
       ${vooRotulo2(v, "saida", { aviao: true })}
-      <span class="destino-info">${bags}<span class="destino-hora">${partiu ? `<span class="voo-partiu">${ico("decolando", 14)}${ico("aceite", 14)}</span>` : ""}${esc(v.saida || "")}</span></span>
+      <span class="destino-info">${bags}<span class="destino-hora">${partiu ? `<span class="voo-partiu">${ico("decolando", 14)}${ico("aceite", 14)}</span>` : ""}${esc(v.saida || "")}</span>${marcado && tagMarcado ? tagMarcado : ""}</span>
     </div>`;
     }).join("")}
   </div>`;
@@ -8518,7 +8533,6 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     }
     if (st.origem === "BOX" && st.vooOrigemId) {
       const g = grupos(st);
-      const vo = voo(st.vooOrigemId) || {};
       let bt = VIAS.map((x) => {
         const q = g[x.id].length;
         return degrau(
@@ -8530,8 +8544,8 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       }).join("");
       if ((st.carga || "BAG") === "BAG")
         bt += degrau(
-          `EST${vo.esteira ? " " + esc(vo.esteira) : ""}`,
-          !!st.esteira,
+          `EST${qtdEsteira(st) ? `<span class="deg-qtd">${qtdEsteira(st)}</span>` : ""}`,
+          qtdEsteira(st) > 0,
           `${esteiraAcao}()`,
           st.via === "ESTEIRA" ? "atual" : ""
         );
@@ -8730,7 +8744,6 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const abrirOrigem = pre === "op" ? "abrirFolhaOp" : "escolherOrigemColeta";
     const escolherBox = pre === "op" ? "escolherBoxOrigem" : "escolherBoxColeta";
     const confirmarVoo = pre === "op" ? "confirmarVooOrigem" : "confirmarVooColeta";
-    const esteiraTirar = pre === "op" ? "opEsteiraTirar" : "puEsteiraTirar";
     const togDestSel = pre === "op" ? "togDest" : "togDestPU";
     if (!st.origem) return `
     <h2 class="folha-pergunta">ONDE ESTOU?</h2>
@@ -8744,14 +8757,6 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
          </div>` : "";
       const nota = !st.boxOrigem ? "Toque no box onde voc\xEA est\xE1." : noBox.length === 0 ? "Nenhum voo da malha neste box." : noBox.length > 1 ? `Mais de um voo no box ${esc(st.boxOrigem)} \u2014 qual \xE9?` : "";
       return passoCab("EM QUAL BOX?", nota, acao) + gradeBoxes(st.boxOrigem, escolherBox, patio, { compacta: true });
-    }
-    if (st.origem === "BOX" && st.via === "ESTEIRA") {
-      const vo = voo(st.vooOrigemId) || {};
-      return passoCab("ESTEIRA", "", botaoSaindo(totalDestinos(st), acaoConfirmar)) + `<div class="esteira-card">
-           <div class="esteira-dest">BAGS para a ${esc(BASE_IATA)}</div>
-           <p class="note" style="margin:8px 0 0">Bagagem local do ${vooRotulo2(vo, "chegada", { box: false })} \xB7 sai na esteira ${esc(vo.esteira || "?")}</p>
-         </div>
-         <button class="ghost" onclick="${esteiraTirar}()">Tirar a esteira desta viagem</button>`;
     }
     if (st.origem === "BOX") {
       if (st.via) return telaVoosDaVia(st, pre, acaoConfirmar);
@@ -8816,16 +8821,18 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     { id: "TLC", sub: "triagem local" }
   ];
   function grupos(st) {
-    if (!st.g) st.g = { PP: [], TCX: [], TLC: [] };
+    if (!st.g) st.g = { PP: [], TCX: [], TLC: [], ESTEIRA: [] };
+    if (!st.g.ESTEIRA) st.g.ESTEIRA = [];
     return st.g;
   }
+  var qtdEsteira = (st) => (st.esteira ? 1 : 0) + grupos(st).ESTEIRA.length;
   function totalDestinos(st) {
     const g = grupos(st);
-    return g.PP.length + g.TCX.length + g.TLC.length + (st.esteira ? 1 : 0);
+    return g.PP.length + g.TCX.length + g.TLC.length + qtdEsteira(st);
   }
   function vooTomado(st, via, id) {
     const g = grupos(st);
-    return VIAS.some((v) => v.id !== via && g[v.id].includes(id));
+    return [...VIAS.map((v) => v.id), "ESTEIRA"].some((v) => v !== via && g[v].includes(id));
   }
   function telaVias(st, titulo, pre, acaoConfirmar) {
     const g = grupos(st);
@@ -8840,8 +8847,8 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     </div>`;
     };
     const cartaoEsteira = !ehBag ? "" : `
-    <div class="voo-btn ${st.esteira ? "sel" : ""}" onclick="${pre}Esteira()">
-      <div class="linha-c"><span class="dcode">ESTEIRA</span>${st.esteira ? ico("check", 20) : ""}</div>
+    <div class="voo-btn ${qtdEsteira(st) ? "sel" : ""}" onclick="${pre}Esteira()">
+      <div class="linha-c"><span class="dcode">ESTEIRA</span>${qtdEsteira(st) ? `<span class="cont">${qtdEsteira(st)}</span>` : ""}</div>
       <div class="dhora">locais \xB7 esteira ${esc(vo.esteira || "?")}</div>
     </div>`;
     const grade = `<div class="voo-grid" style="margin-top:10px">
@@ -8869,8 +8876,9 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const idsConex = new Set(daConexao.map((v) => v.id));
     const outros = todos.filter((v) => !idsConex.has(v.id));
     const escondidos = candidatosDestinoJanela([vooOrigem]).length - todos.length;
-    const legenda = via === "PP" ? "Voos que voc\xEA vai levar direto no box deles." : `Voos cujas bags voc\xEA vai deixar na ${via}. Elas continuam sendo desses voos \u2014 quem for buscar depois sabe que est\xE3o na ${via}.`;
-    const grade = (lista) => listaDestinos(lista, g[via], pre === "op" ? "togDest" : "togDestPU");
+    const legenda = via === "PP" ? "Voos que voc\xEA vai levar direto no box deles." : via === "ESTEIRA" ? "Bagagem local do voo e voos cujas bags v\xE3o para a esteira." : `Voos cujas bags voc\xEA vai deixar na ${via}. Elas continuam sendo desses voos \u2014 quem for buscar depois sabe que est\xE3o na ${via}.`;
+    const tagEsteira = via === "ESTEIRA" ? `<span class="destino-est">EST<span class="esteira-quad">${esc(vo.esteira || "?")}</span></span>` : "";
+    const grade = (lista) => listaDestinos(lista, g[via], pre === "op" ? "togDest" : "togDestPU", tagEsteira);
     const rotOrigem = esc((vo.origem || "") + "-" + (vo.voo_chegada || vo.numero || "?"));
     const linhaTodos = (lista, rotulo) => {
       if (lista.length < 2) return "";
@@ -8894,7 +8902,14 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
          </div>
          ${st.verOutros ? grade(outros) : ""}` : ""}`;
     const rodape = escondidos ? `<p class="note" style="margin-top:8px">${escondidos} voo${escondidos === 1 ? "" : "s"} n\xE3o aparece${escondidos === 1 ? "" : "m"} aqui porque j\xE1 est\xE1${escondidos === 1 ? "" : "\xE3o"} em outra op\xE7\xE3o.</p>` : "";
-    return passoCab("QUAIS VOOS?", legenda, botaoSaindo(totalDestinos(st), acaoConfirmar)) + corpo + rodape;
+    const linhaEsteira = via !== "ESTEIRA" ? "" : `<div class="destino-lista esteira-lista">
+      <div class="pt-linha destino-linha esteira-linha${st.esteira ? " sel" : ""}" onclick="${pre}TogEsteira()">
+        ${vooRotulo2(vo, "chegada", { box: false })}
+        <span class="esteira-info">BAGs p/ ${esc(BASE_IATA)}<span class="esteira-est">EST<span class="esteira-quad">${esc(vo.esteira || "?")}</span></span></span>
+      </div>
+    </div>`;
+    const sigla = via === "ESTEIRA" ? "EST" : via;
+    return passoCab(sigla, legenda, botaoSaindo(totalDestinos(st), acaoConfirmar)) + linhaEsteira + corpo + rodape;
   }
   function alternarTodosDaVia(st) {
     const lista = conexoesDaVia(st).map((v) => v.id);
@@ -8930,16 +8945,9 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     bus.render();
   }
   function opEsteira() {
-    const o = UI.op;
-    if (!o.esteira) {
-      o.esteira = true;
-      o.via = "ESTEIRA";
-    } else o.via = o.via === "ESTEIRA" ? null : "ESTEIRA";
-    bus.render();
-  }
-  function opEsteiraTirar() {
-    UI.op.esteira = false;
-    UI.op.via = null;
+    grupos(UI.op);
+    UI.op.via = UI.op.via === "ESTEIRA" ? null : "ESTEIRA";
+    UI.op.verOutros = false;
     bus.render();
   }
   function opVerOutros() {
@@ -8957,16 +8965,13 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     bus.render();
   }
   function puEsteira() {
-    const st = UI.pu;
-    if (!st.esteira) {
-      st.esteira = true;
-      st.via = "ESTEIRA";
-    } else st.via = st.via === "ESTEIRA" ? null : "ESTEIRA";
+    grupos(UI.pu);
+    UI.pu.via = UI.pu.via === "ESTEIRA" ? null : "ESTEIRA";
+    UI.pu.verOutros = false;
     bus.render();
   }
-  function puEsteiraTirar() {
-    UI.pu.esteira = false;
-    UI.pu.via = null;
+  function puTogEsteira() {
+    UI.pu.esteira = !UI.pu.esteira;
     bus.render();
   }
   function puVerOutros() {
@@ -8979,6 +8984,8 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     for (const v of VIAS)
       for (const id of g[v.id])
         linhas.push({ viagem_id: vgId, voo_destino_id: id, entrega_via: v.id, ...extra });
+    for (const id of g.ESTEIRA)
+      linhas.push({ viagem_id: vgId, voo_destino_id: id, entrega_via: "ESTEIRA", ...extra });
     if (st.esteira)
       linhas.push({ viagem_id: vgId, setor_destino: "ESTEIRA", entrega_via: "ESTEIRA", ...extra });
     return linhas;
@@ -9362,6 +9369,8 @@ Destino: ${esc(inf.num)}`);
     if (idDireto != null) {
       if (chegouNoVoo(d)) {
         await creditarEntregaIndia(idDireto, qtd);
+        await marcarProntaEntregueDb(idDireto);
+      } else if (via === "ESTEIRA") {
         await marcarProntaEntregueDb(idDireto);
       } else {
         await marcarProntaEntregueDb(idDireto);
@@ -10852,6 +10861,20 @@ Sair mesmo assim?`
       desc: "A grade de 4 colunas com os quadrados dos boxes."
     },
     {
+      nome: "numero-da-esteira",
+      seletor: ".esteira-quad",
+      grupo: "boxes",
+      arquivo: "screens/telaOperador.js",
+      desc: "Quadrado azul com o n\xFAmero da esteira, na linha da esteira do passo EST."
+    },
+    {
+      nome: "linha-da-esteira",
+      seletor: ".esteira-linha",
+      grupo: "boxes",
+      arquivo: "screens/telaOperador.js",
+      desc: "No passo EST: voo que chegou \xB7 BAGs p/ BSB \xB7 EST [n]. Toque marca a bagagem local para a viagem."
+    },
+    {
       nome: "bags-do-destino",
       seletor: ".destino-bags",
       grupo: "boxes",
@@ -11482,13 +11505,12 @@ Sair mesmo assim?`
     opVerOutros,
     opTodosDaVia,
     opEsteira,
-    opEsteiraTirar,
     puAbrirVia,
     puFecharVia,
     puVerOutros,
     puTodosDaVia,
     puEsteira,
-    puEsteiraTirar,
+    puTogEsteira,
     abrirFolhaOp,
     fecharFolhaOp,
     trocarBoxOp,
