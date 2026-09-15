@@ -123,13 +123,16 @@
   .voo-saida{color:var(--amber)}
   .voo-setor{color:var(--muted)}
   .voo-apt{font-size:.82em; letter-spacing:.06em; opacity:.75}
-  .voo-num{font-size:1em}
-  /* zero espaco visivel ao redor do hifen: cancela o gap:6px do .voo
-     por completo (pedido do Tiago, 28/08) — so o traco fica, colado no
-     aeroporto e no numero dos dois lados. */
-  .voo-sep{opacity:.35; margin:0 -6px}
-  /* o hifen antes da placa some: a borda do quadrado ja separa */
-  .voo-sep:has(+.voo-box){display:none}
+  /* 15/09/2026 (pedido do Tiago): sem hifen VISIVEL. Aeroporto e numero
+     ficam colados e se separam pela cor/peso — aeroporto mais claro,
+     numero em negrito. O "-" continua no HTML (voo.js), escondido so
+     aqui: busca, copiar e os testes que leem "CGH-1409" seguem valendo.
+     display:none tira o hifen do flex, e o margin-left negativo cancela
+     o gap:6px que sobraria entre aeroporto e numero. Antes (28/08) o
+     traco ficava visivel com margem -6px dos dois lados. */
+  .voo-num{font-size:1em; font-weight:700}
+  .voo-sep{display:none}
+  .voo-sep + .voo-num{margin-left:-6px}
 
   /* a placa: quadrado de borda com o box no meio, herdando a cor */
   .voo-box{display:inline-flex; align-items:center; justify-content:center;
@@ -780,9 +783,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 09:50:08
+     Gerado em: 15/09/2026, 09:55:05
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 09:50";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 09:55";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
