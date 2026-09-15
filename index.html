@@ -848,9 +848,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 13:56:10
+     Gerado em: 15/09/2026, 14:14:51
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 13:56";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 14:14";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2676,13 +2676,13 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const aberto = UI.coordAberto === v.id;
     const cor = corDoTempo(min);
     const naTriagem2 = ds.filter((d) => d.status === "entregue" && (d.entrega_via === "TCX" || d.entrega_via === "TLC"));
-    const naEsteira = ds.filter((d) => d.status === "entregue" && d.entrega_via === "ESTEIRA");
+    const naEsteira2 = ds.filter((d) => d.status === "entregue" && d.entrega_via === "ESTEIRA");
     const resumo = pend.length ? pend.map((d) => {
       const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
       const via = chegouNoVoo(d) ? "" : " \u2192 " + nomeVia(d.entrega_via);
       return `${origemCurta(d, vg)} ${nomeDe(vg.operador_id)}${via}`;
-    }).join(" \xB7 ") : naTriagem2.length ? `parada na ${naTriagem2[0].entrega_via} \u2014 falta levar ao voo` : naEsteira.length ? "na Esteira" : ds.length ? "tudo entregue" : "nada a caminho";
-    const chip = pend.length ? `<span class="chip st-a_caminho">${pend.length} a caminho</span>` : naTriagem2.length ? `<span class="chip st-aceita">na ${naTriagem2[0].entrega_via}</span>` : naEsteira.length ? `<span class="chip st-entregue">na Esteira</span>` : ds.length ? `<span class="chip st-entregue">entregue</span>` : `<span class="chip" style="border-color:var(--line);color:var(--muted)">sem viagem</span>`;
+    }).join(" \xB7 ") : naTriagem2.length ? `parada na ${naTriagem2[0].entrega_via} \u2014 falta levar ao voo` : naEsteira2.length ? "na Esteira" : ds.length ? "tudo entregue" : "nada a caminho";
+    const chip = pend.length ? `<span class="chip st-a_caminho">${pend.length} a caminho</span>` : naTriagem2.length ? `<span class="chip st-aceita">na ${naTriagem2[0].entrega_via}</span>` : naEsteira2.length ? `<span class="chip st-entregue">na Esteira</span>` : ds.length ? `<span class="chip st-entregue">entregue</span>` : `<span class="chip" style="border-color:var(--line);color:var(--muted)">sem viagem</span>`;
     const tempo = min === null ? `<span class="note">\u2014</span>` : min < 0 ? `<div style="font-size:22px;font-weight:600;color:var(--red);line-height:1">${min}</div>
        <div class="note" style="font-size:11px">atrasado</div>` : `<div style="font-size:22px;font-weight:600;color:${cor};line-height:1">${min}</div>
        <div class="note" style="font-size:11px">min</div>`;
@@ -9082,16 +9082,24 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   }
   var TRIAGENS = ["TCX", "TLC"];
   var naTriagem = (d) => TRIAGENS.indexOf(d.entrega_via) >= 0 && !!d.voo_destino_id;
-  var naEsteiraComVoo = (d) => d.entrega_via === "ESTEIRA" && !!d.voo_destino_id;
-  var noMonte = (d) => naTriagem(d) || naEsteiraComVoo(d);
+  var naEsteira = (d) => d.entrega_via === "ESTEIRA" || d.setor_destino === "ESTEIRA";
+  var noMonte = (d) => naTriagem(d) || naEsteira(d);
   function chaveMonte(d, vg) {
     var _a;
     if (naTriagem(d)) return d.entrega_via;
     return `ESTEIRA:${((_a = vooDeOrigem(d, vg)) == null ? void 0 : _a.esteira) || "?"}`;
   }
   var numEsteira = (chave) => chave.startsWith("ESTEIRA:") ? chave.slice(8) : null;
-  var nomeMonte = (chave) => numEsteira(chave) != null ? `EST ${numEsteira(chave)}` : chave;
+  var nomeMonte = (chave) => numEsteira(chave) != null ? `ESTEIRA ${numEsteira(chave)}` : chave;
+  var siglaMonte = (chave) => numEsteira(chave) != null ? `EST ${numEsteira(chave)}` : chave;
   var placaMonte = (chave) => numEsteira(chave) != null ? `E-${numEsteira(chave)}` : chave;
+  function resumoMonte(ds, curto) {
+    const voos = ds.filter((d) => d.voo_destino_id).length;
+    const temLocal = ds.some((d) => d.setor_destino === "ESTEIRA");
+    const txtVoos = voos ? `${voos} voo${voos === 1 ? "" : "s"}` : "";
+    if (curto) return txtVoos || (temLocal ? "bags locais" : "");
+    return [txtVoos, temLocal ? "bags locais" : ""].filter(Boolean).join(" + ");
+  }
   var textoMonte = (chave) => numEsteira(chave) != null ? `Esteira ${numEsteira(chave)}` : chave;
   function gruposDiretos(ds) {
     const porVoo = /* @__PURE__ */ new Map();
@@ -9174,24 +9182,36 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     </div>`);
   }
   function cartaoTriagem(via, ds, vg) {
+    var _a;
     if (!ds.length) return "";
     const linha = (d) => {
+      if (d.setor_destino === "ESTEIRA")
+        return `<div class="list-line" style="padding:6px 0">
+      <span class="grow" style="display:flex;align-items:center;gap:6px">${rotuloEsteira(d, vg)} <span class="note">bags locais</span></span>
+    </div>`;
       const bx = d.origem_box || vg.box_origem;
       return `<div class="list-line" style="padding:6px 0">
       <span class="grow" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         ${bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : ""}
         ${vooRotulo2(d.voo_destino_id ? voo(d.voo_destino_id) || {} : {}, "saida", { box: false })}
-        <span class="voo voo-larga"><span class="voo-box">${esc(nomeMonte(via))}</span></span>
+        <span class="voo voo-larga"><span class="voo-box">${esc(siglaMonte(via))}</span></span>
       </span>
     </div>`;
     };
+    const resumo = resumoMonte(ds, true);
+    const chave = `m${via}`;
+    const aberto = !!((_a = UI.viagemAberto) == null ? void 0 : _a[chave]);
     return `
-      <div class="card">
-        <div class="list-line" style="border:none;padding:0">
-          <span class="grow">${setorRotulo(nomeMonte(via))} <span class="note">\xB7 ${ds.length} voo${ds.length === 1 ? "" : "s"}</span></span>
-          <button class="ok" style="width:auto" onclick="entregarTriagem('${esc(via)}',${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
+      <div class="card acordeon-destino${aberto ? " aberto" : ""}">
+        <div class="list-line acordeon-cabeca" style="border:none;padding:0" onclick="toggleVooDestino('${esc(chave)}')">
+          <span class="grow" style="display:flex;align-items:center;gap:8px">
+            <span class="acordeon-seta">${ico("seta", 14)}</span>
+            <span class="destino-viagem"><span class="voo voo-saida"><span class="voo-num">${esc(nomeMonte(via))}</span></span></span>
+            <span class="note">${resumo}</span>
+          </span>
+          <button class="ok" style="width:auto" onclick="event.stopPropagation();entregarTriagem('${esc(via)}',${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
         </div>
-        ${ds.map(linha).join("")}
+        <div class="acordeon-corpo">${ds.map(linha).join("")}</div>
       </div>`;
   }
   var podeCancelar = (vg) => !destinosDe(vg.id).some((d) => d.status === "a_caminho");
@@ -9202,7 +9222,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const montePendente = ds.filter((d) => noMonte(d) && d.status !== "entregue");
     const chavesMonte = [
       ...TRIAGENS,
-      ...new Set(montePendente.filter(naEsteiraComVoo).map((d) => chaveMonte(d, vg)))
+      ...new Set(montePendente.filter(naEsteira).map((d) => chaveMonte(d, vg)))
     ];
     const feitas = ds.filter((d) => d.status === "entregue");
     return `
@@ -9409,7 +9429,7 @@ Destino: ${esc(inf.num)}`);
     const ok = await confirmar(
       `TEM CERTEZA da ENTREGA?
 
-${ds.length} voo${ds.length === 1 ? "" : "s"} na ${esc(textoMonte(via))}`
+${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     );
     if (!ok) return;
     await entregarDestinos(ds.map((d) => d.id), vgId);
