@@ -780,9 +780,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 09:19:44
+     Gerado em: 15/09/2026, 09:50:08
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 09:19";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 09:50";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2540,7 +2540,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const nomeIcone = tipo === "chegada" ? "pousando" : "decolando";
     const aviao = !!o.aviao;
     const iconeSolto = aviao && !comBox ? ico(nomeIcone) : "";
-    const selo = aviao && comBox ? `<span class="voo-corner ${o.aviaoApos ? "dir" : "esq"} ${nomeIcone}">${ico(nomeIcone, 14)}</span>` : "";
+    const canto = tipo === "chegada" ? "esq" : "dir";
+    const selo = aviao && comBox ? `<span class="voo-corner ${canto} ${nomeIcone}">${ico(nomeIcone, 14)}</span>` : "";
     return `<span class="voo ${classe}${tam}">` + (iconeSolto && !o.aviaoApos ? iconeSolto : "") + `<span class="voo-apt">${esc(p.apt)}</span><span class="voo-sep">-</span><span class="voo-num">${esc(p.num)}</span>` + (comBox ? `<span class="voo-sep">-</span><span class="voo-box">${selo}${esc(placa)}</span>` : "") + (iconeSolto && o.aviaoApos ? iconeSolto : "") + (o.hora && p.hora ? `<span class="voo-hora">${esc(p.hora)}</span>` : "") + `</span>`;
   }
   function vooPar(vChegada, vSaida, opcoes) {
