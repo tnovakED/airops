@@ -835,9 +835,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 12:25:56
+     Gerado em: 15/09/2026, 12:41:37
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 12:25";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 12:41";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1031,6 +1031,33 @@
     var _a, _b;
     (_b = (_a = document.activeElement) == null ? void 0 : _a.blur) == null ? void 0 : _b.call(_a);
   }
+  function guardarRolagem(raiz) {
+    if (!raiz || typeof raiz.querySelectorAll !== "function") return () => {
+    };
+    const chave = (el) => `${el.tagName}.${typeof el.className === "string" ? el.className : ""}`;
+    const guardadas = /* @__PURE__ */ new Map();
+    const vistos = /* @__PURE__ */ new Map();
+    for (const el of raiz.querySelectorAll("*")) {
+      const k = chave(el);
+      const i = vistos.get(k) || 0;
+      vistos.set(k, i + 1);
+      if (el.scrollTop || el.scrollLeft) guardadas.set(`${k}#${i}`, [el.scrollTop, el.scrollLeft]);
+    }
+    return () => {
+      if (!guardadas.size) return;
+      const contagem = /* @__PURE__ */ new Map();
+      for (const el of raiz.querySelectorAll("*")) {
+        const k = chave(el);
+        const i = contagem.get(k) || 0;
+        contagem.set(k, i + 1);
+        const r = guardadas.get(`${k}#${i}`);
+        if (r) {
+          el.scrollTop = r[0];
+          el.scrollLeft = r[1];
+        }
+      }
+    };
+  }
   function beep() {
     try {
       const c = new (window.AudioContext || window.webkitAudioContext)();
@@ -1132,12 +1159,10 @@
       m._timerFechar = null;
     }
     const jaVisivel = m.style.display === "flex" && typeof m.classList.contains === "function" && m.classList.contains("show");
-    const boxAntigo = jaVisivel ? m.querySelector(".modal-box") : null;
-    const scrollAntigo = boxAntigo ? boxAntigo.scrollTop : 0;
+    const voltarRolagem = jaVisivel ? guardarRolagem(m) : null;
     m.innerHTML = `<div class="modal-box" onclick="event.stopPropagation()">${html}</div>`;
     if (jaVisivel) {
-      const boxNovo = m.querySelector(".modal-box");
-      if (boxNovo) boxNovo.scrollTop = scrollAntigo;
+      voltarRolagem();
       return;
     }
     m.classList.remove("show");
@@ -10408,6 +10433,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const abas = abasDoUsuario();
     if (!abas.includes(UI.tab)) UI.tab = abas[0];
     const naOperador = UI.tab === "levar";
+    const voltarRolagem = guardarRolagem(app());
     app().innerHTML = `
     <header class="app">
       ${botaoAbrirMenu()}
@@ -10419,6 +10445,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     ${naOperador ? barraOperador() : ""}
     <main id="main"></main>`;
     document.getElementById("main").innerHTML = conteudo(UI.tab);
+    voltarRolagem();
     atualizarModalVivo();
     sincronizarMenu(abas);
     religarAnimacoes();
