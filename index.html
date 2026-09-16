@@ -1070,9 +1070,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 16/09/2026, 15:48:58
+     Gerado em: 16/09/2026, 15:59:54
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 15:48";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 15:59";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4147,7 +4147,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const duasPernas = ehDuasPernasDelta(pd);
     const classeDuas = duasPernas ? " duas-pernas" : "";
     const tituloDuas = duasPernas ? ` title="Mesma aeronave da outra linha nesta cor \u2014 as duas t\xEAm que ir na mesma carreta"` : "";
-    const chamar = statusConexaoDelta(pd) === "livre" && vSaida ? `<button class="small ok delta-ok delta-chamar" onclick="event.stopPropagation();solicitarConexaoDelta(${vooId},${pd.id})" aria-label="Chamar operador s\xF3 para este voo" title="Chamar operador s\xF3 para este voo">${ico("campanha", 34)}</button>` : "";
+    const chamar = vSaida ? `<button class="small ok delta-ok delta-chamar" onclick="event.stopPropagation();solicitarConexaoDelta(${vooId},${pd.id})" aria-label="Chamar operador s\xF3 para este voo" title="Chamar operador s\xF3 para este voo">${ico("campanha", 34)}</button>` : "";
     const abre = editavel ? `<div class="pt-linha delta-conexao${marcado ? " sel" : ""}${classeDuas}"${tituloDuas} onclick="alternarSelecaoDelta(${pd.id},${vooId})">` : `<div class="pt-linha${classeDuas}"${tituloDuas}>`;
     return `
     ${abre}
@@ -4385,23 +4385,49 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       return "N\xE3o \xE9 poss\xEDvel solicitar operador para buscar TODA a CARRETA \u2014 ela j\xE1 saiu inteira.\n\nSe ainda h\xE1 bag no box, solicite o operador individualmente, no bot\xE3o da linha do voo.";
     return "Essa carreta j\xE1 foi solicitada \u2014 aguardando um operador buscar.";
   }
+  function prontaAtivaDaConexao(pd) {
+    return D.prontas.find((p) => mesmoId(p.ponto_delta_id, pd.id) && (p.status === "pronta" || p.status === "ciente"));
+  }
   async function solicitarConexaoDelta(vooId, pontoDeltaId) {
     const v = voo(vooId);
     if (!v) return;
     const pd = D.deltas.find((x) => mesmoId(x.id, pontoDeltaId));
     if (!pd) return;
-    if (statusConexaoDelta(pd) !== "livre") {
-      await aviso("Esse voo j\xE1 foi solicitado ou j\xE1 foi pego.");
-      return;
-    }
     const vd = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
     if (!vd) {
       await aviso("Esse voo do Delta n\xE3o est\xE1 na malha de hoje \u2014 n\xE3o d\xE1 pra solicitar.");
       return;
     }
-    const carreta = pd.carreta_id != null ? D.carretasDelta.find((c) => mesmoId(c.id, pd.carreta_id)) : null;
-    const ok = await confirmar(`Chamar operador s\xF3 para ${esc(pd.destino || "")}-${esc(pd.voo_saida_numero)}?`);
+    const rotulo2 = `${pd.destino || ""}-${pd.voo_saida_numero}`;
+    const ativa = prontaAtivaDaConexao(pd);
+    if (ativa && ativa.status === "pronta") {
+      await aviso(`${rotulo2} j\xE1 est\xE1 na tela de todos os operadores \u2014 ningu\xE9m pegou ainda.`);
+      return;
+    }
+    if (ativa && ativa.status === "ciente") {
+      const quem = nomeDe(ativa.ciente_por);
+      const quando = ativa.ciente_em ? ` \xE0s ${hora(ativa.ciente_em)}` : "";
+      const ok2 = await confirmar(
+        `${quem} aceitou ${rotulo2}${quando} e ainda n\xE3o pegou.
+
+Devolver pra fila, pra outro operador poder pegar?`,
+        "Aguardando esse operador"
+      );
+      if (!ok2) return;
+      const { error } = await devolverProntaDb(ativa.id);
+      if (error) {
+        await erro(error);
+        return;
+      }
+      await bus.recarregar();
+      return abrirPontoDelta(vooId);
+    }
+    const jaSaiu = statusConexaoDelta(pd) === "pega";
+    const ok = await confirmar(jaSaiu ? `${rotulo2} j\xE1 saiu com um operador.
+
+Chamar de novo, para a bag que ficou no box?` : `Chamar operador s\xF3 para ${rotulo2}?`);
     if (!ok) return;
+    const carreta = pd.carreta_id != null ? D.carretasDelta.find((c) => mesmoId(c.id, pd.carreta_id)) : null;
     try {
       await solicitarCarretaDeltaDb(vooId, [vd.id], carreta ? carreta.nome : null, [pd.id]);
     } catch (e) {
