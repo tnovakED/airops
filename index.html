@@ -311,8 +311,13 @@
      (list-line ja da o layout — grow+botao). Rola depois de umas
      poucas linhas pra o cartao nao crescer sem fim quando um lugar
      tem muita bag esperando. Colada no cabecalho, sem respiro extra. */
+  /* 16/09/2026: 220 -> 360. Com a carreta aberta (accordion + botao
+     PEGAR) 220px cortava a acao, e o operador tinha que rolar DENTRO do
+     cartao pra achar o botao. 360 cabe cabecalho + 4 voos + botao, que
+     e a carreta tipica. Continua limitado: o motivo original do teto --
+     o cartao nao crescer sem fim num lugar com muita bag -- nao mudou. */
   .alerta-lista{border-top:1px solid var(--line); margin:0; padding-top:2px;
-    max-height:220px; overflow-y:auto}
+    max-height:360px; overflow-y:auto}
   .alerta-linha button{flex:0 0 auto}
 
   /* Botao de acao da linha (Aceitar/Cancelar/Ver voos) so-icone, quadrado —
@@ -354,14 +359,13 @@
   .alerta-voo.sel{background:var(--accent-light)}
   /* Botao largo e no fim da carreta aberta: e a acao que termina o
      passo, e alvo de dedo de luva (48px, acima do minimo).
-     STICKY porque a .alerta-lista rola (max-height:220px): com a carreta
-     aberta o botao caia pra fora da area visivel e o operador tinha que
-     rolar dentro do cartao pra achar a acao -- visto na vitrine,
-     16/09/2026. Grudado no pe, ele esta sempre a um toque. O fundo
-     solido e obrigatorio: sem ele as linhas passam por baixo. */
+     Ja foi sticky (bottom:0) pra nao cair fora da area que rola. Durou
+     uma versao: com uma linha DEPOIS da carreta aberta (uma bag
+     misturada, por exemplo), o botao grudado no pe passava por cima
+     dela -- parecia defeito. A altura da .alerta-lista subiu no lugar
+     disso (16/09/2026). */
   .alerta-pegar{width:100%; margin:8px 0 4px; min-height:48px;
-    text-transform:uppercase; letter-spacing:.04em;
-    position:sticky; bottom:0; z-index:1}
+    text-transform:uppercase; letter-spacing:.04em}
   @media (prefers-reduced-motion: reduce){
     .carreta-alerta .acordeon-seta{transition:none}
   }
@@ -431,6 +435,21 @@
      aviso aparecia partido ao meio (visto na vitrine, 16/09/2026).
      Bloco proprio = layout igual sempre. */
   .carreta-folha-fora{display:block; color:var(--orange); font-weight:700; margin-top:2px}
+
+  /* BAG MISTURADA (16/09/2026): a bag foi chamada sozinha, mas continua
+     no meio de uma carreta montada — quem for buscar vai ter que
+     separar. Laranja, igual ao "fora da malha": as duas sao informacao
+     que muda o que fazer, nao urgencia de relogio. Recuada pra ficar
+     claro que fala da linha de cima, nao da proxima. */
+  .bag-misturada{display:inline-block; color:var(--orange); font-weight:700;
+    font-size:12px; letter-spacing:.06em; margin:0 0 4px 16px}
+  /* Decolagem iminente: o voo sai em SINO_IMINENTE_MIN minutos ou menos.
+     Fica em cima do VOO; o timer colorido ao lado continua falando do
+     tempo. Vermelho porque aqui nao ha o que decidir — ou vai agora, ou
+     nao vai. */
+  .sino-iminente{display:inline-flex; align-items:center; color:var(--red);
+    font-weight:700; font-size:12px; letter-spacing:.04em}
+  .sino-iminente .ico{width:16px; height:16px; margin-right:0}
 
   /* ---------- lista de destinos (folha do Operador) ----------
      15/09/2026, pedido do Tiago: voos de saida um embaixo do outro, sem
@@ -1100,9 +1119,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 16/09/2026, 16:38:21
+     Gerado em: 16/09/2026, 16:57:36
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 16:38";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 16:57";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1140,7 +1159,7 @@
     S.me = null;
     S.ferramentas = [];
   }
-  var CHAVE_OP_DE, CHAVE_OP_ATE, CHAVE_OC_DE, CHAVE_OC_ATE, lido, CHAVE_MENU, lidoBool, D, S, UI, mesmoId, voo, nomeDe, destinosDe, chegouNoVoo, pode;
+  var CHAVE_OP_DE, CHAVE_OP_ATE, CHAVE_OC_DE, CHAVE_OC_ATE, lido, CHAVE_MENU, lidoBool, D, S, UI, mesmoId, voo, nomeDe, destinosDe, chegouNoVoo, bagMisturada, pode;
   var init_store = __esm({
     "src/state/store.js"() {
       CHAVE_OP_DE = "rampa_op_de";
@@ -1296,6 +1315,16 @@
       chegouNoVoo = (d) => {
         const via = d && d.entrega_via || "PP";
         return via === "PP" || via === "VOO";
+      };
+      bagMisturada = (p) => {
+        if ((p == null ? void 0 : p.ponto_delta_id) == null) return false;
+        const pd = D.deltas.find((x) => mesmoId(x.id, p.ponto_delta_id));
+        if (!pd || pd.carreta_id == null) return false;
+        const irmas = D.deltas.filter((x) => mesmoId(x.carreta_id, pd.carreta_id));
+        if (irmas.length <= 1) return false;
+        const doLote = D.prontas.filter((x) => p.lote ? x.lote === p.lote : x.id === p.id);
+        const cobertas = new Set(doLote.map((x) => Number(x.ponto_delta_id)));
+        return irmas.some((x) => !cobertas.has(Number(x.id)));
       };
       pode = (id) => S.ferramentas.some((f) => f.id === id);
     }
@@ -1590,7 +1619,7 @@
   });
 
   // src/config/regras.js
-  var JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN, PATIO_PRONTA_ESPERA_MIN, PATIO_PRONTA_CRITICA_MIN, PATIO_DESCARGA_ATRASO_MIN, PATIO_OC_ANTES_MIN, PATIO_VIAGEM_LONGA_MIN, PATIO_PEDIDO_ESPERA_MIN, PATIO_SAIDA_ALERTA_MIN;
+  var JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN, SINO_IMINENTE_MIN, PATIO_PRONTA_ESPERA_MIN, PATIO_PRONTA_CRITICA_MIN, PATIO_DESCARGA_ATRASO_MIN, PATIO_OC_ANTES_MIN, PATIO_VIAGEM_LONGA_MIN, PATIO_PEDIDO_ESPERA_MIN, PATIO_SAIDA_ALERTA_MIN;
   var init_regras = __esm({
     "src/config/regras.js"() {
       JANELA_DESCARGA_ESTIMADA_MIN = 30;
@@ -1601,6 +1630,7 @@
       TIMER_FOLGA_MIN = 40;
       TIMER_APERTO_MIN = 25;
       TIMER_HORA_IR_MIN = 15;
+      SINO_IMINENTE_MIN = 20;
       PATIO_PRONTA_ESPERA_MIN = 5;
       PATIO_PRONTA_CRITICA_MIN = 8;
       PATIO_DESCARGA_ATRASO_MIN = 15;
@@ -10485,6 +10515,13 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     const txt2 = restam <= 0 ? "partiu" : `${restam}min`;
     return ` <span class="op-timer ${corTimer(restam)}">${esc(txt2)}</span>`;
   }
+  function sinoIminente(v) {
+    const alvo2 = minutosDe(v == null ? void 0 : v.saida);
+    if (alvo2 == null) return false;
+    const restam = alvo2 - agoraMin();
+    return restam > 0 && restam <= SINO_IMINENTE_MIN;
+  }
+  var selosDoVoo = (v) => sinoIminente(v) ? ` <span class="sino-iminente" title="Decola em ${SINO_IMINENTE_MIN} minutos ou menos" aria-label="decolagem iminente">${ico("sinoAtivo", 16)}</span>` : "";
   function linhaSolicitacao(p) {
     const v = voo(p.voo_destino_id) || {};
     const minha = p.status === "ciente" && p.ciente_por === S.me.id;
@@ -10523,11 +10560,21 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       const marcado = sel.includes(p.id);
       return `<div class="pt-linha alerta-voo${marcado ? " sel" : ""}" onclick="togVooAlerta(${p.id})">
       ${ico(marcado ? "quadradoMarcado" : "quadrado", 20)}
-      <span class="grow">${vooRotulo2(v, "saida", { aviao: true, aviaoApos: true })}</span>
+      <span class="grow">${vooRotulo2(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}</span>
       ${timerAlerta(v)}
     </div>`;
     };
     return `<div class="alerta-carretas">${grupos2.map((c) => {
+      if (c.ps.length === 1 && bagMisturada(c.ps[0])) {
+        const p = c.ps[0];
+        const v = voo(p.voo_destino_id) || {};
+        return `<div class="pt-linha alerta-voo alerta-solto">
+          <span class="grow">${vooRotulo2(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}</span>
+          ${timerAlerta(v)}
+        </div>
+        <div class="bag-misturada" title="Esta bag foi chamada sozinha, mas est\xE1 no meio da carreta ${esc(c.nome)} \u2014 vai ter que separar">BAG MISTURADA</div>
+        <button class="primary alerta-pegar" onclick="pegarDoAlerta('${tipo}',${boxArg},[${p.id}],[${p.id}])">PEGAR</button>`;
+      }
       const aberta = a && a.lugar === s.lugar && a.chave === c.chave;
       const sel = aberta ? a.sel : [];
       if (!aberta)
@@ -11301,7 +11348,14 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
         lotes[chave].voos++;
         continue;
       }
-      lotes[chave] = { box: nb(p.box), tipo: p.lote ? "Carreta" : "Bag pronta", nome: p.carreta_nome || null, voos: 1, desde: minutosDoIso(p.criada_em) };
+      lotes[chave] = {
+        box: nb(p.box),
+        tipo: p.lote ? "Carreta" : "Bag pronta",
+        nome: p.carreta_nome || null,
+        voos: 1,
+        desde: minutosDoIso(p.criada_em),
+        misturada: bagMisturada(p)
+      };
       pedidos.push(lotes[chave]);
     }
     for (const s of D.sols) {
@@ -11890,7 +11944,8 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       return h.join("");
     }
     if (v.cheg != null) h.push(linha("Chegada", `<b>${esc(v.vc || "\u2014")}</b> de ${esc(v.org)} \xB7 <b>${hhmm(v.cheg)}</b> <small>(${n < v.cheg ? `em ${mins(v.cheg - n)}` : `h\xE1 ${mins(n - v.cheg)}`} min)</small>`, fonte("voos")));
-    h.push(linha("Sa\xEDda", v.sai != null ? `<b>${esc(v.vs)}</b> para ${esc(v.dst)} \xB7 <b>${hhmm(v.sai)}</b> ${tempoChip(v.sai - n)}` : `<b>${esc(v.vs)}</b> <small>sem hora de sa\xEDda</small>`, fonte("voos")));
+    const iminente = v.sai != null && v.sai - n > 0 && v.sai - n <= SINO_IMINENTE_MIN ? ` <span class="sino-iminente">DECOLA J\xC1</span>` : "";
+    h.push(linha("Sa\xEDda", v.sai != null ? `<b>${esc(v.vs)}</b> para ${esc(v.dst)} \xB7 <b>${hhmm(v.sai)}</b> ${tempoChip(v.sai - n)}${iminente}` : `<b>${esc(v.vs)}</b> <small>sem hora de sa\xEDda</small>`, fonte("voos")));
     h.push(linha("OC no box", v.oc ? esc(v.oc) : `<span class="ruim">ningu\xE9m posicionado</span>`, fonte("voos.oc_posicionado_id")));
     if (e === "solo" || e === "descarga")
       h.push(linha("Descarga OK", v.descEm != null ? `<span class="patio-t ok">\u2713 ${hhmm(v.descEm)}</span>${v.descPor ? ` por ${esc(v.descPor)}` : ""}` : `<span class="ruim">n\xE3o marcada</span>${v.cheg != null ? ` <small>\xB7 pousou h\xE1 ${mins(n - v.cheg)} min</small>` : ""}`, fonte("voos.descarga_ok_em")));
@@ -11898,7 +11953,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     if (v.onde.length) h.push(linha("Onde est\xE1 o que falta", esc(v.onde.join(", ")), fonte("bags_local \xB7 viagens")));
     h.push(vindoESaindo(c, k));
     const ped = c.pedidos.filter((p) => p.box === k);
-    if (ped.length) h.push(linha("Pedidos", ped.map((p) => `${esc((p.tipo === "Carreta" ? `Carreta${p.nome ? ` \u201C${p.nome}\u201D` : ""} \xB7 ${p.voos} voos` : p.tipo) + (p.desde != null ? ` \xB7 h\xE1 ${mins(n - p.desde)} min` : ""))} \xB7 <span class="ruim">sem ningu\xE9m</span>`).join("<br>"), fonte("solicitacoes \xB7 prontas")));
+    if (ped.length) h.push(linha("Pedidos", ped.map((p) => `${esc((p.tipo === "Carreta" ? `Carreta${p.nome ? ` \u201C${p.nome}\u201D` : ""} \xB7 ${p.voos} voos` : p.tipo) + (p.desde != null ? ` \xB7 h\xE1 ${mins(n - p.desde)} min` : ""))} \xB7 <span class="ruim">sem ningu\xE9m</span>${p.misturada ? ` <span class="bag-misturada" title="Chamada sozinha, mas a bag est\xE1 no meio de uma carreta montada">BAG MISTURADA</span>` : ""}`).join("<br>"), fonte("solicitacoes \xB7 prontas")));
     h.push(aquiAgora(c, k));
     return h.join("");
   }
@@ -12711,6 +12766,20 @@ Sair mesmo assim?`
       grupo: "alerta",
       arquivo: "screens/telaOperador.js",
       desc: "Um voo dentro da carreta aberta, recuado. Tocar marca s\xF3 ele \u2014 serve para levar parte da carreta."
+    },
+    {
+      nome: "etiqueta-bag-misturada",
+      seletor: ".bag-misturada",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: '"BAG MISTURADA", em laranja: o l\xEDder chamou esse voo sozinho, mas a bag dele est\xE1 no meio de uma carreta montada \u2014 vai ter que separar. Aparece tamb\xE9m no painel de opera\xE7\xE3o.'
+    },
+    {
+      nome: "selo-decola-ja",
+      seletor: ".sino-iminente",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Sino vermelho ao lado do voo: decola em 20 minutos ou menos (SINO_IMINENTE_MIN, em config/regras.js). S\xF3 aparece, n\xE3o apita."
     },
     {
       nome: "botao-pegar-do-alerta",
