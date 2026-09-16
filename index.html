@@ -428,6 +428,11 @@
   .destino-linha .voo-partiu, .destino-linha .voo-partiu .ico{color:var(--text)}
   .destino-bags{display:inline-flex; align-items:center; gap:2px;
     font-weight:600; color:var(--text)}
+  /* Na viagem em andamento o chip fica FORA do bloco que estica, colado
+     no check: dentro dele, a 360px, ele caia pra segunda linha e o
+     cartao virava dois andares (visto na vitrine, 16/09/2026). Aqui ele
+     tem lugar fixo, e os numeros dos cartoes alinham em coluna. */
+  .viagem-bags{flex:0 0 auto; margin-right:10px; white-space:nowrap}
 
   /* Linha da esteira no passo EST (15/09/2026): mesmo formato das linhas de
      voo — voo que chegou · BAGs p/ BSB · EST [n]. O numero da esteira fica
@@ -1065,9 +1070,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 16/09/2026, 14:40:21
+     Gerado em: 16/09/2026, 15:11:40
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 14:40";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 15:11";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4142,6 +4147,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const duasPernas = ehDuasPernasDelta(pd);
     const classeDuas = duasPernas ? " duas-pernas" : "";
     const tituloDuas = duasPernas ? ` title="Mesma aeronave da outra linha nesta cor \u2014 as duas t\xEAm que ir na mesma carreta"` : "";
+    const chamar = statusConexaoDelta(pd) === "livre" && vSaida ? `<button class="small ok delta-ok delta-chamar" onclick="event.stopPropagation();solicitarConexaoDelta(${vooId},${pd.id})" aria-label="Chamar operador s\xF3 para este voo" title="Chamar operador s\xF3 para este voo">${ico("campanha", 34)}</button>` : "";
     const abre = editavel ? `<div class="pt-linha delta-conexao${marcado ? " sel" : ""}${classeDuas}"${tituloDuas} onclick="alternarSelecaoDelta(${pd.id},${vooId})">` : `<div class="pt-linha${classeDuas}"${tituloDuas}>`;
     return `
     ${abre}
@@ -4151,6 +4157,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       ${seloStatus ? `<span class="delta-status ${seloStatus.classe}" title="${esc(seloStatus.titulo)}" aria-label="${seloStatus.texto}">${ico(seloStatus.icone, 18)}</span>` : ""}
       <span class="delta-qtd">${pd.bag_qtd}</span>
       ${manual}
+      ${chamar}
     </div>`;
   }
   var MATIZES_BALDE_DELTA = [205, 265, 335, 25, 145, 95];
@@ -4166,7 +4173,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const nPegas = porStatus("pega").length;
     const linhas = balde.itens.length ? balde.itens.map((pd) => linhaDeltaConexao(vooId, v, pd, editavel)).join("") : `<p class="note" style="margin:4px 0">Nada aqui.</p>`;
     const resumo = nSolicitadas || nPegas ? `<span class="note" style="margin-left:6px">${nSolicitadas ? `${nSolicitadas} aguardando` : ""}${nSolicitadas && nPegas ? " \xB7 " : ""}${nPegas ? `${nPegas} pego${nPegas === 1 ? "" : "s"}` : ""}</span>` : "";
-    const solicitar = livres.length ? `<button class="small ghost delta-icone" onclick="solicitarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Chamar operador" title="Chamar operador">${ico("carreta", 34)}${ico("campanha", 34)}${nSolicitadas || nPegas ? `<span class="delta-n">(${livres.length})</span>` : ""}</button>` : "";
+    const solicitar = balde.itens.length ? `<button class="small ghost delta-icone" onclick="solicitarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Chamar operador" title="Chamar operador">${ico("carreta", 34)}${ico("campanha", 34)}${(nSolicitadas || nPegas) && livres.length ? `<span class="delta-n">(${livres.length})</span>` : ""}</button>` : "";
     const cancelarSolicitacao2 = nSolicitadas ? `<button class="small ghost delta-icone" onclick="cancelarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Cancelar solicita\xE7\xE3o" title="Cancelar solicita\xE7\xE3o">${ico("cancelar", 34)}</button>` : "";
     const excluir = editavel && balde.real && !balde.itens.length ? `<button class="small ghost delta-icone" onclick="excluirCarretaDeltaTela(${balde.real.id},${vooId})" aria-label="Excluir carreta" title="Excluir carreta vazia">${ico("x", 34)}</button>` : "";
     const matiz = corBaldeDelta(balde.chave);
@@ -4343,7 +4350,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     }
     const livres = balde.itens.filter((pd) => statusConexaoDelta(pd) === "livre");
     if (!livres.length) {
-      await aviso("Essa carreta j\xE1 foi solicitada \u2014 aguardando um operador buscar.");
+      await aviso(motivoSemSolicitar(balde.itens));
       return;
     }
     const vistos = /* @__PURE__ */ new Set();
@@ -4364,6 +4371,39 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     if (!ok) return;
     try {
       await solicitarCarretaDeltaDb(vooId, destinos, balde.nome, pontoDeltaIds);
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    await bus.recarregar();
+    return abrirPontoDelta(vooId);
+  }
+  function motivoSemSolicitar(itens) {
+    const pega = itens.some((pd) => statusConexaoDelta(pd) === "pega");
+    const solicitada = itens.some((pd) => statusConexaoDelta(pd) === "solicitada");
+    if (pega && !solicitada)
+      return "N\xE3o \xE9 poss\xEDvel solicitar operador para buscar TODA a CARRETA \u2014 ela j\xE1 saiu inteira.\n\nSe ainda h\xE1 bag no box, solicite o operador individualmente, no bot\xE3o da linha do voo.";
+    return "Essa carreta j\xE1 foi solicitada \u2014 aguardando um operador buscar.";
+  }
+  async function solicitarConexaoDelta(vooId, pontoDeltaId) {
+    const v = voo(vooId);
+    if (!v) return;
+    const pd = D.deltas.find((x) => mesmoId(x.id, pontoDeltaId));
+    if (!pd) return;
+    if (statusConexaoDelta(pd) !== "livre") {
+      await aviso("Esse voo j\xE1 foi solicitado ou j\xE1 foi pego.");
+      return;
+    }
+    const vd = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
+    if (!vd) {
+      await aviso("Esse voo do Delta n\xE3o est\xE1 na malha de hoje \u2014 n\xE3o d\xE1 pra solicitar.");
+      return;
+    }
+    const carreta = pd.carreta_id != null ? D.carretasDelta.find((c) => mesmoId(c.id, pd.carreta_id)) : null;
+    const ok = await confirmar(`Chamar operador s\xF3 para ${esc(pd.destino || "")}-${esc(pd.voo_saida_numero)}?`);
+    if (!ok) return;
+    try {
+      await solicitarCarretaDeltaDb(vooId, [vd.id], carreta ? carreta.nome : null, [pd.id]);
     } catch (e) {
       await erro(e);
       return;
@@ -9275,13 +9315,13 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   function carretasDaLista(lista, semMalha) {
     const porChave = /* @__PURE__ */ new Map();
     const grupo = (chave) => {
-      if (!porChave.has(chave)) porChave.set(chave, { chave, nome: nomeCarreta(chave), vs: [], fora: 0 });
+      if (!porChave.has(chave)) porChave.set(chave, { chave, nome: nomeCarreta(chave), vs: [], fora: [] });
       return porChave.get(chave);
     };
     for (const v of lista) grupo(chaveCarreta(v)).vs.push(v);
     for (const s of semMalha || []) {
       const chave = chaveCarreta(s);
-      if (porChave.has(chave)) porChave.get(chave).fora++;
+      if (porChave.has(chave)) porChave.get(chave).fora.push(s.numero);
     }
     return [...porChave.values()].sort((a, b) => (a.chave === "avulsas" ? 1 : 0) - (b.chave === "avulsas" ? 1 : 0));
   }
@@ -9314,7 +9354,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const marcados = c.vs.filter((v) => g[via].includes(v.id)).length;
       const todos2 = marcados === c.vs.length;
       const parcial = marcados && !todos2 ? ` (${marcados} de ${c.vs.length})` : "";
-      const fora = c.fora ? `<span class="carreta-folha-fora">${c.fora} fora da malha</span>` : "";
+      const fora = c.fora.length ? `<span class="carreta-folha-fora">${esc(c.fora.join(", "))} fora da malha</span>` : "";
       return `<div class="list-line carreta-folha${todos2 ? " marcada" : ""}" onclick="${pre}TodosDaCarreta('${esc(c.chave)}')">
       <span class="carreta-folha-check">${ico(todos2 ? "quadradoMarcado" : "quadrado", 22)}</span>
       <span class="grow carreta-folha-nome">${esc(c.nome)} \xB7 ${c.vs.length} voo${c.vs.length === 1 ? "" : "s"}${parcial}${fora}</span>
@@ -9620,6 +9660,23 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   function origensDoGrupo(ds, vg) {
     return ds.map((d) => ({ rotulo: origemRotuloHtml(d, vg), waypoint: origemDaPerna(d, vg).waypoint }));
   }
+  function bagsDaPerna(d, vg) {
+    if (!(d == null ? void 0 : d.voo_destino_id)) return null;
+    const vo = vooDeOrigem(d, vg);
+    if (!vo) return null;
+    const conex = candidatosConexao(vo.id);
+    if (!conex) return null;
+    const c = conex.find((x) => mesmoId(x.id, d.voo_destino_id));
+    return (c == null ? void 0 : c._bag) || null;
+  }
+  function bagsDoCartao(ds, vg) {
+    let total = null;
+    for (const d of ds) {
+      const n = bagsDaPerna(d, vg);
+      if (n != null) total = (total || 0) + n;
+    }
+    return total;
+  }
   function cartaoVooDestino(item, vg) {
     const ds = item.grupo || [item.solo];
     const primeiro = ds[0];
@@ -9628,6 +9685,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const origens = origensDoGrupo(ds, vg);
     const temColeta = origens.length > 1 || origens.some((o) => o.waypoint);
     const rotuloVoo = rotuloDestinoCompacto(primeiro, vg, item.grupo ? { aviao: true, aviaoApos: true } : void 0);
+    const bags = bagsDoCartao(ds, vg);
     const onclickCheck = item.grupo ? `abrirEntregaGrupo([${ds.map((d) => d.id).join(",")}],${vg.id})` : `entregar(${primeiro.id},${vg.id})`;
     return `
       <div class="card acordeon-destino${aberto ? " aberto" : ""}">
@@ -9637,6 +9695,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
             <span class="destino-viagem">${rotuloVoo}</span>
             ${temColeta ? `<span class="chip st-aceita">Coleta no caminho</span>` : ""}
           </span>
+          ${bags != null ? `<span class="destino-bags viagem-bags">${bags}${ico("pacote", 16)}</span>` : ""}
           <button class="ok" style="width:auto" onclick="event.stopPropagation();${onclickCheck}" aria-label="Entreguei">${ico("aceite", 18)}</button>
         </div>
         <div class="acordeon-corpo">
@@ -12845,6 +12904,15 @@ Sair mesmo assim?`
       arquivo: "screens/telaPontos.js",
       desc: "Bot\xF5es s\xF3 com \xEDcone no topo: + reboque + lista (Nova carreta) e reboque branco (Pedir carreta vazia)."
     },
+    // Antes de .delta-ok: o botao de chamar tem as duas classes (mesmo
+    // tamanho e forma do check, de propósito), e a primeira que casar vence.
+    {
+      nome: "chamar-operador-do-voo",
+      seletor: ".delta-chamar",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Megafone ao lado do \u2713 da quantidade: chama operador S\xD3 para aquele voo. S\xF3 aparece em conex\xE3o ainda livre \u2014 serve para a bag que desceu depois e ficou no box, com a carreta dela j\xE1 embora."
+    },
     {
       nome: "check-do-delta",
       seletor: ".delta-ok",
@@ -13395,6 +13463,7 @@ Sair mesmo assim?`
     confirmarCriarCarretaDelta,
     excluirCarretaDeltaTela,
     solicitarCarretaDelta,
+    solicitarConexaoDelta,
     cancelarCarretaDelta,
     alternarSelecaoDelta,
     confirmarMoverSelecionados,
