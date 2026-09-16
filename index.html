@@ -938,7 +938,20 @@
   .patio-legenda .sw{display:block; width:18px; height:13px; border-radius:3px}
 
   .patio-rail{background:var(--surface); border-left:1px solid var(--line); display:flex; flex-direction:column; min-height:0}
-  .patio-abas{display:flex; border-bottom:1px solid var(--line)}
+  .patio-abas{display:flex; border-bottom:1px solid var(--line); overflow-x:auto}
+  /* Cinco abas em 380px (e em 360 no celular): cada uma segura o proprio
+     tamanho e a faixa rola de lado em vez de espremer o rotulo. */
+  .patio .patio-abas button{flex:1 0 auto; min-width:74px}
+  /* A aba "Bags" e a tela da coordenacao inteira (telaViagensCCO) dentro
+     do trilho: cartao e titulo precisam de margem menor aqui. */
+  .patio-lista .card{margin:8px 10px; padding:10px}
+  .patio-lista .board-title{margin:12px 10px 6px}
+  .patio-lista .board-title h2{font-size:14px}
+  /* O trilho tem 380px: a linha do cartao quebra em vez de empurrar o
+     chip para fora da tela. */
+  .patio-lista .list-line{flex-wrap:wrap; gap:4px 8px}
+  .patio-lista .chip{font-size:11px; white-space:normal}
+  .patio-lista .voo{flex-wrap:wrap}
   .patio .patio-abas button{flex:1; min-height:46px; border:0; border-radius:0; background:none; color:var(--muted); font-size:12px; border-bottom:3px solid transparent}
   .patio .patio-abas button[aria-selected="true"]{color:var(--text); border-bottom-color:var(--amber)}
   .patio-abas .n{background:var(--red); color:#fff; border-radius:9px; padding:1px 6px; margin-left:4px; font-size:11px}
@@ -1011,9 +1024,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 15/09/2026, 16:51:28
+     Gerado em: 16/09/2026, 09:17:02
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="15/09 16:51";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 09:17";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1084,8 +1097,10 @@
         deltas: [],
         bagsLocal: [],
         // onde estao as bags de cada par chegada->saida
-        carretasDelta: []
+        carretasDelta: [],
         // carretas que o lider montou no Ponto Delta (por voo de chegada)
+        posicoes: []
+        // onde cada pessoa esta agora (so chega para quem tem patio_gps)
       };
       S = {
         me: null,
@@ -1821,6 +1836,8 @@
       t.push("prontas", "bags_local");
     if (vejoIndia || vejoTudo)
       t.push("ponto_india");
+    if (pode("patio_gps"))
+      t.push("posicoes");
     if (vejoIndia || vejoTudo || pode("levar") || pode("triagem_sinalizar"))
       t.push("ponto_delta");
     if (pode("oc_pontos"))
@@ -1855,19 +1872,31 @@
       if (!document.hidden) bus.recarregar();
     });
   }
+  function recarregarComFolga() {
+    if (recargaMarcada) return;
+    recargaMarcada = setTimeout(() => {
+      recargaMarcada = null;
+      bus.recarregar();
+    }, 400);
+  }
   function aplicarMudanca(tabela, p) {
     const chave = CHAVE2[tabela];
+    const idDe = (row2) => row2 && (tabela === "posicoes" ? row2.usuario_id : row2.id);
+    const mesmaChave = (a, b) => tabela === "posicoes" ? String(a) === String(b) : mesmoId(a, b);
     if (p.eventType === "DELETE") {
-      const id = p.old && p.old.id;
-      if (id != null) D[chave] = D[chave].filter((x) => !mesmoId(x.id, id));
+      const id = idDe(p.old);
+      if (id != null) D[chave] = D[chave].filter((x) => !mesmaChave(idDe(x), id));
       bus.renderSeguro();
       return;
     }
     const row = normalizarIds(p.new);
     if ((tabela === "voos" || tabela === "ponto_india" || tabela === "ponto_delta" || tabela === "carretas_delta") && row.data !== hoje()) return;
-    if (tabela === "viagens_destinos" && !D.viagens.some((v) => mesmoId(v.id, row.viagem_id)) && pode("levar") && !pode("viagens_cco")) return;
+    if (tabela === "viagens_destinos" && !D.viagens.some((v) => mesmoId(v.id, row.viagem_id)) && pode("levar") && !pode("viagens_cco")) {
+      if (row.operador_id === S.me.id || p.eventType === "INSERT") recarregarComFolga();
+      return;
+    }
     const arr = D[chave];
-    const i = arr.findIndex((x) => mesmoId(x.id, row.id));
+    const i = arr.findIndex((x) => mesmaChave(idDe(x), idDe(row)));
     const novo = i < 0;
     if (novo) arr.push(row);
     else arr[i] = row;
@@ -1888,7 +1917,7 @@
     }
     bus.renderSeguro();
   }
-  var CHAVE2;
+  var CHAVE2, recargaMarcada;
   var init_realtime = __esm({
     "src/core/realtime.js"() {
       init_supabase();
@@ -1906,8 +1935,89 @@
         ponto_india: "indias",
         ponto_delta: "deltas",
         bags_local: "bagsLocal",
-        carretas_delta: "carretasDelta"
+        carretas_delta: "carretasDelta",
+        posicoes: "posicoes"
       };
+      recargaMarcada = null;
+    }
+  });
+
+  // src/data/posicoes.js
+  async function registrarPosicaoDb(lat, lng, precisao) {
+    const { error } = await sb.rpc("registrar_posicao", {
+      p_lat: lat,
+      p_lng: lng,
+      p_precisao: precisao == null ? null : Math.round(precisao)
+    });
+    if (error) throw error;
+  }
+  var init_posicoes = __esm({
+    "src/data/posicoes.js"() {
+      init_supabase();
+    }
+  });
+
+  // src/core/posicao.js
+  var posicao_exports = {};
+  __export(posicao_exports, {
+    iniciarPosicao: () => iniciarPosicao,
+    ligarPosicaoNaVisibilidade: () => ligarPosicaoNaVisibilidade,
+    pararPosicao: () => pararPosicao
+  });
+  function metros(a, b) {
+    const dLat = (a.lat - b.lat) * 111320;
+    const dLng = (a.lng - b.lng) * 111320 * Math.cos(a.lat * Math.PI / 180);
+    return Math.hypot(dLat, dLng);
+  }
+  async function chegou(pos) {
+    const c = pos.coords;
+    if (c.accuracy != null && c.accuracy > PRECISAO_MAX_M) return;
+    const agora = { lat: c.latitude, lng: c.longitude };
+    const tempo = Date.now();
+    if (ultimo && metros(agora, ultimo) < PASSO_METROS && tempo - ultimoEnvio < INTERVALO_MS) return;
+    ultimo = agora;
+    ultimoEnvio = tempo;
+    try {
+      await registrarPosicaoDb(agora.lat, agora.lng, c.accuracy);
+    } catch {
+    }
+  }
+  function iniciarPosicao() {
+    if (desistiu || vigia != null) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    vigia = navigator.geolocation.watchPosition(chegou, (err) => {
+      if (err && err.code === 1) {
+        desistiu = true;
+        pararPosicao();
+      }
+    }, { enableHighAccuracy: true, maximumAge: 1e4, timeout: 3e4 });
+  }
+  function pararPosicao() {
+    if (vigia == null) return;
+    try {
+      navigator.geolocation.clearWatch(vigia);
+    } catch {
+    }
+    vigia = null;
+  }
+  function ligarPosicaoNaVisibilidade() {
+    if (typeof document === "undefined" || !document.addEventListener) return;
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) pararPosicao();
+      else iniciarPosicao();
+    });
+  }
+  var PASSO_METROS, INTERVALO_MS, PRECISAO_MAX_M, vigia, ultimo, ultimoEnvio, desistiu;
+  var init_posicao = __esm({
+    "src/core/posicao.js"() {
+      init_posicoes();
+      PASSO_METROS = 15;
+      INTERVALO_MS = 3e4;
+      PRECISAO_MAX_M = 120;
+      vigia = null;
+      ultimo = null;
+      ultimoEnvio = 0;
+      desistiu = false;
     }
   });
 
@@ -1944,7 +2054,7 @@
     india: "Consultar pontos",
     pontosimport: "Subir Pontos",
     viagens: "Viagens",
-    patio: "P\xE1tio",
+    patio: "Painel Operacional",
     sol: "Solicita\xE7\xF5es",
     levar: "Levar",
     minhas: "Minhas viagens",
@@ -2882,7 +2992,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
        <div class="note" style="font-size:11px">min</div>`;
     return `<div class="card" style="padding:0;overflow:hidden;${min !== null && min < 20 ? "border-color:var(--red)" : ""}">
     <div class="list-line" style="border:none;padding:10px 12px;cursor:pointer;align-items:center"
-         onclick="UI.coordAberto=${aberto ? "null" : v.id};render()">
+         onclick="UI.coordAberto=${aberto ? "null" : v.id};renderSeguro()">
       <div style="min-width:52px;text-align:center">${tempo}</div>
       <div class="grow" style="padding-left:12px">
         <div>${vooRotulo2(v, "saida", { hora: true })}</div>
@@ -2959,7 +3069,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     ${blocoBase()}
     ${fechados.length ? `
       <div class="list-line" style="cursor:pointer;margin-top:12px"
-           onclick="UI.coordVerEntregues=${UI.coordVerEntregues ? "false" : "true"};render()">
+           onclick="UI.coordVerEntregues=${UI.coordVerEntregues ? "false" : "true"};renderSeguro()">
         <span class="note grow">${fechados.length} voo${fechados.length === 1 ? "" : "s"} com tudo entregue \u2014 toque para ${UI.coordVerEntregues ? "esconder" : "ver"}</span>
       </div>
       ${UI.coordVerEntregues ? fechados.map(linhaVoo2).join("") : ""}` : ""}`;
@@ -10647,6 +10757,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   init_bus();
 
   // src/config/mapaPatio.js
+  var PROJ = { "LON0": -47.9301, "LAT1": -15.865208, "COS": 0.9618871161168996, "K": 69197.48614860298 };
   var MAPA = { "largura": 1e3, "altura": 591, "mPorUnidade": 1.6, "solo": "M68.4,199.4L71.5,267L290.4,251.3L304,249.1L312.6,246L320.9,239.7L327.9,231.3L377.9,139.5L380.9,135.9L428.8,160.5L440.8,140.4L604.3,222.7L608.8,222.5L610.7,223L612.8,225L614.2,242.2L615.7,243.9L629.1,244.9L631.2,247.7L630.5,249.9L632,279.1L620.6,279.2L626.4,411.9L621.4,415.6L626.1,482.1L615.4,484L601.2,491L605.7,577.2L610.8,587.2L631.9,588.7L647.8,591.2L657.9,587.6L657.3,575.7L906.3,562L870.4,76L824.1,44.8L601.4,67L574.1,64.8L538.7,55.5L496.9,37.3L465.9,14.9L417.6,6.6L399,14.5L319.1,172.5L309.8,179L302.8,182.6L68.4,199.4Z", "lugares": { "1": { "tipo": "box", "d": "M569.1,167.4L557.2,192.6L598.6,212.1L601,212.6L603.2,212.7L607,211.6L614.8,206.7L616.9,204.8L618.6,201.7L619.2,197.9L617.9,190.5L569.1,167.4Z", "c": [588.7, 191.8], "tam": 39.5 }, "2": { "tipo": "box", "d": "M582.7,138.2L569.3,167.7L617.9,191.4L618.5,184.3L619.5,178.8L622.9,173.9L627.9,169L623.1,162.2L591.1,138.9L582.7,138.2Z", "c": [598.3, 164.1], "tam": 40.6 }, "3": { "tipo": "box", "d": "M639.4,141L631.1,108.7L601.5,110.6L596.7,111.7L594.6,114.5L582.5,138.5L590.7,139.2L622.9,162.5L627.8,169L634.8,165.2L640.7,164.2L639.4,141Z", "c": [616.4, 135.1], "tam": 46.6 }, "4": { "tipo": "box", "d": "M631.7,113.2L639.4,141.7L640.7,164.1L651.4,165.4L655.6,167.4L659.3,169.7L665.1,156.3L666.9,148.8L665.7,106.8L630.9,108.7L631.7,113.2Z", "c": [651.4, 134.6], "tam": 40.9 }, "5": { "tipo": "box", "d": "M716.3,154.2L714.4,103.8L689.5,105L691.8,130.9L691.4,155.7L716.3,154.2Z", "c": [703.2, 129.6], "tam": 35.1 }, "6": { "tipo": "box", "d": "M716.7,154.5L743.8,152.9L741.8,101.4L714.2,103.6L716.7,154.5Z", "c": [729.1, 128], "tam": 37.5 }, "7": { "tipo": "box", "d": "M769.1,99.6L741.8,101.7L744,153L751.3,152.2L759.4,150.3L771.2,148.1L770.6,125.2L769.1,99.6Z", "c": [756.5, 125.7], "tam": 37.2 }, "8": { "tipo": "box", "d": "M770.7,132.4L771.2,148.5L778.9,148.3L795.7,147.7L793.4,97.8L768.8,99.6L770.7,132.4Z", "c": [782.4, 123.4], "tam": 34.7 }, "9": { "tipo": "box", "d": "M795.7,147.7L812.8,146.7L816,144.2L815.6,131.8L816.4,127.3L820.4,115.6L837.2,104.8L833.7,96L822.9,96L811,96.6L793.1,98.1L795.7,147.7Z", "c": [809.6, 117.7], "tam": 37.6 }, "10": { "tipo": "box", "d": "M812.9,176L852.2,174L849.5,143L816.2,144.8L813.7,154.4L811.9,159.3L812.4,162.8L812.9,176Z", "c": [832.1, 159.9], "tam": 34.2 }, "11": { "tipo": "box", "d": "M813.9,201.7L853.6,199.9L852.2,174L813.2,176.2L814.6,198.3L813.9,201.7Z", "c": [833.5, 188], "tam": 31.7 }, "12": { "tipo": "box", "d": "M814.2,201.8L816.2,209.3L822,221.3L840.4,243.5L856.2,242.9L853.6,199.8L814.2,201.8Z", "c": [838.9, 219.1], "tam": 35.9 }, "13": { "tipo": "box", "d": "M794.9,210.3L796.7,247.6L840.9,243.6L822.3,221.6L816.6,209.3L814.4,201.8L811.4,204.9L794.7,206L794.9,210.3Z", "c": [811.8, 228.2], "tam": 35.5 }, "14": { "tipo": "box", "d": "M768.2,211.5L770.4,248.9L796.9,247.6L794.9,206.4L781.5,207.8L768.2,211.5Z", "c": [782.8, 228.3], "tam": 32.7 }, "15": { "tipo": "box", "d": "M735.7,251L770.9,248.9L768.8,211.8L768.6,208.4L758.2,209.3L749.5,208.6L733.2,209.7L735.7,251Z", "c": [752, 229.5], "tam": 38.1 }, "16": { "tipo": "box", "d": "M733.4,209.7L715.9,210.4L706.3,210.8L702.7,213.3L700.7,217.3L698.3,229.9L709.8,253.1L735.8,251.1L733.4,209.7Z", "c": [718.4, 230.8], "tam": 36.8 }, "17": { "tipo": "box", "d": "M652.7,223.4L692,235.7L696.8,212.4L665.1,202.3L657.7,213.1L652.7,223.4Z", "c": [676.3, 218.8], "tam": 29.9 }, "18": { "tipo": "box", "d": "M690.3,255.8L690.2,245.8L692.3,235.3L653.2,223.8L641.9,246L642.5,259.5L690.3,255.8Z", "c": [665.9, 243.6], "tam": 36.3 }, "19": { "tipo": "box", "d": "M644.8,293.1L692.6,288.8L690.5,255.8L642.6,259.4L644.8,293.1Z", "c": [667.5, 274.3], "tam": 40 }, "20": { "tipo": "box", "d": "M647.4,330.3L695.6,325.7L692.7,289L645,293.1L647.4,330.3Z", "c": [670.1, 309.6], "tam": 42.3 }, "21": { "tipo": "box", "d": "M696.5,349.7L695.2,325.6L647.3,330.3L650.1,366.6L661.5,364.3L667.5,360.7L696.5,349.7Z", "c": [670.6, 343.7], "tam": 38.3 }, "22": { "tipo": "box", "d": "M654.1,402.2L657.6,399.8L664.9,382.9L698.2,376.7L696.8,349.9L667.5,360.7L661.4,364.4L650,366.3L652.5,400.3L654.1,402.2Z", "c": [673.3, 372.1], "tam": 34.9 }, "23": { "tipo": "box", "d": "M673.9,424.8L697.9,397.1L699.6,391.7L698.3,376.6L664.8,382.9L657.9,399.7L654.4,402.3L657.3,409.2L668.3,412.8L673.9,424.8Z", "c": [678.2, 397.3], "tam": 35.4 }, "24": { "tipo": "box", "d": "M717.9,403.2L701.8,404.2L694.8,408.2L677.3,429.2L686.8,442.3L721.2,440.4L718.7,403.2L717.9,403.2Z", "c": [702.3, 424.5], "tam": 35.7 }, "25": { "tipo": "box", "d": "M748,401.1L718.2,403.2L720.8,440.5L750.7,438.3L748,401.1Z", "c": [734.4, 420.8], "tam": 33.4 }, "26": { "tipo": "box", "d": "M777.2,399.4L747.8,401.1L750.3,438.5L781.4,435.5L777.2,399.4Z", "c": [764.1, 418.8], "tam": 33.5 }, "27": { "tipo": "box", "d": "M783.5,399.5L780.8,399.3L776.9,399.7L781.5,435.5L806.2,433L803,397.9L783.5,399.5Z", "c": [791.9, 416.4], "tam": 30.1 }, "28": { "tipo": "box", "d": "M803.2,397.5L805.9,432.8L829.8,431.4L829.2,419.8L835.2,413.7L834.5,397.1L831.7,395.9L803.2,397.5Z", "c": [818.7, 413.3], "tam": 31.5 }, "29": { "tipo": "box", "d": "M829.8,431.5L830.6,452L870.1,449.6L868.5,428.7L829.8,431.5Z", "c": [849.8, 440.5], "tam": 28.5 }, "30": { "tipo": "box", "d": "M830.3,452.1L832.2,472.1L838,472.1L849,477.5L871.9,476.7L870,449.6L830.3,452.1Z", "c": [852.2, 463.3], "tam": 31.4 }, "31": { "tipo": "box", "d": "M832.1,472.1L833.2,493.3L850.8,505.6L852.2,528.5L874.9,528L873.6,500.9L871.9,476.6L848.9,477.3L837.6,471.9L832.1,472.1Z", "c": [856.6, 498.3], "tam": 40.1 }, "32": { "tipo": "box", "d": "M832.7,493.4L810.4,495L814,531.5L852.3,528.5L850.6,505.3L832.7,493.4Z", "c": [830.5, 513], "tam": 36.2 }, "33": { "tipo": "box", "d": "M810,495L780.1,497.4L782.3,534.1L814.6,531.8L810.8,494.8L810,495Z", "c": [797, 514.7], "tam": 34.1 }, "34": { "tipo": "box", "d": "M782.1,533.7L780,497.2L750.3,499.1L753,535.5L782.1,533.7Z", "c": [766.4, 516.3], "tam": 32.8 }, "35": { "tipo": "box", "d": "M752.7,535.3L750.8,499.1L720.7,501.8L723,537.5L752.7,535.3Z", "c": [736.8, 518.4], "tam": 32.9 }, "36": { "tipo": "box", "d": "M720.8,501.5L690.5,503.2L693.1,540.3L723.1,537.6L720.8,501.5Z", "c": [706.8, 520.6], "tam": 33.3 }, "37": { "tipo": "box", "d": "M690.3,502.9L661.2,504.9L663.3,541.6L693.6,540.4L690.3,502.9Z", "c": [677.2, 522.6], "tam": 33.2 }, "38": { "tipo": "box", "d": "M661.5,504.9L639.8,506.7L642.3,543.7L664.1,541.7L661.5,504.9Z", "c": [651.9, 524.3], "tam": 28.5 }, "47": { "tipo": "box", "d": "M494.7,149.5L538.2,169.9L564.1,115.1L521.6,94L494.7,149.5Z", "c": [529.6, 132.2], "tam": 54 }, "48": { "tipo": "box", "d": "M467.8,136.5L495,149.5L521.7,94.2L494.8,80.9L485.8,99.9L467.8,136.5Z", "c": [494.8, 115.3], "tam": 43 }, "49": { "tipo": "box", "d": "M467.6,136.1L495.1,81.1L472.8,70.3L445.2,125L467.6,136.1Z", "c": [470.2, 103.2], "tam": 39.1 }, "50": { "tipo": "box", "d": "M444.8,124.8L472.9,70.4L468.1,68.1L435.1,70.6L433.4,96.4L424.1,126.6L444.8,124.8Z", "c": [446.4, 94.4], "tam": 39.3 }, "51": { "tipo": "box", "d": "M423.5,126.6L433.1,96.6L435.4,70.1L414.1,71.8L410.2,73.8L406.1,82.1L392.1,112L390.4,119.7L396.6,120.3L410.3,127.2L413.6,129.1L423.5,126.6Z", "c": [415.3, 99.7], "tam": 41.5 }, "52": { "tipo": "box", "d": "M301,241.2L299.1,205.2L270.8,206.6L273.6,243.9L301,241.2Z", "c": [286.1, 224.1], "tam": 32 }, "53": { "tipo": "box", "d": "M270.6,206.5L247.2,208.1L249.6,245.4L274.1,244.3L270.6,206.5Z", "c": [260.4, 226.2], "tam": 30 }, "54": { "tipo": "box", "d": "M247.1,207.9L224,209.9L226.3,247L250,245.5L247.1,207.9Z", "c": [236.9, 227.7], "tam": 29.7 }, "55": { "tipo": "box", "d": "M226.2,246.9L224.2,209.7L197.8,211.5L200.1,248.8L226.2,246.9Z", "c": [212, 229.2], "tam": 31.3 }, "56": { "tipo": "box", "d": "M199.9,248.7L198.2,211.5L172.9,213.4L174.5,250.6L199.9,248.7Z", "c": [186.4, 231.1], "tam": 30.8 }, "57": { "tipo": "box", "d": "M173.2,213.5L148.5,215.1L151.3,252.3L174.9,250.7L173.2,213.5Z", "c": [161.9, 232.7], "tam": 30 }, "58": { "tipo": "box", "d": "M148.6,215L123.7,216.8L126.8,253.9L151.6,252.4L148.6,215Z", "c": [137.7, 234.5], "tam": 30.5 }, "59": { "tipo": "box", "d": "M123.4,216.7L98,218.2L101.5,255.7L127,254.1L123.4,216.7Z", "c": [112.5, 236.2], "tam": 30.9 }, "60": { "tipo": "box", "d": "M97.8,218.5L71.4,220.3L73.9,257.8L102.2,255.7L97.8,218.5Z", "c": [86.3, 238.3], "tam": 32.1 }, "27A": { "tipo": "box", "d": "M834.3,397L835.1,413.5L829.1,419.8L829.8,431.6L868.9,428.7L867.3,405.2L865.1,402.5L863.1,399.1L858.1,393.5L851,391L833.3,391.2L833,395.9L834.3,397Z", "c": [849.1, 412.4], "tam": 36 }, "9A": { "tipo": "box", "d": "M816.1,144.6L849.6,142.9L848,123.1L847.4,119.9L836.9,104.8L820,115.7L816.4,127.2L815.6,132L816.1,144.6Z", "c": [832.6, 127.9], "tam": 31.9 }, "4A": { "tipo": "box", "d": "M691.1,155.7L692,130.6L689.5,105L665.7,106.9L666.5,148.9L664.9,156L659.4,169.9L689.1,162.2L691.1,155.7Z", "c": [677.9, 136.4], "tam": 39 }, "TCX": { "tipo": "triagem", "d": "M765.6,163.7L767.6,201L792.2,199.2L789.1,160.3L765.8,161.4L765.6,163.7Z", "c": [778.6, 180.6], "tam": 30.8 }, "ESTEIRA": { "tipo": "esteira", "d": "M634.9,397.1L645.4,397.1L638.7,289.9L623.8,290.2L629.5,397.7L634.9,397.1Z", "c": [634.4, 344.2], "tam": 40.7 }, "TLC": { "tipo": "triagem", "d": "M646,413.7L622.5,416.2L624.7,463.3L649.9,462.6L646,413.7Z", "c": [635.9, 439.2], "tam": 34.3 } } };
 
   // src/utils/cenaPatio.js
@@ -10750,6 +10861,44 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const v = voo(d.voo_destino_id);
     return v ? nb(v.box) : null;
   }
+  function paraMapa(lat, lng) {
+    return [(lng - PROJ.LON0) * PROJ.COS * PROJ.K, (PROJ.LAT1 - lat) * PROJ.K];
+  }
+  var SEM_SINAL_SEG = 90;
+  function figuraDe(perfil) {
+    const p = String(perfil || "");
+    if (p === "oc") return "oc";
+    if (p.startsWith("aux")) return "aux";
+    return "op";
+  }
+  function pessoasReais(viagens) {
+    if (!pode("patio_gps")) return [];
+    const agora = Date.now(), out = [];
+    for (const po of D.posicoes) {
+      const [x, y] = paraMapa(po.lat, po.lng);
+      if (!(x >= -50 && x <= MAPA.largura + 50 && y >= -50 && y <= MAPA.altura + 50)) continue;
+      const u = D.users.find((z) => z.id === po.usuario_id) || {};
+      const idade = Math.max(0, (agora - new Date(po.atualizada_em).getTime()) / 1e3);
+      const vg = viagens.find((v) => v.operadorId === po.usuario_id);
+      out.push({
+        id: po.usuario_id,
+        nome: u.nome || "\u2014",
+        funcao: u.perfil || "",
+        tipo: figuraDe(u.perfil),
+        x,
+        y,
+        prec: po.precisao_m || 15,
+        idade,
+        estado: idade > SEM_SINAL_SEG ? "semsinal" : vg ? "viagem" : "livre",
+        v: vg ? { de: vg.de, para: vg.para, qtd: vg.destinos } : null,
+        prog: null,
+        paradoMin: 0,
+        lugar: null,
+        box: null
+      });
+    }
+    return out;
+  }
   function cenaReal() {
     const n = agoraMin();
     const voos = D.voos.map((v) => infoVoo(v, n));
@@ -10790,9 +10939,19 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       pedidos.push(lotes[chave]);
     }
     for (const s of D.sols) {
-      if (s.status !== "solicitada") continue;
+      if (s.status !== "solicitada" && s.status !== "aceita" && s.status !== "a_caminho") continue;
       const v = voo(s.voo_id);
-      pedidos.push({ box: v ? nb(v.box) : null, tipo: ROTULO[s.tipo] || s.tipo, nome: null, voos: 1, desde: minutosDoIso(s.criada_em), solicitacao: true });
+      pedidos.push({
+        box: v ? nb(v.box) : null,
+        tipo: ROTULO[s.tipo] || s.tipo,
+        nome: null,
+        voos: 1,
+        desde: minutosDoIso(s.criada_em),
+        solicitacao: true,
+        status: s.status,
+        atendente: s.atendente_id ? nomeDe(s.atendente_id) : null,
+        descricao: s.descricao || null
+      });
     }
     const viagens = [];
     for (const vg of D.viagens) {
@@ -10808,6 +10967,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
         sel: `vg:${vg.id}`,
         id: vg.id,
         quem: nomeDe(vg.operador_id),
+        operadorId: vg.operador_id,
         de: lugarDeOrigem(vg),
         para: paras[0] || null,
         paras,
@@ -10817,7 +10977,8 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
         prog: null
       });
     }
-    return { agora: n, demo: false, gps: false, voos, boxes, estacoes, aceitas, pedidos, viagens, pessoas: [] };
+    const pessoas2 = pessoasReais(viagens);
+    return { agora: n, demo: false, gps: pode("patio_gps"), voos, boxes, estacoes, aceitas, pedidos, viagens, pessoas: pessoas2 };
   }
   var PESO_SEV = { crit: 0, aperta: 1, info: 2 };
   var rotuloLugar = (k) => MAPA.lugares[k] && MAPA.lugares[k].tipo === "box" ? `BOX ${k}` : k || "?";
@@ -10860,6 +11021,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     }
     for (const p of c.pedidos) {
       if (p.desde == null) continue;
+      if (p.solicitacao && p.status && p.status !== "solicitada") continue;
       const m = n - p.desde;
       const limite = p.solicitacao ? PATIO_PEDIDO_ESPERA_MIN : PATIO_PRONTA_ESPERA_MIN;
       if (m <= limite) continue;
@@ -11279,7 +11441,28 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     if (UI.patio.sel) return "";
     const n = alertasPatio(c).length, aba = UI.patio.aba;
     const b = (id, t, extra) => `<button role="tab" aria-selected="${aba === id}" onclick="patioAba('${id}')">${t}${extra || ""}</button>`;
-    return `<div class="patio-abas" role="tablist">${b("atencao", "Aten\xE7\xE3o", n ? `<span class="n">${n}</span>` : "")}${b("saidas", "Sa\xEDdas 60 min")}${b("pessoas", "Pessoas")}</div>`;
+    return `<div class="patio-abas" role="tablist">${b("atencao", "Aten\xE7\xE3o", n ? `<span class="n">${n}</span>` : "")}${b("bags", "Bags")}${b("saidas", "Sa\xEDdas")}${b("pedidos", "Pedidos")}${b("pessoas", "Pessoas")}</div>`;
+  }
+  function listaBags() {
+    return telaViagensCCO();
+  }
+  function listaPedidos(c) {
+    const n = c.agora;
+    if (!c.pedidos.length) return `<p class="patio-aviso">Nenhum pedido aberto.</p>`;
+    const linhas = c.pedidos.slice().sort((a, b) => {
+      var _a, _b;
+      return ((_a = a.desde) != null ? _a : 0) - ((_b = b.desde) != null ? _b : 0);
+    }).map((p) => {
+      const espera = p.desde != null ? mins(n - p.desde) : null;
+      const dono = p.atendente ? esc(p.atendente) : `<span class="ruim">sem ningu\xE9m</span>`;
+      const oque = p.tipo === "Carreta" ? `Carreta${p.nome ? ` \u201C${esc(p.nome)}\u201D` : ""} \xB7 ${p.voos} ${p.voos === 1 ? "voo" : "voos"}` : esc(p.tipo);
+      return `<button class="patio-alerta" data-sel="${p.box ? `box:${esc(p.box)}` : ""}" onclick="patioSel(this.dataset.sel||null,1)">
+      <span class="sev ${p.status && p.status !== "solicitada" ? "info" : "aperta"}">${p.status && p.status !== "solicitada" ? "Em andamento" : "Sem dono"}</span>
+      <span class="onde">${esc(p.box ? `BOX ${p.box}` : "\u2014")}</span>
+      <span class="tempo">${espera != null ? `h\xE1 ${espera}\u2032` : ""}</span>
+      <span class="txt">${oque} \xB7 ${dono}${p.descricao ? ` \xB7 ${esc(p.descricao)}` : ""}</span></button>`;
+    }).join("");
+    return `${linhas}<div style="padding:12px"><button class="patio-bt" onclick="irPara('sol')">Abrir Solicita\xE7\xF5es para agir</button></div>`;
   }
   function listaAtencao(c) {
     const a = alertasPatio(c);
@@ -11410,7 +11593,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       if (tipo === "p") return detalhePessoa(c, k);
     }
     const aba = UI.patio.aba;
-    return aba === "saidas" ? listaSaidas(c) : aba === "pessoas" ? listaPessoas(c) : listaAtencao(c);
+    return aba === "saidas" ? listaSaidas(c) : aba === "pessoas" ? listaPessoas(c) : aba === "bags" ? listaBags() : aba === "pedidos" ? listaPedidos(c) : listaAtencao(c);
   }
   function relogioTexto() {
     const d = /* @__PURE__ */ new Date();
@@ -11490,6 +11673,9 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const el = document.getElementById(id);
     if (el) el.innerHTML = html;
   }
+  function patioNaTela() {
+    return temDom() && !!document.getElementById("patio-mapa");
+  }
   function redesenharPatio(forcar) {
     if (!temDom() || !document.getElementById("patio-mapa")) return;
     const c = cena(), s = ppu();
@@ -11563,10 +11749,10 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       aplicarVB();
       return;
     }
-    const ini = Object.assign({}, atual), t0 = Date.now();
+    const ini2 = Object.assign({}, atual), t0 = Date.now();
     (function passo() {
       const q = Math.min(1, (Date.now() - t0) / 450), e = 1 - (1 - q) ** 3;
-      UI.patio.vb = { x: ini.x + (alvo2.x - ini.x) * e, y: ini.y + (alvo2.y - ini.y) * e, w: ini.w + (alvo2.w - ini.w) * e, h: ini.h + (alvo2.h - ini.h) * e };
+      UI.patio.vb = { x: ini2.x + (alvo2.x - ini2.x) * e, y: ini2.y + (alvo2.y - ini2.y) * e, w: ini2.w + (alvo2.w - ini2.w) * e, h: ini2.h + (alvo2.h - ini2.h) * e };
       aplicarVB();
       if (q < 1) requestAnimationFrame(passo);
     })();
@@ -11606,22 +11792,33 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     UI.patio.fontes = !UI.patio.fontes;
     bus.render();
   }
+  var dedos = {};
+  var ini = null;
+  var moveu = false;
+  var pinca = null;
+  var ultimoToque = 0;
+  var pontos = () => Object.keys(dedos).map((k) => dedos[k]);
+  function patioSoltarArrasto() {
+    for (const k of Object.keys(dedos)) delete dedos[k];
+    pinca = null;
+    moveu = false;
+    if (UI.patio) UI.patio.arrastando = false;
+  }
   var instalado = false;
   function instalar() {
     if (instalado || !temDom()) return;
     instalado = true;
-    const dedos = {};
-    let ini = null, moveu = false, pinca = null;
     const noMapa = (e) => {
       var _a;
       return ((_a = e.target) == null ? void 0 : _a.closest) ? e.target.closest("#patio-mapa") : null;
     };
-    const pontos = () => Object.keys(dedos).map((k) => dedos[k]);
     document.addEventListener("pointerdown", (e) => {
       var _a, _b;
       if ((_b = (_a = e.target) == null ? void 0 : _a.closest) == null ? void 0 : _b.call(_a, ".patio-rail")) listaPresa = true;
       const svg = noMapa(e);
       if (!svg) return;
+      if (pontos().length && Date.now() - ultimoToque > 5e3) patioSoltarArrasto();
+      ultimoToque = Date.now();
       try {
         svg.setPointerCapture(e.pointerId);
       } catch {
@@ -11640,6 +11837,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     });
     document.addEventListener("pointermove", (e) => {
       if (!dedos[e.pointerId]) return;
+      ultimoToque = Date.now();
       const antes = dedos[e.pointerId];
       dedos[e.pointerId] = [e.clientX, e.clientY];
       const v = pontos();
@@ -11678,6 +11876,14 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     };
     document.addEventListener("pointerup", soltar);
     document.addEventListener("pointercancel", soltar);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) return;
+      patioSoltarArrasto();
+      if (UI.renderPendente) {
+        UI.renderPendente = false;
+        bus.render();
+      }
+    });
     document.addEventListener("wheel", (e) => {
       if (!noMapa(e)) return;
       e.preventDefault();
@@ -11711,7 +11917,8 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       return [...ABAS_ANTIGAS[S.me.perfil] || []];
     }
     const temLevar = S.ferramentas.some((f) => f.id === "levar");
-    const abas = temLevar ? ["levar"] : ["inicio"];
+    const temPainel = S.ferramentas.some((f) => f.id === "viagens_cco");
+    const abas = temLevar ? ["levar"] : temPainel ? ["patio", "inicio"] : ["inicio"];
     for (const f of S.ferramentas) {
       const aba = FERRAMENTA_ABA[f.id];
       if (aba && !abas.includes(aba)) abas.push(aba);
@@ -11800,6 +12007,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     }
   }
   function irPara(tab) {
+    patioSoltarArrasto();
     UI.tab = tab;
     try {
       localStorage.setItem(CHAVE_ABA, tab);
@@ -11812,6 +12020,10 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     var _a;
     if ((_a = UI.patio) == null ? void 0 : _a.arrastando) {
       UI.renderPendente = true;
+      return;
+    }
+    if (UI.tab === "patio" && patioNaTela()) {
+      redesenharPatio(false);
       return;
     }
     const a = document.activeElement;
@@ -11834,7 +12046,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   init_horas();
   async function carregarTudo() {
     const dia = hoje();
-    const ini = dia + "T00:00:00";
+    const ini2 = dia + "T00:00:00";
     const vejoTudo = pode("viagens_cco");
     const pegaViagens = vejoTudo || pode("levar") || pode("oc_chegando") || pode("triagem_sinalizar") || pode("oc_pontos");
     const pegaSols = pode("sol_abrir") || pode("sol_atender") || pode("triagem_sinalizar") || vejoTudo;
@@ -11842,19 +12054,21 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const pegaProntas = vejoTudo || pode("levar") || pode("triagem_sinalizar") || pegaIndia;
     const pegaDelta = pegaIndia || vejoTudo || pode("levar") || pode("triagem_sinalizar");
     const pegaCarretas = pode("oc_pontos");
-    let qv = sb.from("viagens").select("*").gte("saiu_em", ini).order("saiu_em", { ascending: false });
+    const pegaPosicoes = pode("patio_gps");
+    let qv = sb.from("viagens").select("*").gte("saiu_em", ini2).order("saiu_em", { ascending: false });
     if (pode("levar") && !vejoTudo && !pode("oc_chegando")) qv = qv.eq("operador_id", S.me.id);
     const pegaLocal = pegaProntas;
-    const [v, g, s, u, pr, pi, pd, bl, cd] = await Promise.all([
+    const [v, g, s, u, pr, pi, pd, bl, cd, po] = await Promise.all([
       sb.from("voos").select("*").eq("data", dia).order("chegada", { ascending: true, nullsFirst: false }),
       pegaViagens ? qv : Promise.resolve({ data: [] }),
-      pegaSols ? sb.from("solicitacoes").select("*").gte("criada_em", ini).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] }),
+      pegaSols ? sb.from("solicitacoes").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] }),
       sb.from("usuarios").select("id,nome,nome_de_guerra,perfil"),
-      pegaProntas ? sb.from("prontas").select("*").gte("criada_em", ini).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] }),
+      pegaProntas ? sb.from("prontas").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] }),
       pegaIndia ? sb.from("ponto_india").select("*").eq("data", dia) : Promise.resolve({ data: [] }),
       pegaDelta ? sb.from("ponto_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] }),
       pegaLocal ? sb.from("bags_local").select("*").eq("data", dia) : Promise.resolve({ data: [] }),
-      pegaCarretas ? sb.from("carretas_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] })
+      pegaCarretas ? sb.from("carretas_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] }),
+      pegaPosicoes ? sb.from("posicoes").select("*") : Promise.resolve({ data: [] })
     ]);
     D.users = (u.data || []).map((x) => ({ ...x, nome: x.nome_de_guerra || x.nome }));
     D.voos = v.data || [];
@@ -11865,6 +12079,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     D.deltas = pd.data || [];
     D.bagsLocal = bl.data || [];
     D.carretasDelta = cd.data || [];
+    D.posicoes = po.data || [];
     const ids = D.viagens.map((x) => x.id);
     D.destinos = ids.length ? (await sb.from("viagens_destinos").select("*").in("viagem_id", ids)).data || [] : [];
   }
@@ -11930,6 +12145,9 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     UI.tab = abaGuardada() || padrao;
     const { escutarTempoReal: escutarTempoReal2 } = await Promise.resolve().then(() => (init_realtime(), realtime_exports));
     escutarTempoReal2();
+    const { iniciarPosicao: iniciarPosicao2, ligarPosicaoNaVisibilidade: ligarPosicaoNaVisibilidade2 } = await Promise.resolve().then(() => (init_posicao(), posicao_exports));
+    iniciarPosicao2();
+    ligarPosicaoNaVisibilidade2();
     await bus.recarregar();
   }
   async function entrar() {
