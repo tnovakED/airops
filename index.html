@@ -34,6 +34,10 @@
     /* 15/09/2026: verde pro numero pequeno sobre --accent-light (.deg-qtd).
        --green ali da 2.2:1 de contraste e some no sol; este da 5.3:1. */
     --verde-escuro:#0E4A28;
+    /* 16/09/2026: fundo das duas linhas do mesmo aviao (duas pernas) no
+       Ponto Delta. Roxo porque e o unico tom ainda sem significado no
+       app; esmaecido porque o texto por cima continua --text. */
+    --duas-pernas:rgba(123,63,166,.24);
     --text:#16425B; --muted:rgba(22,66,91,.62); /* yale-blue */
     --header-h:46px;
     --barra-h:52px;
@@ -387,6 +391,16 @@
   .carreta-folha-nome{padding-left:8px; text-transform:uppercase; font-size:13px;
     font-weight:700; color:var(--muted)}
   .carreta-folha.marcada .carreta-folha-nome{color:var(--text)}
+  /* "· 1 fora da malha" (16/09/2026): o lider pos mais voos nesta carreta
+     do que o app consegue oferecer, porque a malha do dia nao tem esses
+     voos. Laranja (nao o ambar do tema, que aqui e azul): e falta de
+     dado, nao urgencia. Fica visivel mesmo na carreta ainda nao marcada,
+     por isso NAO herda o cinza do nome. */
+  /* LINHA PROPRIA, nao pedaço colado no fim do nome: com nome longo +
+     "(1 de 2)" + o aviso, a linha quebrava em lugar imprevisivel e o
+     aviso aparecia partido ao meio (visto na vitrine, 16/09/2026).
+     Bloco proprio = layout igual sempre. */
+  .carreta-folha-fora{display:block; color:var(--orange); font-weight:700; margin-top:2px}
 
   /* ---------- lista de destinos (folha do Operador) ----------
      15/09/2026, pedido do Tiago: voos de saida um embaixo do outro, sem
@@ -856,7 +870,17 @@
      folha da viagem nova; o padding lateral e o mesmo marcada ou nao, pra
      linha nao pular de lugar ao marcar */
   .delta-conexao{cursor:pointer; padding-left:4px; padding-right:4px; border-radius:8px}
-  .delta-conexao.sel{background:var(--accent-light)}
+  /* DUAS PERNAS (16/09/2026): mesmo voo de saida em duas conexoes, com
+     destinos diferentes — a mesma aeronave faz os dois trechos, e as duas
+     linhas tem que ir na MESMA carreta. Roxo de proposito: e o unico tom
+     sem significado ja atribuido no app (azul = solicitado, verde = pego,
+     ambar = selecionado/urgente, vermelho = atraso). Uma cor so pra todos
+     os pares — ver ehDuasPernasDelta em telaPontos.js.
+     Marcar a linha PINTA POR CIMA (3 classes ganham de 2): saber o que
+     esta selecionado importa mais, no momento do toque, do que lembrar
+     que aquele voo tem duas pernas. */
+  .pt-linha.duas-pernas{background:var(--duas-pernas); border-radius:8px}
+  .delta-conexao.sel, .delta-conexao.duas-pernas.sel{background:var(--accent-light)}
   /* "ALOCAR EM:" + lista do tamanho do nome da carreta (nao estica) */
   /* 12px e gap 6: "ALOCAR VOOS EM:" a 14px + lista + check passava 4px da
      janela a 360px (medido). A lista pode ENCOLHER (flex 0 1) se o nome da
@@ -1041,9 +1065,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 16/09/2026, 13:23:29
+     Gerado em: 16/09/2026, 14:40:21
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 13:23";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 14:40";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1698,29 +1722,31 @@
     });
   }
   function candidatosConexao(vooChegadaId) {
-    var _a, _b;
+    var _a, _b, _c;
     if (vooChegadaId == null) return null;
     const pds = D.deltas.filter((pd) => Number(pd.voo_id) === Number(vooChegadaId));
     if (!pds.length) return null;
     const achados = [];
     let foraDaMalha = 0;
+    const semMalha = [];
     for (const pd of pds) {
       const v = D.voos.find((x) => x.numero === pd.voo_saida_numero && (!pd.destino || !x.destino || x.destino === pd.destino)) || D.voos.find((x) => x.numero === pd.voo_saida_numero);
       if (!v) {
         foraDaMalha++;
+        semMalha.push({ _carretaId: (_a = pd.carreta_id) != null ? _a : null, numero: pd.voo_saida_numero });
         continue;
       }
       const ja = achados.find((a) => a.id === v.id);
       if (ja) {
         ja._bag += pd.bag_qtd || 0;
         ja._pdIds.push(pd.id);
-        if (ja._carretaId == null) ja._carretaId = (_a = pd.carreta_id) != null ? _a : null;
+        if (ja._carretaId == null) ja._carretaId = (_b = pd.carreta_id) != null ? _b : null;
       } else {
         achados.push({
           ...v,
           _bag: pd.bag_qtd || 0,
           _pdIds: [pd.id],
-          _carretaId: (_b = pd.carreta_id) != null ? _b : null
+          _carretaId: (_c = pd.carreta_id) != null ? _c : null
         });
       }
     }
@@ -1729,6 +1755,7 @@
       return ((_a2 = minutosDe(a.saida)) != null ? _a2 : 99999) - ((_b2 = minutosDe(b.saida)) != null ? _b2 : 99999);
     });
     achados.foraDaMalha = foraDaMalha;
+    achados.semMalha = semMalha;
     return achados;
   }
   var hoje, FAIXAS_TURNO, voosAtivos, voosEmSolo;
@@ -4099,6 +4126,9 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     solicitada: { classe: "solicitado", icone: "relogio", texto: "solicitado", titulo: "J\xE1 solicitado, aguardando um operador buscar" },
     pega: { classe: "pega", icone: "aceite", texto: "pego", titulo: "J\xE1 foi pego por um operador" }
   };
+  function ehDuasPernasDelta(pd) {
+    return D.deltas.filter((x) => mesmoId(x.voo_id, pd.voo_id) && x.voo_saida_numero === pd.voo_saida_numero).length > 1;
+  }
   function linhaDeltaConexao(vooId, v, pd, editavel) {
     var _a;
     const { tipo, vSaida } = classificarConexaoDelta(v, pd);
@@ -4109,7 +4139,10 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const manual = editavel ? `<span class="delta-manual-grupo" onclick="event.stopPropagation()"><input id="bagManual${pd.id}" class="delta-manual" type="number" inputmode="numeric" placeholder="+" title="Quantidade manual (soma ao previsto, nunca substitui) \u2014 pode ser negativa"
         value="${salvo}" oninput="this.nextElementSibling.disabled=(this.value===${JSON.stringify(salvo)})">
        <button class="small ok delta-ok" disabled onclick="confirmarBagQtdManual(${pd.id},${vooId})" aria-label="Confirmar quantidade" title="Confirmar">${ico("aceite", 34)}</button></span>` : pd.bag_qtd_manual ? `<span class="note" title="Quantidade manual do l\xEDder, soma ao previsto">${pd.bag_qtd_manual > 0 ? "+" : ""}${pd.bag_qtd_manual}</span>` : "";
-    const abre = editavel ? `<div class="pt-linha delta-conexao${marcado ? " sel" : ""}" onclick="alternarSelecaoDelta(${pd.id},${vooId})">` : `<div class="pt-linha">`;
+    const duasPernas = ehDuasPernasDelta(pd);
+    const classeDuas = duasPernas ? " duas-pernas" : "";
+    const tituloDuas = duasPernas ? ` title="Mesma aeronave da outra linha nesta cor \u2014 as duas t\xEAm que ir na mesma carreta"` : "";
+    const abre = editavel ? `<div class="pt-linha delta-conexao${marcado ? " sel" : ""}${classeDuas}"${tituloDuas} onclick="alternarSelecaoDelta(${pd.id},${vooId})">` : `<div class="pt-linha${classeDuas}"${tituloDuas}>`;
     return `
     ${abre}
       ${vooRotulo2(comoSaida(pd.destino, pd.voo_saida_numero, vSaida == null ? void 0 : vSaida.box), "saida", { box: tipo === "pp" })}
@@ -9239,12 +9272,16 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const c = D.carretasDelta.find((x) => mesmoId(x.id, chave));
     return c ? c.nome : "Avulsas";
   }
-  function carretasDaLista(lista) {
+  function carretasDaLista(lista, semMalha) {
     const porChave = /* @__PURE__ */ new Map();
-    for (const v of lista) {
-      const chave = chaveCarreta(v);
-      if (!porChave.has(chave)) porChave.set(chave, { chave, nome: nomeCarreta(chave), vs: [] });
-      porChave.get(chave).vs.push(v);
+    const grupo = (chave) => {
+      if (!porChave.has(chave)) porChave.set(chave, { chave, nome: nomeCarreta(chave), vs: [], fora: 0 });
+      return porChave.get(chave);
+    };
+    for (const v of lista) grupo(chaveCarreta(v)).vs.push(v);
+    for (const s of semMalha || []) {
+      const chave = chaveCarreta(s);
+      if (porChave.has(chave)) porChave.get(chave).fora++;
     }
     return [...porChave.values()].sort((a, b) => (a.chave === "avulsas" ? 1 : 0) - (b.chave === "avulsas" ? 1 : 0));
   }
@@ -9277,13 +9314,14 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const marcados = c.vs.filter((v) => g[via].includes(v.id)).length;
       const todos2 = marcados === c.vs.length;
       const parcial = marcados && !todos2 ? ` (${marcados} de ${c.vs.length})` : "";
+      const fora = c.fora ? `<span class="carreta-folha-fora">${c.fora} fora da malha</span>` : "";
       return `<div class="list-line carreta-folha${todos2 ? " marcada" : ""}" onclick="${pre}TodosDaCarreta('${esc(c.chave)}')">
       <span class="carreta-folha-check">${ico(todos2 ? "quadradoMarcado" : "quadrado", 22)}</span>
-      <span class="grow carreta-folha-nome">${esc(c.nome)} \xB7 ${c.vs.length} voo${c.vs.length === 1 ? "" : "s"}${parcial}</span>
+      <span class="grow carreta-folha-nome">${esc(c.nome)} \xB7 ${c.vs.length} voo${c.vs.length === 1 ? "" : "s"}${parcial}${fora}</span>
     </div>`;
     };
     const corpoConexoes = () => {
-      const cs = carretasDaLista(daConexao);
+      const cs = carretasDaLista(daConexao, semDelta ? [] : conex.semMalha);
       if (cs.length === 1 && cs[0].chave === "avulsas")
         return linhaTodos(daConexao, `as ${daConexao.length} conex\xF5es do ${rotOrigem}`) + grade(daConexao);
       return cs.map((c) => linhaCarreta(c) + grade(c.vs)).join("");
@@ -12716,6 +12754,15 @@ Sair mesmo assim?`
       arquivo: "screens/telaOperador.js",
       desc: 'Cabe\xE7alho da carreta que o l\xEDder montou, agrupando os voos no passo PP/TCX/TLC/EST ("IMEDIATAS \xB7 2 VOOS"). Tocar marca ou desmarca todos os voos dela de uma vez.'
     },
+    // Antes de .carreta-folha-nome: o aviso vive DENTRO dele, e a primeira
+    // entrada que casar vence.
+    {
+      nome: "aviso-fora-da-malha",
+      seletor: ".carreta-folha-fora",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: '"\xB7 1 fora da malha", em laranja, no cabe\xE7alho da carreta: o l\xEDder p\xF4s mais voos nela do que o app consegue oferecer, porque a malha do dia n\xE3o tem esses voos.'
+    },
     {
       nome: "nome-da-carreta-na-folha",
       seletor: ".carreta-folha-nome",
@@ -12781,6 +12828,15 @@ Sair mesmo assim?`
       grupo: "delta",
       arquivo: "screens/telaPontos.js",
       desc: "\xCDcone pequeno na conex\xE3o: rel\xF3gio azul = solicitado (aguardando operador), check verde = j\xE1 pego."
+    },
+    // Antes de .delta-conexao e de .balde-delta .list-line: e a linha
+    // inteira que muda de fundo, e quem pedir ajuste aqui quer ESTA.
+    {
+      nome: "linha-de-duas-pernas",
+      seletor: ".duas-pernas",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Fundo roxo esmaecido nas conex\xF5es do MESMO avi\xE3o com destinos diferentes (ex.: 1758 RBR e 1758 CZS). Avisa o l\xEDder que as duas t\xEAm que ir na mesma carreta. Marcar a linha pinta de azul por cima."
     },
     {
       nome: "botao-icone-delta",
