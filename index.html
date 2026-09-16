@@ -1070,9 +1070,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 16/09/2026, 15:11:40
+     Gerado em: 16/09/2026, 15:48:58
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 15:11";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 15:48";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4548,7 +4548,12 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     abrirModal(conteudoPontoIndiaOC(vooId));
   }
   function atualizarPontoDelta(vooId) {
+    if (digitandoNoDelta()) return;
     desenharPontoDelta(vooId);
+  }
+  function digitandoNoDelta() {
+    const foco = typeof document !== "undefined" ? document.activeElement : null;
+    return !!foco && String(foco.id || "").startsWith("bagManual");
   }
   function abrirSubstituirPonto(tipo, vooId) {
     UI.modalVivo = null;
