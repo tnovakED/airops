@@ -336,6 +336,36 @@
   .alerta-acao::after{content:""; position:absolute; top:-3px; bottom:-3px; left:-3px; right:0}
   .alerta-acao .ico{margin-right:0; width:34px; height:34px; flex:none}
 
+  /* ---------- accordion de carretas dentro do olho (16/09/2026) ----------
+     O card BOX saiu de 6 toques pra 4: tocar na carreta ABRE (nao aceita
+     mais), e o PEGAR aceita e leva no mesmo ato. Ver carretasDoAlerta em
+     telaOperador.js.
+     Cabeca em maiuscula e seta, mesmo idioma do accordion da viagem
+     (.acordeon-destino) — quem ja usa o app reconhece que abre. */
+  .carreta-alerta{cursor:pointer; gap:8px; text-transform:uppercase;
+    font-size:13px; font-weight:700; color:var(--muted)}
+  .carreta-alerta.aberta{color:var(--text)}
+  .carreta-alerta .acordeon-seta{flex:0 0 auto; transition:transform .15s}
+  .carreta-alerta.aberta .acordeon-seta{transform:rotate(90deg)}
+  /* Voo dentro da carreta aberta: recuado, pra ler como "filho" da
+     carreta e nao como mais uma carreta. Marcado usa o mesmo azul-claro
+     de selecionado do resto do app. */
+  .alerta-voo{cursor:pointer; padding-left:16px; gap:8px; border-radius:10px}
+  .alerta-voo.sel{background:var(--accent-light)}
+  /* Botao largo e no fim da carreta aberta: e a acao que termina o
+     passo, e alvo de dedo de luva (48px, acima do minimo).
+     STICKY porque a .alerta-lista rola (max-height:220px): com a carreta
+     aberta o botao caia pra fora da area visivel e o operador tinha que
+     rolar dentro do cartao pra achar a acao -- visto na vitrine,
+     16/09/2026. Grudado no pe, ele esta sempre a um toque. O fundo
+     solido e obrigatorio: sem ele as linhas passam por baixo. */
+  .alerta-pegar{width:100%; margin:8px 0 4px; min-height:48px;
+    text-transform:uppercase; letter-spacing:.04em;
+    position:sticky; bottom:0; z-index:1}
+  @media (prefers-reduced-motion: reduce){
+    .carreta-alerta .acordeon-seta{transition:none}
+  }
+
   /* Contagem de VOOS (nao bags) do lugar — sempre visivel, tom neutro:
      e contexto, nao alarme. Convive com .alerta-urgentes (so aparece
      com timer vermelho) sem competir por atencao. */
@@ -1070,9 +1100,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 16/09/2026, 15:59:54
+     Gerado em: 16/09/2026, 16:38:21
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 15:59";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 16:38";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1187,6 +1217,15 @@
         olhoLugar: null,
         // lugar (chave de lugarDaPronta) com a lista de carretas
         // pendentes expandida no card do alerta BOX; null = fechado
+        // Carreta aberta DENTRO do olho, com o que esta marcado nela:
+        // {lugar, chave, sel:[ids]}. Uma so aberta por vez; trocar de carreta
+        // zera a selecao junto (fechar e abrir e "comecar de novo", nao
+        // "guardar pra depois").
+        //
+        // A selecao mora AQUI, nunca nos checkboxes do DOM: a pagina se
+        // redesenha a cada evento de tempo real e a marcacao se perderia no
+        // meio da escolha — mesmo motivo de UI.escolhaBox existir.
+        alertaCarreta: null,
         // O que ele viu no lugar e nao levou, nesta viagem.
         //
         // Fica quieto na tela DELE enquanto a viagem esta aberta: com a
@@ -10202,8 +10241,22 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     }
     return sobra;
   }
-  function abrirEscolhaVoosBox(tipo, box) {
-    UI.escolhaBox = { tipo, box, sel: [], abertas: [], vias: null, ajuste: [], esteira: false };
+  function abrirEscolhaVoosBox(tipo, box, ids) {
+    const prontos = ids == null ? void 0 : ids.length;
+    UI.escolhaBox = {
+      tipo,
+      box,
+      sel: prontos ? ids.slice() : [],
+      abertas: [],
+      vias: null,
+      ajuste: [],
+      esteira: false
+    };
+    if (prontos && tipo !== "BOX") {
+      confirmarEscolhaVoosBox();
+      return;
+    }
+    if (prontos) UI.escolhaBox.vias = {};
     renderEscolhaVoosBox();
   }
   function renderEscolhaVoosBox() {
@@ -10448,8 +10501,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     const totalVoos = contarVoosUnicos(s.ps);
     const urgentes = contarUrgentes(s.ps);
     const idsCancelar = meusCientes.map((p) => p.id);
-    const olho = pendentes.length ? `<button class="alerta-acao ghost" onclick="alternarOlhoLugar('${esc(s.lugar)}')" aria-label="Ver carretas">${ico("olho", 20)}</button>` : "";
-    const verVoos = meusCientes.length ? `<button class="alerta-acao ok" onclick="abrirEscolhaVoosBox('${tipo}',${s.box ? `'${esc(s.box)}'` : null})" aria-label="Ver voos">${ico("vervoos", 20)}</button>` : "";
+    const olho = pendentes.length || meusCientes.length ? `<button class="alerta-acao ghost" onclick="alternarOlhoLugar('${esc(s.lugar)}')" aria-label="Ver carretas">${ico("olho", 20)}</button>` : "";
     const cancelar = meusCientes.length ? `<button class="alerta-acao ghost" onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
     const aberto = UI.olhoLugar === s.lugar;
     return `<div class="list-line alerta-linha">
@@ -10458,18 +10510,77 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       <span class="alerta-contagem">${totalVoos} voo${totalVoos === 1 ? "" : "s"}</span>
       ${urgentes > 0 ? `<span class="alerta-urgentes">${ico("alerta", 16)} ${urgentes}</span>` : ""}
     </span>
-    ${cancelar}${olho}${verVoos}
-  </div>${aberto ? carretasParaAceitar(pendentes) : ""}`;
+    ${cancelar}${olho}
+  </div>${aberto ? carretasDoAlerta(tipo, s) : ""}`;
   }
-  function carretasParaAceitar(pendentes) {
-    const grupos2 = carretasDoLugar(pendentes);
+  function carretasDoAlerta(tipo, s) {
+    const grupos2 = carretasDoLugar(s.ps);
     if (!grupos2.length) return "";
-    return `<div class="alerta-carretas">
-    ${grupos2.map((c) => `<div class="pt-linha" onclick="aceitarBox([${c.ps.map((p) => p.id).join(",")}])">
-      ${ico("quadrado", 20)}
-      <span class="grow">${esc(c.nome)} \xB7 ${c.ps.length} voo${c.ps.length === 1 ? "" : "s"}</span>
-    </div>`).join("")}
-  </div>`;
+    const a = UI.alertaCarreta;
+    const boxArg = s.box ? `'${esc(s.box)}'` : "null";
+    const linhaVoo3 = (p, sel) => {
+      const v = voo(p.voo_destino_id) || {};
+      const marcado = sel.includes(p.id);
+      return `<div class="pt-linha alerta-voo${marcado ? " sel" : ""}" onclick="togVooAlerta(${p.id})">
+      ${ico(marcado ? "quadradoMarcado" : "quadrado", 20)}
+      <span class="grow">${vooRotulo2(v, "saida", { aviao: true, aviaoApos: true })}</span>
+      ${timerAlerta(v)}
+    </div>`;
+    };
+    return `<div class="alerta-carretas">${grupos2.map((c) => {
+      const aberta = a && a.lugar === s.lugar && a.chave === c.chave;
+      const sel = aberta ? a.sel : [];
+      if (!aberta)
+        return `<div class="pt-linha carreta-alerta" onclick="abrirCarretaAlerta('${esc(s.lugar)}','${esc(c.chave)}')">
+        <span class="acordeon-seta">${ico("seta", 14)}</span>
+        <span class="grow">${esc(c.nome)} \xB7 ${c.ps.length} voo${c.ps.length === 1 ? "" : "s"}</span>
+      </div>`;
+      const escolhidos = sel.length ? sel : c.ps.map((p) => p.id);
+      const rotulo2 = sel.length && sel.length < c.ps.length ? `PEGAR ${sel.length} DE ${c.ps.length}` : c.ps.length === 1 ? "PEGAR" : `PEGAR OS ${c.ps.length}`;
+      return `<div class="pt-linha carreta-alerta aberta" onclick="abrirCarretaAlerta('${esc(s.lugar)}','${esc(c.chave)}')">
+        <span class="acordeon-seta">${ico("seta", 14)}</span>
+        <span class="grow">${esc(c.nome)} \xB7 ${c.ps.length} voo${c.ps.length === 1 ? "" : "s"}</span>
+      </div>
+      ${c.ps.map((p) => linhaVoo3(p, sel)).join("")}
+      <button class="primary alerta-pegar" onclick="pegarDoAlerta('${tipo}',${boxArg},[${c.ps.map((p) => p.id).join(",")}],[${escolhidos.join(",")}])">${rotulo2}</button>`;
+    }).join("")}</div>`;
+  }
+  function abrirCarretaAlerta(lugar, chave) {
+    const a = UI.alertaCarreta;
+    const jaAberta = a && a.lugar === lugar && a.chave === chave;
+    UI.alertaCarreta = jaAberta ? null : { lugar, chave, sel: [] };
+    bus.render();
+  }
+  function togVooAlerta(id) {
+    const a = UI.alertaCarreta;
+    if (!a) return;
+    const i = a.sel.indexOf(id);
+    if (i < 0) a.sel.push(id);
+    else a.sel.splice(i, 1);
+    bus.render();
+  }
+  async function pegarDoAlerta(tipo, box, idsCarreta, idsEscolhidos) {
+    if (!(idsEscolhidos == null ? void 0 : idsEscolhidos.length)) return;
+    for (const id of idsCarreta) {
+      const p = D.prontas.find((x) => x.id === id);
+      if ((p == null ? void 0 : p.status) !== "pronta") continue;
+      const { error } = await cientePronta(id);
+      if (error) {
+        await erro(error);
+        return;
+      }
+    }
+    await bus.recarregar();
+    const meus = idsEscolhidos.filter((id) => {
+      const p = D.prontas.find((x) => x.id === id);
+      return p && p.status === "ciente" && p.ciente_por === S.me.id;
+    });
+    UI.alertaCarreta = null;
+    if (!meus.length) {
+      await aviso("Outro operador pegou essas bags primeiro.");
+      return;
+    }
+    abrirEscolhaVoosBox(tipo, box, meus);
   }
   function alternarOlhoLugar(lugar) {
     UI.olhoLugar = UI.olhoLugar === lugar ? null : lugar;
@@ -12585,6 +12696,29 @@ Sair mesmo assim?`
       arquivo: "screens/telaOperador.js",
       desc: "Lista de carretas que aparece ao tocar no olho."
     },
+    // Antes de .alerta-linha e de .list-line: sao linhas DENTRO da lista de
+    // carretas, e quem pedir ajuste aqui quer estas.
+    {
+      nome: "cabeca-da-carreta-no-alerta",
+      seletor: ".carreta-alerta",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Linha com o nome da carreta e quantos voos, dentro do olho. Tocar abre e fecha os voos dela."
+    },
+    {
+      nome: "voo-da-carreta-no-alerta",
+      seletor: ".alerta-voo",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Um voo dentro da carreta aberta, recuado. Tocar marca s\xF3 ele \u2014 serve para levar parte da carreta."
+    },
+    {
+      nome: "botao-pegar-do-alerta",
+      seletor: ".alerta-pegar",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: 'O bot\xE3o largo no fim da carreta aberta: "PEGAR OS 3", ou "PEGAR 1 DE 3" quando voc\xEA marcou parte. Aceita e leva no mesmo toque.'
+    },
     {
       nome: "lista-do-alerta",
       seletor: ".alerta-lista",
@@ -13445,6 +13579,9 @@ Sair mesmo assim?`
     cancelarAceiteBox,
     abrirEscolhaVoosBox,
     alternarEscolhaVoo,
+    abrirCarretaAlerta,
+    togVooAlerta,
+    pegarDoAlerta,
     fecharEscolhaVoosBox,
     confirmarEscolhaVoosBox,
     escolherSecaoBox,
