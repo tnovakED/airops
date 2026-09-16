@@ -371,6 +371,23 @@
   .st-aceita{background:rgba(47,102,144,.15); color:var(--amber)}
   .st-cancelada{background:rgba(194,59,59,.14); color:var(--red)}
 
+  /* ---------- cabeca da carreta na folha (16/09/2026) ----------
+     O lider monta a carreta no Ponto Delta e ela aparece aqui agrupando
+     os voos. Mesma caixa grande e mesma linha-alvo do "Marcar todas"
+     (.list-line) porque faz a mesma coisa: marca um conjunto de uma vez.
+     O que muda e o nome, que e do lider.
+     Sem letter-spacing: o "· 2 voos" e contagem, e contagem no projeto
+     nao leva espacamento (ver skill ajuste-visual). O respiro de 12px em
+     cima e o que separa uma carreta da lista da carreta anterior — sem
+     ele, duas carretas viram um bloco so de linhas. */
+  .carreta-folha{cursor:pointer; margin-top:12px}
+  .destino-lista + .carreta-folha{margin-top:14px}
+  .carreta-folha-check{flex:0 0 auto; color:var(--muted)}
+  .carreta-folha.marcada .carreta-folha-check{color:var(--amber)}
+  .carreta-folha-nome{padding-left:8px; text-transform:uppercase; font-size:13px;
+    font-weight:700; color:var(--muted)}
+  .carreta-folha.marcada .carreta-folha-nome{color:var(--text)}
+
   /* ---------- lista de destinos (folha do Operador) ----------
      15/09/2026, pedido do Tiago: voos de saida um embaixo do outro, sem
      cara de botao (era a .voo-grid logo abaixo) e sem quadradinho.
@@ -1024,9 +1041,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 16/09/2026, 09:17:02
+     Gerado em: 16/09/2026, 13:23:29
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 09:17";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 13:23";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1681,6 +1698,7 @@
     });
   }
   function candidatosConexao(vooChegadaId) {
+    var _a, _b;
     if (vooChegadaId == null) return null;
     const pds = D.deltas.filter((pd) => Number(pd.voo_id) === Number(vooChegadaId));
     if (!pds.length) return null;
@@ -1693,12 +1711,22 @@
         continue;
       }
       const ja = achados.find((a) => a.id === v.id);
-      if (ja) ja._bag += pd.bag_qtd || 0;
-      else achados.push({ ...v, _bag: pd.bag_qtd || 0 });
+      if (ja) {
+        ja._bag += pd.bag_qtd || 0;
+        ja._pdIds.push(pd.id);
+        if (ja._carretaId == null) ja._carretaId = (_a = pd.carreta_id) != null ? _a : null;
+      } else {
+        achados.push({
+          ...v,
+          _bag: pd.bag_qtd || 0,
+          _pdIds: [pd.id],
+          _carretaId: (_b = pd.carreta_id) != null ? _b : null
+        });
+      }
     }
     achados.sort((a, b) => {
-      var _a, _b;
-      return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
+      var _a2, _b2;
+      return ((_a2 = minutosDe(a.saida)) != null ? _a2 : 99999) - ((_b2 = minutosDe(b.saida)) != null ? _b2 : 99999);
     });
     achados.foraDaMalha = foraDaMalha;
     return achados;
@@ -1840,7 +1868,7 @@
       t.push("posicoes");
     if (vejoIndia || vejoTudo || pode("levar") || pode("triagem_sinalizar"))
       t.push("ponto_delta");
-    if (pode("oc_pontos"))
+    if (pode("oc_pontos") || pode("levar"))
       t.push("carretas_delta");
     return t;
   }
@@ -3360,6 +3388,92 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     return linhas[0];
   }
 
+  // src/data/deltaCarretas.js
+  init_supabase();
+  init_offline_sync();
+  async function criarCarretaDelta(vooId, nome) {
+    const { data, error } = await sb.rpc("criar_carreta_delta", { p_voo_id: vooId, p_nome: nome });
+    if (error) throw error;
+    return data;
+  }
+  async function moverConexaoCarretaDelta(pontoDeltaId, carretaId) {
+    try {
+      const { error } = await sb.rpc(
+        "mover_conexao_carreta_delta",
+        { p_ponto_delta_id: pontoDeltaId, p_carreta_id: carretaId }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("mover_conexao_carreta_delta", { pontoDeltaId, carretaId });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function moverConexoesCarretaDelta(pontoDeltaIds, carretaId) {
+    try {
+      const { error } = await sb.rpc(
+        "mover_conexoes_carreta_delta",
+        { p_ponto_delta_ids: pontoDeltaIds, p_carreta_id: carretaId }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("mover_conexoes_carreta_delta", { pontoDeltaIds, carretaId });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function definirBagQtdManualDelta(pontoDeltaId, qtd) {
+    try {
+      const { error } = await sb.rpc(
+        "definir_bag_qtd_manual_delta",
+        { p_ponto_delta_id: pontoDeltaId, p_qtd: qtd }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("definir_bag_qtd_manual_delta", { pontoDeltaId, qtd });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function excluirCarretaDelta(id) {
+    const { error } = await sb.rpc("excluir_carreta_delta", { p_id: id });
+    if (error) throw error;
+  }
+  async function pegarConexoesDelta(destinos, pontoDeltaIds) {
+    try {
+      const { error } = await sb.rpc(
+        "pegar_conexoes_delta",
+        { p_destinos: destinos, p_ponto_delta_ids: pontoDeltaIds }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("pegar_conexoes_delta", { destinos, pontoDeltaIds });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function solicitarCarretaDeltaDb(vooChegadaId, destinos, nome, pontoDeltaIds) {
+    const { data, error } = await sb.rpc(
+      "solicitar_carreta_delta",
+      {
+        p_voo_chegada_id: vooChegadaId,
+        p_destinos: destinos,
+        p_carreta_nome: nome || null,
+        p_ponto_delta_ids: pontoDeltaIds || null
+      }
+    );
+    if (error) throw error;
+    return data;
+  }
+
   // src/data/prontas.js
   init_supabase();
   init_store();
@@ -3595,77 +3709,6 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const { error } = await creditarBagIndiaDb(id, digitado, digitado == null);
     if (error) return { error };
     return sb.from("ponto_india").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), entregue_por: S.me.id }).eq("id", id);
-  }
-
-  // src/data/deltaCarretas.js
-  init_supabase();
-  init_offline_sync();
-  async function criarCarretaDelta(vooId, nome) {
-    const { data, error } = await sb.rpc("criar_carreta_delta", { p_voo_id: vooId, p_nome: nome });
-    if (error) throw error;
-    return data;
-  }
-  async function moverConexaoCarretaDelta(pontoDeltaId, carretaId) {
-    try {
-      const { error } = await sb.rpc(
-        "mover_conexao_carreta_delta",
-        { p_ponto_delta_id: pontoDeltaId, p_carreta_id: carretaId }
-      );
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("mover_conexao_carreta_delta", { pontoDeltaId, carretaId });
-        return;
-      }
-      throw e;
-    }
-  }
-  async function moverConexoesCarretaDelta(pontoDeltaIds, carretaId) {
-    try {
-      const { error } = await sb.rpc(
-        "mover_conexoes_carreta_delta",
-        { p_ponto_delta_ids: pontoDeltaIds, p_carreta_id: carretaId }
-      );
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("mover_conexoes_carreta_delta", { pontoDeltaIds, carretaId });
-        return;
-      }
-      throw e;
-    }
-  }
-  async function definirBagQtdManualDelta(pontoDeltaId, qtd) {
-    try {
-      const { error } = await sb.rpc(
-        "definir_bag_qtd_manual_delta",
-        { p_ponto_delta_id: pontoDeltaId, p_qtd: qtd }
-      );
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("definir_bag_qtd_manual_delta", { pontoDeltaId, qtd });
-        return;
-      }
-      throw e;
-    }
-  }
-  async function excluirCarretaDelta(id) {
-    const { error } = await sb.rpc("excluir_carreta_delta", { p_id: id });
-    if (error) throw error;
-  }
-  async function solicitarCarretaDeltaDb(vooChegadaId, destinos, nome, pontoDeltaIds) {
-    const { data, error } = await sb.rpc(
-      "solicitar_carreta_delta",
-      {
-        p_voo_chegada_id: vooChegadaId,
-        p_destinos: destinos,
-        p_carreta_nome: nome || null,
-        p_ponto_delta_ids: pontoDeltaIds || null
-      }
-    );
-    if (error) throw error;
-    return data;
   }
 
   // src/utils/patio.js
@@ -9186,6 +9229,25 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const conex = candidatosConexao(vooOrigem);
     return conex === null ? candidatosDestinoJanela([vooOrigem]).filter(livre) : conex.filter(livre);
   }
+  function chaveCarreta(v) {
+    const id = v == null ? void 0 : v._carretaId;
+    if (id == null) return "avulsas";
+    return D.carretasDelta.some((c) => mesmoId(c.id, id)) ? String(id) : "avulsas";
+  }
+  function nomeCarreta(chave) {
+    if (chave === "avulsas") return "Avulsas";
+    const c = D.carretasDelta.find((x) => mesmoId(x.id, chave));
+    return c ? c.nome : "Avulsas";
+  }
+  function carretasDaLista(lista) {
+    const porChave = /* @__PURE__ */ new Map();
+    for (const v of lista) {
+      const chave = chaveCarreta(v);
+      if (!porChave.has(chave)) porChave.set(chave, { chave, nome: nomeCarreta(chave), vs: [] });
+      porChave.get(chave).vs.push(v);
+    }
+    return [...porChave.values()].sort((a, b) => (a.chave === "avulsas" ? 1 : 0) - (b.chave === "avulsas" ? 1 : 0));
+  }
   function telaVoosDaVia(st, pre, acaoConfirmar) {
     const via = st.via;
     const g = grupos(st);
@@ -9211,12 +9273,27 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       <span class="grow" style="padding-left:8px">${marcados ? "Desmarcar" : "Marcar"} ${rotulo2}</span>
     </div>`;
     };
+    const linhaCarreta = (c) => {
+      const marcados = c.vs.filter((v) => g[via].includes(v.id)).length;
+      const todos2 = marcados === c.vs.length;
+      const parcial = marcados && !todos2 ? ` (${marcados} de ${c.vs.length})` : "";
+      return `<div class="list-line carreta-folha${todos2 ? " marcada" : ""}" onclick="${pre}TodosDaCarreta('${esc(c.chave)}')">
+      <span class="carreta-folha-check">${ico(todos2 ? "quadradoMarcado" : "quadrado", 22)}</span>
+      <span class="grow carreta-folha-nome">${esc(c.nome)} \xB7 ${c.vs.length} voo${c.vs.length === 1 ? "" : "s"}${parcial}</span>
+    </div>`;
+    };
+    const corpoConexoes = () => {
+      const cs = carretasDaLista(daConexao);
+      if (cs.length === 1 && cs[0].chave === "avulsas")
+        return linhaTodos(daConexao, `as ${daConexao.length} conex\xF5es do ${rotOrigem}`) + grade(daConexao);
+      return cs.map((c) => linhaCarreta(c) + grade(c.vs)).join("");
+    };
     const corpo = semDelta ? `<div class="card note" style="border-color:var(--amber)">
          O Ponto Delta do ${rotOrigem} n\xE3o foi importado \u2014 mostrando todos os voos do turno.
        </div>
        ${linhaTodos(todos, `os ${todos.length} voos do turno`)}
        ${grade(todos)}` : `<p class="note passo-secao">Conex\xF5es do ${rotOrigem}</p>
-       ${daConexao.length ? linhaTodos(daConexao, `as ${daConexao.length} conex\xF5es do ${rotOrigem}`) + grade(daConexao) : `<div class="card note">${conex.length ? "Todas as conex\xF5es deste voo j\xE1 est\xE3o em outra op\xE7\xE3o." : "Este voo n\xE3o tem conex\xE3o no Ponto Delta \u2014 a bagagem dele \xE9 toda local (esteira)."}</div>`}
+       ${daConexao.length ? corpoConexoes() : `<div class="card note">${conex.length ? "Todas as conex\xF5es deste voo j\xE1 est\xE3o em outra op\xE7\xE3o." : "Este voo n\xE3o tem conex\xE3o no Ponto Delta \u2014 a bagagem dele \xE9 toda local (esteira)."}</div>`}
        ${conex.foraDaMalha ? `<p class="note" style="margin-top:8px">${conex.foraDaMalha} voo${conex.foraDaMalha === 1 ? "" : "s"} do Delta n\xE3o est\xE1${conex.foraDaMalha === 1 ? "" : "\xE3o"} na malha de hoje.</p>` : ""}
        ${outros.length ? `
          <div class="list-line" style="cursor:pointer;margin-top:12px"
@@ -9252,6 +9329,25 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   }
   function puTodosDaVia() {
     alternarTodosDaVia(UI.pu);
+  }
+  function alternarTodosDaCarreta(st, chave) {
+    const lista = conexoesDaVia(st).filter((v) => chaveCarreta(v) === chave).map((v) => v.id);
+    if (!lista.length) return;
+    const alvo2 = grupos(st)[st.via];
+    const todos = lista.every((id) => alvo2.includes(id));
+    for (const id of lista) {
+      const i = alvo2.indexOf(id);
+      if (todos) {
+        if (i >= 0) alvo2.splice(i, 1);
+      } else if (i < 0) alvo2.push(id);
+    }
+    bus.render();
+  }
+  function opTodosDaCarreta(chave) {
+    alternarTodosDaCarreta(UI.op, chave);
+  }
+  function puTodosDaCarreta(chave) {
+    alternarTodosDaCarreta(UI.pu, chave);
   }
   function opAbrirVia(via) {
     grupos(UI.op);
@@ -9353,6 +9449,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       return;
     }
     await registrarLocais(linhas, UI.op.vooOrigemId, "a_caminho");
+    await marcarPegasNoDelta(linhas, UI.op.vooOrigemId);
     UI.op = { origem: null, sel: [] };
     fecharModal();
     UI.modalVivo = { tipo: "viagem" };
@@ -9377,6 +9474,35 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       }
     }
     if (falhas.length) await avisarFalhaLocal(falhas[0]);
+  }
+  async function marcarPegasNoDelta(linhas, vooOrigemId) {
+    const conex = candidatosConexao(vooOrigemId);
+    if (!conex) return;
+    const destinos = [], pdIds = [];
+    for (const l of linhas) {
+      if (!l.voo_destino_id) continue;
+      const c = conex.find((v) => mesmoId(v.id, l.voo_destino_id));
+      if (!c) continue;
+      for (const pd of c._pdIds) {
+        destinos.push(l.voo_destino_id);
+        pdIds.push(pd);
+      }
+    }
+    if (!destinos.length) return;
+    try {
+      await pegarConexoesDelta(destinos, pdIds);
+    } catch (e) {
+      await avisarFalhaDelta(e.message || String(e));
+    }
+  }
+  async function avisarFalhaDelta(msg) {
+    await erro([
+      "A viagem foi registrada, mas n\xE3o consegui avisar que essa carreta saiu.",
+      "",
+      "O l\xEDder vai continuar vendo esses voos como se ainda estivessem no box. Avise ele.",
+      "",
+      `(${msg})`
+    ].join("\n"));
   }
   async function avisarFalhaLocal(msg) {
     await erro([
@@ -9662,6 +9788,7 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
       return;
     }
     await registrarLocais(linhas, UI.pu.vooOrigemId, "a_caminho");
+    await marcarPegasNoDelta(linhas, UI.pu.vooOrigemId);
     UI.pu = null;
     bus.recarregar();
   }
@@ -12053,7 +12180,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const pegaIndia = pode("oc_pontos") || pode("pontos_import") || pode("levar") || vejoTudo;
     const pegaProntas = vejoTudo || pode("levar") || pode("triagem_sinalizar") || pegaIndia;
     const pegaDelta = pegaIndia || vejoTudo || pode("levar") || pode("triagem_sinalizar");
-    const pegaCarretas = pode("oc_pontos");
+    const pegaCarretas = pode("oc_pontos") || pode("levar");
     const pegaPosicoes = pode("patio_gps");
     let qv = sb.from("viagens").select("*").gte("saiu_em", ini2).order("saiu_em", { ascending: false });
     if (pode("levar") && !vejoTudo && !pode("oc_chegando")) qv = qv.eq("operador_id", S.me.id);
@@ -12578,6 +12705,24 @@ Sair mesmo assim?`
       arquivo: "screens/telaOperador.js",
       desc: 'R\xF3tulo em mai\xFAsculas logo abaixo do cabe\xE7alho do passo ("CONEX\xD5ES DO GRU-1709").'
     },
+    // Antes da linha-de-lista generica (.list-line, grupo base): a primeira
+    // entrada que casar vence. Nome diferente da cabeca-da-carreta do Delta
+    // (grupo delta) de proposito — sao duas telas, e pedir ajuste numa nao
+    // pode mexer na outra.
+    {
+      nome: "carreta-na-folha",
+      seletor: ".carreta-folha",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: 'Cabe\xE7alho da carreta que o l\xEDder montou, agrupando os voos no passo PP/TCX/TLC/EST ("IMEDIATAS \xB7 2 VOOS"). Tocar marca ou desmarca todos os voos dela de uma vez.'
+    },
+    {
+      nome: "nome-da-carreta-na-folha",
+      seletor: ".carreta-folha-nome",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: "O texto do cabe\xE7alho da carreta: nome que o l\xEDder deu + quantos voos. Cinza enquanto nada est\xE1 marcado, branco quando a carreta inteira est\xE1."
+    },
     {
       nome: "carga-da-folha",
       seletor: ".folha-carga",
@@ -13056,7 +13201,8 @@ Sair mesmo assim?`
     sinalizar_pronta: (p) => sinalizarProntaDb(p.setor, p.vooId, p.box, p.pontoIndiaId),
     mover_conexao_carreta_delta: (p) => moverConexaoCarretaDelta(p.pontoDeltaId, p.carretaId),
     mover_conexoes_carreta_delta: (p) => moverConexoesCarretaDelta(p.pontoDeltaIds, p.carretaId),
-    definir_bag_qtd_manual_delta: (p) => definirBagQtdManualDelta(p.pontoDeltaId, p.qtd)
+    definir_bag_qtd_manual_delta: (p) => definirBagQtdManualDelta(p.pontoDeltaId, p.qtd),
+    pegar_conexoes_delta: (p) => pegarConexoesDelta(p.destinos, p.pontoDeltaIds)
   });
   iniciarOfflineSync();
   Object.assign(window, {
@@ -13111,11 +13257,13 @@ Sair mesmo assim?`
     opTogEsteira,
     opVerOutros,
     opTodosDaVia,
+    opTodosDaCarreta,
     opEsteira,
     puAbrirVia,
     puFecharVia,
     puVerOutros,
     puTodosDaVia,
+    puTodosDaCarreta,
     puEsteira,
     puTogEsteira,
     abrirFolhaOp,
