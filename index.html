@@ -1119,9 +1119,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 17/09/2026, 09:37:24
+     Gerado em: 17/09/2026, 10:59:34
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 09:37";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 10:59";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4228,7 +4228,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const abre = editavel ? `<div class="pt-linha delta-conexao${marcado ? " sel" : ""}${classeDuas}"${tituloDuas} onclick="alternarSelecaoDelta(${pd.id},${vooId})">` : `<div class="pt-linha${classeDuas}"${tituloDuas}>`;
     return `
     ${abre}
-      ${vooRotulo2(comoSaida(pd.destino, pd.voo_saida_numero, vSaida == null ? void 0 : vSaida.box), "saida", { box: tipo === "pp" })}
+      ${vooRotulo2(comoSaida(pd.destino, pd.voo_saida_numero, vSaida == null ? void 0 : vSaida.box), "saida")}
       <span class="grow"></span>
       ${selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : ""}
       ${seloStatus ? `<span class="delta-status ${seloStatus.classe}" title="${esc(seloStatus.titulo)}" aria-label="${seloStatus.texto}">${ico(seloStatus.icone, 18)}</span>` : ""}
@@ -4566,9 +4566,10 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>`;
     const novaCarreta = editavel ? `<button class="small ghost delta-icone" onclick="abrirCriarCarretaDelta(${vooId},null)" aria-label="Nova carreta" title="Nova carreta">+${ico("reboque", 34)}${ico("malha", 34)}</button>` : "";
     const carretaVazia = pode("sol_abrir") ? `<button class="small primary delta-icone" onclick="solicitarCarretaVaziaDelta(${vooId})" aria-label="Pedir carreta vazia" title="Pedir carreta vazia">${ico("reboque", 34)}</button>` : "";
+    const prefixo = v.prefixo ? `<span class="note delta-prefixo" title="Prefixo da aeronave">${esc(v.prefixo)}</span>` : "";
     abrirModal(`<div class="delta-popup"><div class="delta-cabeca">${substituir}
     <div class="list-line delta-topo">
-      <h3 class="grow">Delta ${vooRotulo2(v, "chegada", { box: false })}</h3>
+      <h3 class="grow">Delta ${vooRotulo2(v, "chegada")}${prefixo}</h3>
       ${novaCarreta}${carretaVazia}
     </div>
     ${barraMoverSelecionadosDelta(vooId, carretasDoVoo, editavel)}
@@ -13153,6 +13154,22 @@ Sair mesmo assim?`
       grupo: "delta",
       arquivo: "screens/telaPontos.js",
       desc: "\xCDcone pequeno na conex\xE3o: rel\xF3gio azul = solicitado (aguardando operador), check verde = j\xE1 pego."
+    },
+    // Antes das basicas: .delta-prefixo tambem tem a classe .note, e
+    // .delta-topo tambem e uma .list-line — a primeira que casar vence.
+    {
+      nome: "prefixo-da-aeronave",
+      seletor: ".delta-prefixo",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "A matr\xEDcula da aeronave (ex.: PR-GUQ) ao lado do voo, no topo do Ponto Delta. S\xF3 aparece quando a malha trouxe o prefixo."
+    },
+    {
+      nome: "cabeca-do-delta",
+      seletor: ".delta-topo",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: 'A primeira linha do Ponto Delta: "Delta", o voo que chegou com o box, o prefixo da aeronave e os bot\xF5es de carreta.'
     },
     // Antes de .delta-conexao e de .balde-delta .list-line: e a linha
     // inteira que muda de fundo, e quem pedir ajuste aqui quer ESTA.
