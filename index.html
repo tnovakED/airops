@@ -418,7 +418,14 @@
      nao leva espacamento (ver skill ajuste-visual). O respiro de 12px em
      cima e o que separa uma carreta da lista da carreta anterior — sem
      ele, duas carretas viram um bloco so de linhas. */
-  .carreta-folha{cursor:pointer; margin-top:12px}
+  /* Cor por carreta, igual a tela do lider (pedido do Tiago, 17/09/2026):
+     mesma faixa esquerda + fundo esmaecido de .balde-cor (telaPontos.js),
+     so que aqui e a linha inteira que carrega o --matiz (nao um wrapper
+     a parte). Nao briga com .marcada: sao dois canais diferentes --
+     borda/fundo dizem QUAL carreta, o check ambar diz SELECIONADA. */
+  .carreta-folha{cursor:pointer; margin-top:12px;
+    border-left:3px solid hsl(var(--matiz) 55% 45%);
+    background:hsl(var(--matiz) 55% 45% / .1); padding-left:6px}
   .destino-lista + .carreta-folha{margin-top:14px}
   .carreta-folha-check{flex:0 0 auto; color:var(--muted)}
   .carreta-folha.marcada .carreta-folha-check{color:var(--amber)}
@@ -1165,9 +1172,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 17/09/2026, 14:41:51
+     Gerado em: 17/09/2026, 16:13:19
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 14:41";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 16:13";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1690,6 +1697,45 @@
     }
   });
 
+  // src/utils/patio.js
+  function ordemBox(box) {
+    const s = String(box == null ? "" : box).trim().toUpperCase();
+    if (/^\d+$/.test(s)) {
+      const n = parseInt(s, 10);
+      return n + BOX_BASES_COM_LETRA.filter((b) => b < n).length;
+    }
+    const m = s.match(/^(\d+)A$/);
+    if (m && BOX_BASES_COM_LETRA.includes(parseInt(m[1], 10))) return ordemBox(m[1]) + 1;
+    return null;
+  }
+  function distanciaBox(boxA, boxB) {
+    const o1 = ordemBox(boxA), o2 = ordemBox(boxB);
+    return o1 == null || o2 == null ? null : Math.abs(o1 - o2);
+  }
+  function secaoDoBox(box) {
+    const o = ordemBox(box);
+    if (o == null) return null;
+    const s = SECOES_BOX.find((s2) => o >= ordemBox(s2.de) && o <= ordemBox(s2.ate));
+    return s ? s.nome : null;
+  }
+  function nomesDasSecoes() {
+    return SECOES_BOX.map((s) => s.nome);
+  }
+  var BOX_BASES_COM_LETRA, SECOES_BOX;
+  var init_patio = __esm({
+    "src/utils/patio.js"() {
+      BOX_BASES_COM_LETRA = [4, 9];
+      SECOES_BOX = [
+        { nome: "01-04", de: "1", ate: "4" },
+        { nome: "4A-8", de: "4A", ate: "8" },
+        { nome: "9-12", de: "9", ate: "12" },
+        { nome: "13-16", de: "13", ate: "16" },
+        { nome: "17-22", de: "17", ate: "22" },
+        { nome: "47-60", de: "47", ate: "60" }
+      ];
+    }
+  });
+
   // src/utils/horas.js
   function minutosDe(hhmm2) {
     const m = String(hhmm2 || "").match(/^(\d{1,2}):(\d{2})/);
@@ -1849,6 +1895,7 @@
     if (vooChegadaId == null) return null;
     const pds = D.deltas.filter((pd) => Number(pd.voo_id) === Number(vooChegadaId));
     if (!pds.length) return null;
+    const vChegada = voo(vooChegadaId);
     const achados = [];
     let foraDaMalha = 0;
     const semMalha = [];
@@ -1859,6 +1906,7 @@
         semMalha.push({ _carretaId: (_a = pd.carreta_id) != null ? _a : null, numero: pd.voo_saida_numero });
         continue;
       }
+      if (distanciaBox(vChegada == null ? void 0 : vChegada.box, v.box) === 0) continue;
       const ja = achados.find((a) => a.id === v.id);
       if (ja) {
         ja._bag += pd.bag_qtd || 0;
@@ -1886,6 +1934,7 @@
     "src/utils/horas.js"() {
       init_store();
       init_regras();
+      init_patio();
       hoje = () => (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA");
       FAIXAS_TURNO = { manha: [180, 780], tarde: [720, 1080], noite: [960, 1560] };
       voosAtivos = () => D.voos.filter(rotacaoAtiva);
@@ -3887,41 +3936,8 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     return sb.from("ponto_india").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), entregue_por: S.me.id }).eq("id", id);
   }
 
-  // src/utils/patio.js
-  var BOX_BASES_COM_LETRA = [4, 9];
-  function ordemBox(box) {
-    const s = String(box == null ? "" : box).trim().toUpperCase();
-    if (/^\d+$/.test(s)) {
-      const n = parseInt(s, 10);
-      return n + BOX_BASES_COM_LETRA.filter((b) => b < n).length;
-    }
-    const m = s.match(/^(\d+)A$/);
-    if (m && BOX_BASES_COM_LETRA.includes(parseInt(m[1], 10))) return ordemBox(m[1]) + 1;
-    return null;
-  }
-  function distanciaBox(boxA, boxB) {
-    const o1 = ordemBox(boxA), o2 = ordemBox(boxB);
-    return o1 == null || o2 == null ? null : Math.abs(o1 - o2);
-  }
-  var SECOES_BOX = [
-    { nome: "01-04", de: "1", ate: "4" },
-    { nome: "4A-8", de: "4A", ate: "8" },
-    { nome: "9-12", de: "9", ate: "12" },
-    { nome: "13-16", de: "13", ate: "16" },
-    { nome: "17-22", de: "17", ate: "22" },
-    { nome: "47-60", de: "47", ate: "60" }
-  ];
-  function secaoDoBox(box) {
-    const o = ordemBox(box);
-    if (o == null) return null;
-    const s = SECOES_BOX.find((s2) => o >= ordemBox(s2.de) && o <= ordemBox(s2.ate));
-    return s ? s.nome : null;
-  }
-  function nomesDasSecoes() {
-    return SECOES_BOX.map((s) => s.nome);
-  }
-
   // src/ui/screens/telaPontos.js
+  init_patio();
   init_modal();
   init_bus();
   init_regras();
@@ -4844,6 +4860,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   }
 
   // src/ui/screens/telaOperador.js
+  init_patio();
   init_modal();
   init_bus();
 
@@ -9584,7 +9601,8 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const todos2 = marcados === c.vs.length;
       const parcial = marcados && !todos2 ? ` (${marcados} de ${c.vs.length})` : "";
       const fora = c.fora.length ? `<span class="carreta-folha-fora">${esc(c.fora.join(", "))} fora da malha</span>` : "";
-      return `<div class="list-line carreta-folha${todos2 ? " marcada" : ""}" onclick="${pre}TodosDaCarreta('${esc(c.chave)}')">
+      const matiz = corBaldeDelta(c.chave === "avulsas" ? c.chave : `c${c.chave}`);
+      return `<div class="list-line carreta-folha${todos2 ? " marcada" : ""}" style="--matiz:${matiz}" onclick="${pre}TodosDaCarreta('${esc(c.chave)}')">
       <span class="carreta-folha-check">${ico(todos2 ? "quadradoMarcado" : "quadrado", 22)}</span>
       <span class="grow carreta-folha-nome">${esc(c.nome)} \xB7 ${c.vs.length} voo${c.vs.length === 1 ? "" : "s"}${parcial}${fora}</span>
     </div>`;
