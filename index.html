@@ -1165,9 +1165,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 17/09/2026, 14:25:13
+     Gerado em: 17/09/2026, 14:41:51
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 14:25";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 14:41";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4498,6 +4498,9 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     await bus.recarregar();
     return abrirPontoDelta(vooId);
   }
+  function elegiveisParaSolicitar(v, itens) {
+    return itens.filter((pd) => statusConexaoDelta(pd) === "livre" && classificarConexaoDelta(v, pd).tipo !== "tst");
+  }
   async function solicitarCarretaDelta(vooId, chaveBalde) {
     const v = voo(vooId);
     if (!v) return;
@@ -4508,9 +4511,9 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       await aviso("Essa carreta est\xE1 vazia.");
       return;
     }
-    const livres = balde.itens.filter((pd) => statusConexaoDelta(pd) === "livre");
+    const livres = elegiveisParaSolicitar(v, balde.itens);
     if (!livres.length) {
-      await aviso(motivoSemSolicitar(balde.itens));
+      await aviso(motivoSemSolicitar(balde.itens, v));
       return;
     }
     const vistos = /* @__PURE__ */ new Set();
@@ -4538,11 +4541,14 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     await bus.recarregar();
     return abrirPontoDelta(vooId);
   }
-  function motivoSemSolicitar(itens) {
+  function motivoSemSolicitar(itens, v) {
     const pega = itens.some((pd) => statusConexaoDelta(pd) === "pega");
     const solicitada = itens.some((pd) => statusConexaoDelta(pd) === "solicitada");
     if (pega && !solicitada)
       return "N\xE3o \xE9 poss\xEDvel solicitar operador para buscar TODA a CARRETA \u2014 ela j\xE1 saiu inteira.\n\nSe ainda h\xE1 bag no box, solicite o operador individualmente, no bot\xE3o da linha do voo.";
+    if (solicitada) return "Essa carreta j\xE1 foi solicitada \u2014 aguardando um operador buscar.";
+    if (v && itens.length && itens.every((pd) => classificarConexaoDelta(v, pd).tipo === "tst"))
+      return "Essas conex\xF5es s\xE3o TST (mesmo box) \u2014 n\xE3o precisam de carreta.\n\nSe alguma precisar sair mesmo assim, use o bot\xE3o de chamar da linha do voo.";
     return "Essa carreta j\xE1 foi solicitada \u2014 aguardando um operador buscar.";
   }
   function prontaAtivaDaConexao(pd) {
