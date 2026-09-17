@@ -1119,9 +1119,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 16/09/2026, 16:57:36
+     Gerado em: 17/09/2026, 09:04:23
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="16/09 16:57";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 09:04";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1159,13 +1159,14 @@
     S.me = null;
     S.ferramentas = [];
   }
-  var CHAVE_OP_DE, CHAVE_OP_ATE, CHAVE_OC_DE, CHAVE_OC_ATE, lido, CHAVE_MENU, lidoBool, D, S, UI, mesmoId, voo, nomeDe, destinosDe, chegouNoVoo, bagMisturada, pode;
+  var CHAVE_OP_DE, CHAVE_OP_ATE, CHAVE_OC_DE, CHAVE_OC_ATE, CHAVE_OP_SECAO, lido, CHAVE_MENU, lidoBool, D, S, UI, mesmoId, voo, nomeDe, destinosDe, chegouNoVoo, bagMisturada, pode;
   var init_store = __esm({
     "src/state/store.js"() {
       CHAVE_OP_DE = "rampa_op_de";
       CHAVE_OP_ATE = "rampa_op_ate";
       CHAVE_OC_DE = "rampa_oc_de";
       CHAVE_OC_ATE = "rampa_oc_ate";
+      CHAVE_OP_SECAO = "rampa_op_secao";
       lido = (chave) => {
         try {
           return localStorage.getItem(chave) || "";
@@ -1210,6 +1211,8 @@
         opDe: lido(CHAVE_OP_DE),
         opAte: lido(CHAVE_OP_ATE),
         // filtro de horario livre do operador (vazio = sem limite)
+        opSecao: lido(CHAVE_OP_SECAO) || null,
+        // secao de box na escolha do box, so na viagem nova (null = todas)
         janelaAberta: false,
         // dropdown do filtro de horario, na barra do Operador (render.js)
         ocDe: lido(CHAVE_OC_DE),
@@ -1758,9 +1761,9 @@
     return restam > 0 ? restam : null;
   }
   function voosChegando() {
-    return D.voos.filter((v) => ehChegada(v) && (dentroDoIntervalo(minutosDe(v.saida), UI.opDe, UI.opAte) || pendenciaDeChegada(v.id))).sort((a, b) => {
+    return D.voos.filter((v) => ehChegada(v) && (dentroDoIntervalo(horaNaJanela(v), UI.opDe, UI.opAte) || pendenciaDeChegada(v.id))).sort((a, b) => {
       var _a, _b;
-      return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
+      return ((_a = horaNaJanela(a)) != null ? _a : 99999) - ((_b = horaNaJanela(b)) != null ? _b : 99999);
     });
   }
   function voosSaindo(de, ate) {
@@ -1832,7 +1835,7 @@
     achados.semMalha = semMalha;
     return achados;
   }
-  var hoje, FAIXAS_TURNO, voosAtivos, voosEmSolo;
+  var hoje, FAIXAS_TURNO, voosAtivos, voosEmSolo, horaNaJanela;
   var init_horas = __esm({
     "src/utils/horas.js"() {
       init_store();
@@ -1841,6 +1844,10 @@
       FAIXAS_TURNO = { manha: [180, 780], tarde: [720, 1080], noite: [960, 1560] };
       voosAtivos = () => D.voos.filter(rotacaoAtiva);
       voosEmSolo = () => D.voos.filter(emSolo);
+      horaNaJanela = (v) => {
+        var _a;
+        return (_a = minutosDe(v.saida)) != null ? _a : minutosDe(v.chegada);
+      };
     }
   });
 
@@ -3343,7 +3350,8 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       <div class="bx-estado">${ico("pousando", 14)} ${esc(vs[0].chegada || "")}${est === "ok" ? " \xB7 descarga OK" : est === "descarregando" ? " \xB7 descarregando" : est === "chegando" ? " \xB7 ainda vai pousar" : ""}${pend ? " \xB7 bag em curso" : ""}</div>
     </div>`;
     };
-    const vazio = `<div class="card note">Nenhum voo no p\xE1tio nesta janela.</div>`;
+    const txtVazio = (opcoes == null ? void 0 : opcoes.vazio) || "Nenhum voo no p\xE1tio nesta janela.";
+    const vazio = `<div class="card note">${esc(txtVazio)}</div>`;
     if (!boxes.length) return vazio;
     const legenda = compacta ? `<p class="note bxq-legenda">\xE2mbar = ainda vai pousar \xB7 azul = descarregando \xB7 verde = descarga OK \xB7 ponto = bag em curso \xB7 n\xFAmero = minutos para pousar</p>` : "";
     return `<div class="${compacta ? "bxq-grid" : "voo-grid"}">${boxes.map(btn).join("")}</div>${legenda}`;
@@ -9114,6 +9122,17 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     }
     return fora.size ? patio.filter((v) => !fora.has(v.id)) : patio;
   }
+  function abasSecaoBox(patio) {
+    const temOrfao = patio.some((v) => v.box && !secaoDoBox(v.box));
+    const nomes = [...nomesDasSecoes(), ...temOrfao ? ["OUTROS"] : []];
+    const botoes = degrau("Todas", !UI.opSecao, "escolherSecaoOp('')") + nomes.map((n) => degrau(n, UI.opSecao === n, `escolherSecaoOp('${n}')`)).join("");
+    return `<div class="deg-linha secao-linha"><span class="deg-rot">Se\xE7\xE3o</span>${botoes}</div>`;
+  }
+  function escolherSecaoOp(nome) {
+    UI.opSecao = nome || null;
+    guardarJanela(CHAVE_OP_SECAO, UI.opSecao || "");
+    bus.render();
+  }
   var passoCab = (titulo, nota, acao) => `<div class="passo-cab">
      <div class="passo-txt">
        <h2 class="folha-pergunta">${titulo}</h2>
@@ -9295,7 +9314,13 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
            ${noBox.map((v) => `<button class="primary" onclick="${confirmarVoo}(${v.id})">${vooRotulo2(v, "chegada", { box: false })}</button>`).join("")}
          </div>` : "";
       const nota = !st.boxOrigem ? "Toque no box onde voc\xEA est\xE1." : noBox.length === 0 ? "Nenhum voo da malha neste box." : noBox.length > 1 ? `Mais de um voo no box ${esc(st.boxOrigem)} \u2014 qual \xE9?` : "";
-      return passoCab("EM QUAL BOX?", nota, acao) + gradeBoxes(st.boxOrigem, escolherBox, patio, { compacta: true });
+      const daSecao = pre === "op" && UI.opSecao ? patio.filter((v) => (secaoDoBox(v.box) || "OUTROS") === UI.opSecao) : patio;
+      return passoCab("EM QUAL BOX?", nota, acao) + (pre === "op" ? abasSecaoBox(patio) : "") + gradeBoxes(
+        st.boxOrigem,
+        escolherBox,
+        daSecao,
+        { compacta: true, vazio: pre === "op" && UI.opSecao ? `Nenhum voo no p\xE1tio nesta janela, na se\xE7\xE3o ${UI.opSecao}.` : null }
+      );
     }
     if (st.origem === "BOX") {
       if (st.via) return telaVoosDaVia(st, pre, acaoConfirmar);
@@ -13092,6 +13117,13 @@ Sair mesmo assim?`
       desc: "Bot\xE3ozinho de uma resposta na trilha."
     },
     {
+      nome: "filtro-de-secao",
+      seletor: ".secao-linha",
+      grupo: "janela",
+      arquivo: "screens/telaOperador.js",
+      desc: "A linha de abas de se\xE7\xE3o de box no passo EM QUAL BOX? (Todas, 01-04, 4A-8...)."
+    },
+    {
       nome: "botoes-da-janela",
       seletor: ".modal-acoes",
       grupo: "janela",
@@ -13641,6 +13673,7 @@ Sair mesmo assim?`
     fecharJanelaBarra,
     mudarOpDe,
     mudarOpAte,
+    escolherSecaoOp,
     aceitarSolicitacao,
     pegarSolicitacao,
     cancelarSolicitacao,
