@@ -911,7 +911,11 @@
   /* Botoes do topo numa linha propria (17/09/2026, Tiago): na mesma
      linha do titulo eles empurravam o prefixo pra baixo sozinho, e o
      cabecalho quebrava do jeito errado. */
-  .delta-acoes{display:flex; align-items:center; gap:6px; margin-top:6px}
+  /* wrap (17/09/2026): Equipamentos + Descarrega OK + Nova carreta juntos
+     passam de 400px, e o cabecalho a 360px so tem ~280px pra botao (o
+     resto e a placa/prefixo do titulo, acima). Sem wrap o texto cortava
+     na borda em vez de quebrar linha -- pior que ocupar duas linhas. */
+  .delta-acoes{display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:6px}
   /* Equipamentos: botao de texto (nao icone) -- e a unica acao do
      cabecalho que abre uma tela inteira, e "Equipamentos" escrito nao
      se confunde com os reboques dos vizinhos. */
@@ -1161,9 +1165,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 17/09/2026, 13:32:27
+     Gerado em: 17/09/2026, 14:09:00
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 13:32";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 14:09";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4225,7 +4229,9 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   function agruparEmBaldesDelta(v, lista, carretasDoVoo) {
     const fixos = baldesFixosDelta(carretasDoVoo);
     const idsFixos = new Set(fixos.filter((b) => b.real).map((b) => b.real.id));
-    const baldes = fixos.map((b) => ({ ...b, itens: [] }));
+    const baldesRct = fixos.map((b) => ({ ...b, itens: [] }));
+    const baldeTst = { chave: "tst", nome: "TST", real: null, itens: [] };
+    const baldes = [baldeTst, ...baldesRct];
     for (const c of carretasDoVoo) {
       if (idsFixos.has(c.id)) continue;
       baldes.push({ chave: `c${c.id}`, nome: c.nome, real: c, itens: [] });
@@ -4233,12 +4239,14 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     for (const pd of lista) {
       if (pd.carreta_id != null) {
         const alvo2 = baldes.find((b) => b.real && mesmoId(b.real.id, pd.carreta_id));
-        (alvo2 || baldes[2]).itens.push(pd);
+        (alvo2 || baldesRct[2]).itens.push(pd);
+      } else if (classificarConexaoDelta(v, pd).tipo === "tst") {
+        baldeTst.itens.push(pd);
       } else {
-        baldes[ORDEM_BALDES_AUTO_DELTA.indexOf(baldeAutoDaConexao(v, pd))].itens.push(pd);
+        baldesRct[ORDEM_BALDES_AUTO_DELTA.indexOf(baldeAutoDaConexao(v, pd))].itens.push(pd);
       }
     }
-    return baldes;
+    return baldeTst.itens.length ? baldes : baldes.slice(1);
   }
   function statusConexaoDelta(pd) {
     const ps = D.prontas.filter((p) => mesmoId(p.ponto_delta_id, pd.id));
@@ -4247,9 +4255,9 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     return "livre";
   }
   async function sincronizarBaldesAutoDelta(vooId) {
-    const semCarreta = D.deltas.filter((pd) => pd.voo_id === vooId && pd.carreta_id == null);
-    if (!semCarreta.length) return false;
     const v = voo(vooId) || {};
+    const semCarreta = D.deltas.filter((pd) => pd.voo_id === vooId && pd.carreta_id == null && classificarConexaoDelta(v, pd).tipo !== "tst");
+    if (!semCarreta.length) return false;
     const carretasDoVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId));
     let mexeu = false;
     for (const auto of BALDES_AUTO_DELTA) {
@@ -4651,8 +4659,7 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
     const lista = D.deltas.filter((pd) => pd.voo_id === vooId);
     const carretasDoVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId)).sort((a, b) => a.ordem - b.ordem || String(a.criada_em).localeCompare(String(b.criada_em)));
     const linhas = lista.length ? agruparEmBaldesDelta(v, lista, carretasDoVoo).map((b) => blocoBaldeDelta(vooId, v, b, editavel)).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
-    const descarga = !pode("descarga_ok") ? "" : v.descarga_ok_em ? `<p class="note" style="margin-top:12px">Descarga confirmada ${hora(v.descarga_ok_em)} por ${esc(nomeDe(v.descarga_ok_por))}.</p>` : `<div style="margin-top:12px"><button class="ok" onclick="marcarDescargaDelta(${vooId})">Descarrega OK</button>
-         <p class="note" style="margin-top:6px">Confirma que o voo foi descarregado \u2014 fica registrado quem e quando. N\xE3o tira o voo da grade de boxes dos operadores (pode ainda ter bag parada ali).</p></div>`;
+    const descarga = !pode("descarga_ok") ? "" : v.descarga_ok_em ? `<button class="small ghost equip-botao" disabled aria-label="Descarga j\xE1 confirmada" title="Descarga confirmada ${hora(v.descarga_ok_em)} por ${esc(nomeDe(v.descarga_ok_por))}">Descarrega OK</button>` : `<button class="small ok equip-botao" onclick="marcarDescargaDelta(${vooId})" aria-label="Confirmar descarga" title="Confirma que o voo foi descarregado \u2014 fica registrado quem e quando. N\xE3o tira o voo da grade de boxes dos operadores (pode ainda ter bag parada ali).">Descarrega OK</button>`;
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>`;
     const novaCarreta = editavel ? `<button class="small ghost delta-icone" onclick="abrirCriarCarretaDelta(${vooId},null)" aria-label="Nova carreta" title="Nova carreta">+${ico("reboque", 34)}${ico("malha", 34)}</button>` : "";
     const equipamentos = pode("sol_abrir") ? `<button class="small equip-botao" onclick="abrirEquipamentosDelta(${vooId})" aria-label="Equipamentos" title="Pedir equipamento e ver o que j\xE1 foi pedido">Equipamentos</button>` : "";
@@ -4661,10 +4668,10 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
     <div class="list-line delta-topo">
       <h3 class="grow">Delta ${vooRotulo(v, "chegada")}${prefixo}</h3>
     </div>
-    ${novaCarreta || equipamentos ? `<div class="delta-acoes">${equipamentos}<span class="grow"></span>${novaCarreta}</div>` : ""}
+    ${novaCarreta || equipamentos || descarga ? `<div class="delta-acoes">${equipamentos}${descarga}<span class="grow"></span>${novaCarreta}</div>` : ""}
     ${barraMoverSelecionadosDelta(vooId, carretasDoVoo, editavel)}
     </div>
-    ${linhas}${descarga}
+    ${linhas}
     <div style="margin-top:12px">
       <button class="ghost" onclick="abrirPontoDelta(${vooId})">Atualizar</button>
       <button class="ghost" onclick="fecharModal()">Fechar</button>
