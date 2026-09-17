@@ -1119,9 +1119,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 17/09/2026, 09:04:23
+     Gerado em: 17/09/2026, 09:37:24
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 09:04";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 09:37";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -9613,7 +9613,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     return linhas;
   }
   function escolherBoxOrigem(b) {
-    UI.op.boxOrigem = b;
+    UI.op.boxOrigem = String(UI.op.boxOrigem) === String(b) ? null : b;
     UI.op.vooOrigemId = null;
     bus.render();
   }
@@ -9981,7 +9981,7 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
     bus.render();
   }
   function escolherBoxColeta(b) {
-    UI.pu.boxOrigem = b;
+    UI.pu.boxOrigem = String(UI.pu.boxOrigem) === String(b) ? null : b;
     UI.pu.vooOrigemId = null;
     bus.render();
   }
