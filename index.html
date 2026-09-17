@@ -1165,9 +1165,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 17/09/2026, 14:09:00
+     Gerado em: 17/09/2026, 14:25:13
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 14:09";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 14:25";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4230,7 +4230,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const fixos = baldesFixosDelta(carretasDoVoo);
     const idsFixos = new Set(fixos.filter((b) => b.real).map((b) => b.real.id));
     const baldesRct = fixos.map((b) => ({ ...b, itens: [] }));
-    const baldeTst = { chave: "tst", nome: "TST", real: null, itens: [] };
+    const baldeTst = { chave: "tst", nome: "Tr\xE2nsito", real: null, itens: [] };
     const baldes = [baldeTst, ...baldesRct];
     for (const c of carretasDoVoo) {
       if (idsFixos.has(c.id)) continue;
