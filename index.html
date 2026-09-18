@@ -1215,9 +1215,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 18/09/2026, 07:44:12
+     Gerado em: 18/09/2026, 08:14:34
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 07:44";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 08:14";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1779,6 +1779,31 @@
     }
   });
 
+  // src/utils/conexoes.js
+  function chegadasComNumero(numero) {
+    return D.voos.filter((v) => v.voo_chegada === numero || !v.voo_chegada && v.numero === numero);
+  }
+  function rctDaConexaoDelta(v, pd) {
+    const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
+    if (!vSaida) return null;
+    const candidatos = D.indias.filter((pi) => mesmoId(pi.voo_id, vSaida.id) && pi.voo_chegada_numero === v.voo_chegada);
+    return candidatos.length === 1 ? candidatos[0].rct : null;
+  }
+  function deltasDaLinhaIndia(pi) {
+    const viSaida = voo(pi.voo_id);
+    if (!viSaida) return [];
+    const chegadas = chegadasComNumero(pi.voo_chegada_numero);
+    if (chegadas.length !== 1) return [];
+    return D.deltas.filter((pd) => mesmoId(pd.voo_id, chegadas[0].id) && pd.voo_saida_numero === viSaida.numero);
+  }
+  var naoConectaDelta;
+  var init_conexoes = __esm({
+    "src/utils/conexoes.js"() {
+      init_store();
+      naoConectaDelta = (pd) => !!(pd == null ? void 0 : pd.nao_conecta_em);
+    }
+  });
+
   // src/utils/horas.js
   function minutosDe(hhmm2) {
     const m = String(hhmm2 || "").match(/^(\d{1,2}):(\d{2})/);
@@ -1950,6 +1975,7 @@
         continue;
       }
       if (distanciaBox(vChegada == null ? void 0 : vChegada.box, v.box) === 0) continue;
+      if (naoConectaDelta(pd)) continue;
       const ja = achados.find((a) => a.id === v.id);
       if (ja) {
         ja._bag += pd.bag_qtd || 0;
@@ -1978,6 +2004,7 @@
       init_store();
       init_regras();
       init_patio();
+      init_conexoes();
       hoje = () => (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA");
       FAIXAS_TURNO = { manha: [180, 780], tarde: [720, 1080], noite: [960, 1560] };
       voosAtivos = () => D.voos.filter(rotacaoAtiva);
@@ -3988,28 +4015,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
 
   // src/ui/screens/telaPontos.js
   init_patio();
-
-  // src/utils/conexoes.js
-  init_store();
-  var naoConectaDelta = (pd) => !!(pd == null ? void 0 : pd.nao_conecta_em);
-  function chegadasComNumero(numero) {
-    return D.voos.filter((v) => v.voo_chegada === numero || !v.voo_chegada && v.numero === numero);
-  }
-  function rctDaConexaoDelta(v, pd) {
-    const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
-    if (!vSaida) return null;
-    const candidatos = D.indias.filter((pi) => mesmoId(pi.voo_id, vSaida.id) && pi.voo_chegada_numero === v.voo_chegada);
-    return candidatos.length === 1 ? candidatos[0].rct : null;
-  }
-  function deltasDaLinhaIndia(pi) {
-    const viSaida = voo(pi.voo_id);
-    if (!viSaida) return [];
-    const chegadas = chegadasComNumero(pi.voo_chegada_numero);
-    if (chegadas.length !== 1) return [];
-    return D.deltas.filter((pd) => mesmoId(pd.voo_id, chegadas[0].id) && pd.voo_saida_numero === viSaida.numero);
-  }
-
-  // src/ui/screens/telaPontos.js
+  init_conexoes();
   init_modal();
   init_bus();
   init_regras();
@@ -11388,6 +11394,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
 
   // src/utils/cenaPatio.js
   init_store();
+  init_conexoes();
   init_horas();
   init_regras();
   var nb = (v) => v == null || String(v).trim() === "" ? null : String(v).trim().toUpperCase().replace(/^0+(?=\d)/, "");
