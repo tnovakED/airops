@@ -1215,9 +1215,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 18/09/2026, 08:27:23
+     Gerado em: 18/09/2026, 09:09:56
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 08:27";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 09:09";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1796,11 +1796,28 @@
     if (chegadas.length !== 1) return [];
     return D.deltas.filter((pd) => mesmoId(pd.voo_id, chegadas[0].id) && pd.voo_saida_numero === viSaida.numero);
   }
-  var naoConectaDelta;
+  function baldeAutoDaConexao(v, pd) {
+    const min = duracaoMin(rctDaConexaoDelta(v, pd));
+    if (min <= 50) return "imediatas";
+    if (min <= 60) return "umahora";
+    return "maisdeuma";
+  }
+  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto;
   var init_conexoes = __esm({
     "src/utils/conexoes.js"() {
       init_store();
+      init_horas();
       naoConectaDelta = (pd) => !!(pd == null ? void 0 : pd.nao_conecta_em);
+      BALDES_AUTO_DELTA = [
+        { id: "imediatas", nome: "Imediatas" },
+        { id: "umahora", nome: "de 1h", antigos: ["~1h"] },
+        { id: "maisdeuma", nome: "Mais de 1h" }
+      ];
+      ehDoBalde = (carreta, balde) => carreta.nome === balde.nome || (balde.antigos || []).includes(carreta.nome);
+      nomeBaldeAuto = (id) => {
+        var _a;
+        return ((_a = BALDES_AUTO_DELTA.find((b) => b.id === id)) == null ? void 0 : _a.nome) || null;
+      };
     }
   });
 
@@ -1976,6 +1993,7 @@
       }
       if (distanciaBox(vChegada == null ? void 0 : vChegada.box, v.box) === 0) continue;
       if (naoConectaDelta(pd)) continue;
+      const balde = baldeAutoDaConexao(vChegada || {}, pd);
       const ja = achados.find((a) => a.id === v.id);
       if (ja) {
         ja._bag += pd.bag_qtd || 0;
@@ -1986,7 +2004,8 @@
           ...v,
           _bag: pd.bag_qtd || 0,
           _pdIds: [pd.id],
-          _carretaId: (_c = pd.carreta_id) != null ? _c : null
+          _carretaId: (_c = pd.carreta_id) != null ? _c : null,
+          _baldeAuto: balde
         });
       }
     }
@@ -4287,18 +4306,6 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   function deltaManualParaIndia(pi) {
     return deltasDaLinhaIndia(pi).reduce((s, pd) => s + (pd.bag_qtd_manual || 0), 0);
   }
-  var BALDES_AUTO_DELTA = [
-    { id: "imediatas", nome: "Imediatas" },
-    { id: "umahora", nome: "de 1h", antigos: ["~1h"] },
-    { id: "maisdeuma", nome: "Mais de 1h" }
-  ];
-  var ehDoBalde = (carreta, balde) => carreta.nome === balde.nome || (balde.antigos || []).includes(carreta.nome);
-  function baldeAutoDaConexao(v, pd) {
-    const min = duracaoMin(rctDaConexaoDelta(v, pd));
-    if (min <= 50) return "imediatas";
-    if (min <= 60) return "umahora";
-    return "maisdeuma";
-  }
   function baldesFixosDelta(carretasDoVoo) {
     return BALDES_AUTO_DELTA.map((b) => {
       const real = carretasDoVoo.find((c) => ehDoBalde(c, b));
@@ -4931,6 +4938,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   }
 
   // src/ui/screens/telaOperador.js
+  init_conexoes();
   init_patio();
   init_modal();
   init_bus();
@@ -9619,28 +9627,45 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const conex = candidatosConexao(vooOrigem);
     return conex === null ? candidatosDestinoJanela([vooOrigem]).filter(livre) : conex.filter(livre);
   }
-  function chaveCarreta(v) {
+  function mapaAutoDoVoo(vooOrigemId) {
+    const doVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooOrigemId));
+    const m = /* @__PURE__ */ new Map();
+    for (const b of BALDES_AUTO_DELTA) {
+      const real = doVoo.find((c) => ehDoBalde(c, b));
+      if (real) m.set(b.id, String(real.id));
+    }
+    return m;
+  }
+  function chaveCarreta(v, mapaAuto) {
     const id = v == null ? void 0 : v._carretaId;
-    if (id == null) return "avulsas";
-    return D.carretasDelta.some((c) => mesmoId(c.id, id)) ? String(id) : "avulsas";
+    if (id != null && D.carretasDelta.some((c) => mesmoId(c.id, id))) return String(id);
+    const auto = (v == null ? void 0 : v._baldeAuto) || "maisdeuma";
+    return (mapaAuto == null ? void 0 : mapaAuto.get(auto)) || auto;
   }
   function nomeCarreta(chave) {
-    if (chave === "avulsas") return "Avulsas";
+    const auto = nomeBaldeAuto(chave);
+    if (auto) return auto;
     const c = D.carretasDelta.find((x) => mesmoId(x.id, chave));
-    return c ? c.nome : "Avulsas";
+    return c ? c.nome : "Mais de 1h";
   }
-  function carretasDaLista(lista, semMalha) {
+  function carretasDaLista(lista, semMalha, vooOrigemId) {
+    const mapaAuto = mapaAutoDoVoo(vooOrigemId);
     const porChave = /* @__PURE__ */ new Map();
     const grupo = (chave) => {
-      if (!porChave.has(chave)) porChave.set(chave, { chave, nome: nomeCarreta(chave), vs: [], fora: [] });
+      if (!porChave.has(chave))
+        porChave.set(chave, { chave, nome: nomeCarreta(chave), virtual: !!nomeBaldeAuto(chave), vs: [], fora: [] });
       return porChave.get(chave);
     };
-    for (const v of lista) grupo(chaveCarreta(v)).vs.push(v);
+    for (const v of lista) grupo(chaveCarreta(v, mapaAuto)).vs.push(v);
     for (const s of semMalha || []) {
-      const chave = chaveCarreta(s);
+      const chave = chaveCarreta(s, mapaAuto);
       if (porChave.has(chave)) porChave.get(chave).fora.push(s.numero);
     }
-    return [...porChave.values()].sort((a, b) => (a.chave === "avulsas" ? 1 : 0) - (b.chave === "avulsas" ? 1 : 0));
+    const ordemAuto = (c) => {
+      const i = BALDES_AUTO_DELTA.findIndex((b) => b.id === c.chave || b.nome === c.nome);
+      return i < 0 ? BALDES_AUTO_DELTA.length : i;
+    };
+    return [...porChave.values()].sort((a, b) => ordemAuto(a) - ordemAuto(b));
   }
   function telaVoosDaVia(st, pre, acaoConfirmar) {
     const via = st.via;
@@ -9672,15 +9697,15 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const todos2 = marcados === c.vs.length;
       const parcial = marcados && !todos2 ? ` (${marcados} de ${c.vs.length})` : "";
       const fora = c.fora.length ? `<span class="carreta-folha-fora">${esc(c.fora.join(", "))} fora da malha</span>` : "";
-      const matiz = corBaldeDelta(c.chave === "avulsas" ? c.chave : `c${c.chave}`);
+      const matiz = corBaldeDelta(c.virtual ? c.chave : `c${c.chave}`);
       return `<div class="list-line carreta-folha${todos2 ? " marcada" : ""}" style="--matiz:${matiz}" onclick="${pre}TodosDaCarreta('${esc(c.chave)}')">
       <span class="carreta-folha-check">${ico(todos2 ? "quadradoMarcado" : "quadrado", 22)}</span>
       <span class="grow carreta-folha-nome">${esc(c.nome)} \xB7 ${c.vs.length} voo${c.vs.length === 1 ? "" : "s"}${parcial}${fora}</span>
     </div>`;
     };
     const corpoConexoes = () => {
-      const cs = carretasDaLista(daConexao, semDelta ? [] : conex.semMalha);
-      if (cs.length === 1 && cs[0].chave === "avulsas")
+      const cs = carretasDaLista(daConexao, semDelta ? [] : conex.semMalha, vooOrigem);
+      if (cs.length === 1 && cs[0].virtual)
         return linhaTodos(daConexao, `as ${daConexao.length} conex\xF5es do ${rotOrigem}`) + grade(daConexao);
       return cs.map((c) => linhaCarreta(c) + grade(c.vs)).join("");
     };
@@ -9727,7 +9752,8 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     alternarTodosDaVia(UI.pu);
   }
   function alternarTodosDaCarreta(st, chave) {
-    const lista = conexoesDaVia(st).filter((v) => chaveCarreta(v) === chave).map((v) => v.id);
+    const mapaAuto = mapaAutoDoVoo(st.vooOrigemId);
+    const lista = conexoesDaVia(st).filter((v) => chaveCarreta(v, mapaAuto) === chave).map((v) => v.id);
     if (!lista.length) return;
     const alvo2 = grupos(st)[st.via];
     const todos = lista.every((id) => alvo2.includes(id));
