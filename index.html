@@ -466,6 +466,10 @@
      aviso aparecia partido ao meio (visto na vitrine, 16/09/2026).
      Bloco proprio = layout igual sempre. */
   .carreta-folha-fora{display:block; color:var(--orange); font-weight:700; margin-top:2px}
+  /* Quantidade de bags + veiculo na pronta que nasceu com numero (a "bag
+     de outro voo", 18/09/2026). Linha propria: com nome de voo + selos +
+     timer, colada no fim ela quebrava em lugar imprevisivel. */
+  .pronta-qtd{display:block; font-size:12px; font-weight:700; color:var(--blue); margin-top:2px}
 
   /* BAG MISTURADA (16/09/2026): a bag foi chamada sozinha, mas continua
      no meio de uma carreta montada — quem for buscar vai ter que
@@ -1239,9 +1243,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 18/09/2026, 11:34:39
+     Gerado em: 18/09/2026, 11:50:17
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 11:34";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 11:50";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1742,7 +1746,12 @@
   });
 
   // src/config/regras.js
-  var JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN, SINO_IMINENTE_MIN, PATIO_PRONTA_ESPERA_MIN, PATIO_PRONTA_CRITICA_MIN, PATIO_DESCARGA_ATRASO_MIN, PATIO_OC_ANTES_MIN, PATIO_VIAGEM_LONGA_MIN, PATIO_PEDIDO_ESPERA_MIN, PATIO_SAIDA_ALERTA_MIN;
+  function veiculoParaQtd(qtd) {
+    var _a;
+    if (qtd == null || qtd <= 0) return null;
+    return ((_a = VEICULO_POR_QTD.find((f) => qtd <= f.ate)) == null ? void 0 : _a.nome) || null;
+  }
+  var JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN, SINO_IMINENTE_MIN, PATIO_PRONTA_ESPERA_MIN, PATIO_PRONTA_CRITICA_MIN, PATIO_DESCARGA_ATRASO_MIN, PATIO_OC_ANTES_MIN, PATIO_VIAGEM_LONGA_MIN, PATIO_PEDIDO_ESPERA_MIN, PATIO_SAIDA_ALERTA_MIN, VEICULO_POR_QTD;
   var init_regras = __esm({
     "src/config/regras.js"() {
       JANELA_DESCARGA_ESTIMADA_MIN = 30;
@@ -1761,6 +1770,11 @@
       PATIO_VIAGEM_LONGA_MIN = 20;
       PATIO_PEDIDO_ESPERA_MIN = 10;
       PATIO_SAIDA_ALERTA_MIN = 25;
+      VEICULO_POR_QTD = [
+        { ate: 3, nome: "na m\xE3o" },
+        { ate: 15, nome: "carreta" },
+        { ate: Infinity, nome: "trator com carretas" }
+      ];
     }
   });
 
@@ -3836,18 +3850,20 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   init_supabase();
   init_store();
   init_offline_sync();
-  async function sinalizarProntaDb(setor, vooId, box, pontoIndiaId) {
+  async function sinalizarProntaDb(setor, vooId, box, pontoIndiaId, qtd) {
     try {
       await sb.from("prontas").insert({
         setor,
         box: box || null,
         voo_destino_id: vooId,
         criada_por: S.me.id,
-        ponto_india_id: pontoIndiaId || null
+        ponto_india_id: pontoIndiaId || null,
+        // Nula quando quem sinalizou nao soube dizer (atualizacao_43.sql).
+        qtd: qtd != null ? qtd : null
       });
     } catch (e) {
       if (erroDeRede(e)) {
-        enfileirarAcao("sinalizar_pronta", { setor, vooId, box, pontoIndiaId });
+        enfileirarAcao("sinalizar_pronta", { setor, vooId, box, pontoIndiaId, qtd });
         return;
       }
       throw e;
@@ -4655,6 +4671,69 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   function elegiveisParaSolicitar(v, itens) {
     return itens.filter((pd) => statusConexaoDelta(pd) === "livre" && !naoConectaDelta(pd) && classificarConexaoDelta(v, pd).tipo !== "tst");
   }
+  function voosParaBagDeOutro(vooId) {
+    const agora = agoraMin();
+    return D.voos.filter((x) => {
+      var _a;
+      return !mesmoId(x.id, vooId) && x.numero && x.saida && ((_a = minutosDe(x.saida)) != null ? _a : -1) >= agora;
+    }).sort((a, b) => {
+      var _a, _b;
+      return ((_a = minutosDe(a.saida)) != null ? _a : 99999) - ((_b = minutosDe(b.saida)) != null ? _b : 99999);
+    });
+  }
+  function abrirBagDeOutroVoo(vooId) {
+    const v = voo(vooId) || {};
+    const lista = voosParaBagDeOutro(vooId);
+    if (!lista.length) {
+      return abrirModal(`<h3>Bag de outro voo</h3>
+      <p class="note">Nenhum outro voo com sa\xEDda pela frente hoje.</p>
+      <div style="margin-top:12px"><button class="ghost" onclick="abrirPontoIndiaOC(${vooId})">Voltar</button></div>`);
+    }
+    abrirModal(`
+    <h3>Bag de outro voo</h3>
+    <p class="note">Chegou no box ${esc(v.box || "?")} bagagem que \xE9 de outro voo.
+      Avise, e ela vira um pedido para algu\xE9m buscar.</p>
+    <label style="display:block;margin-top:10px">De qual voo \xE9 a bagagem?</label>
+    <select id="bagOutroVoo">
+      ${lista.map((x) => `<option value="${x.id}">${esc(`${x.destino || "\u2014"}-${x.numero}`)} \xB7 sai ${esc(x.saida)}${x.box ? ` \xB7 box ${esc(x.box)}` : ""}</option>`).join("")}
+    </select>
+    <label style="display:block;margin-top:10px">Quantas bags?</label>
+    <input id="bagOutroQtd" type="number" min="1" inputmode="numeric"
+      oninput="atualizarVeiculoBagOutro()">
+    <p class="note" id="bagOutroVeiculo"></p>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="primary" onclick="confirmarBagDeOutroVoo(${vooId})">Avisar</button>
+      <button class="ghost" onclick="abrirPontoIndiaOC(${vooId})">Cancelar</button>
+    </div>`);
+  }
+  function atualizarVeiculoBagOutro() {
+    const campo = $("bagOutroQtd"), alvo2 = $("bagOutroVeiculo");
+    if (!campo || !alvo2) return;
+    const n = parseInt(campo.value, 10);
+    const veic = veiculoParaQtd(Number.isFinite(n) ? n : null);
+    alvo2.textContent = veic ? `Vai buscar: ${veic}` : "";
+  }
+  async function confirmarBagDeOutroVoo(vooId) {
+    const alvo2 = $("bagOutroVoo"), campo = $("bagOutroQtd");
+    const n = parseInt(campo == null ? void 0 : campo.value, 10);
+    return registrarBagDeOutroVoo(
+      vooId,
+      alvo2 ? Number(alvo2.value) : null,
+      Number.isFinite(n) && n > 0 ? n : null
+    );
+  }
+  async function registrarBagDeOutroVoo(vooId, destinoId, qtd) {
+    if (!destinoId) return;
+    const v = voo(vooId) || {};
+    try {
+      await sinalizarProntaDb("BOX", destinoId, v.box || null, null, qtd != null ? qtd : null);
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    await bus.recarregar();
+    return abrirPontoIndiaOC(vooId);
+  }
   function abrirAvisoPpDelta(vooId, pontoDeltaId) {
     const pd = D.deltas.find((x) => mesmoId(x.id, pontoDeltaId));
     if (!pd) return;
@@ -4945,8 +5024,10 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     </div>`;
     }).join("") : `<p class="note">Nada importado do \xCDndia pra esse voo.</p>`;
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('india',${vooId})">Substituir</button>`;
+    const bagDeOutro = pode("oc_pontos") ? `<button class="ghost" style="margin-top:12px" onclick="abrirBagDeOutroVoo(${vooId})">Bag de outro voo</button>` : "";
     return `${substituir}
     <h3>\xCDndia \xB7 ${vooRotulo(v, "saida", { box: false })}</h3>${LEGENDA_PRD}${linhas}
+    ${bagDeOutro}
     <div style="margin-top:12px"><button class="ghost" onclick="fecharModal()">Fechar</button></div>`;
   }
   function abrirPontoIndiaOC(vooId) {
@@ -5047,6 +5128,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
 
   // src/ui/screens/telaOperador.js
   init_conexoes();
+  init_regras();
   init_patio();
   init_modal();
   init_bus();
@@ -10617,6 +10699,11 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
   function prontasDoLugar(tipo, box) {
     return D.prontas.filter((p) => p.setor === tipo && (box ? p.box === box : true) && p.status === "ciente" && p.ciente_por === S.me.id);
   }
+  function qtdDaPronta(p) {
+    if ((p == null ? void 0 : p.qtd) == null) return "";
+    const veic = veiculoParaQtd(p.qtd);
+    return `<span class="pronta-qtd">${p.qtd} bag${p.qtd === 1 ? "" : "s"}${veic ? ` \xB7 ${esc(veic)}` : ""}</span>`;
+  }
   function carretasDoLugar(ps) {
     const porChave = /* @__PURE__ */ new Map();
     for (const p of ps) {
@@ -10946,7 +11033,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       const marcado = sel.includes(p.id);
       return `<div class="pt-linha alerta-voo${marcado ? " sel" : ""}" onclick="togVooAlerta(${p.id})">
       ${ico(marcado ? "quadradoMarcado" : "quadrado", 20)}
-      <span class="grow">${vooRotulo(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}</span>
+      <span class="grow">${vooRotulo(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}${qtdDaPronta(p)}</span>
       ${timerAlerta(v)}
     </div>`;
     };
@@ -10955,7 +11042,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
         const p = c.ps[0];
         const v = voo(p.voo_destino_id) || {};
         return `<div class="pt-linha alerta-voo alerta-solto">
-          <span class="grow">${vooRotulo(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}</span>
+          <span class="grow">${vooRotulo(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}${qtdDaPronta(p)}</span>
           ${timerAlerta(v)}
         </div>
         <div class="bag-misturada" title="Esta bag foi chamada sozinha, mas est\xE1 no meio da carreta ${esc(c.nome)} \u2014 vai ter que separar">BAG MISTURADA</div>
@@ -14179,7 +14266,7 @@ Sair mesmo assim?`
     entregar_destino: (p) => entregarDestino(p.destId, p.vgId, p.qtd),
     marcar_local_bags: (p) => marcarLocalBags(p.vooDestinoId, p.vooOrigemId, p.local, p.box, p.status),
     baixar_local_bags: (p) => baixarLocalBags(p.vooDestinoId, p.vooOrigemId),
-    sinalizar_pronta: (p) => sinalizarProntaDb(p.setor, p.vooId, p.box, p.pontoIndiaId),
+    sinalizar_pronta: (p) => sinalizarProntaDb(p.setor, p.vooId, p.box, p.pontoIndiaId, p.qtd),
     mover_conexao_carreta_delta: (p) => moverConexaoCarretaDelta(p.pontoDeltaId, p.carretaId),
     mover_conexoes_carreta_delta: (p) => moverConexoesCarretaDelta(p.pontoDeltaIds, p.carretaId),
     definir_bag_qtd_manual_delta: (p) => definirBagQtdManualDelta(p.pontoDeltaId, p.qtd),
@@ -14335,6 +14422,9 @@ Sair mesmo assim?`
     pedirEquipamentoDelta,
     abrirAvisoPpDelta,
     marcarAvisoPp,
+    abrirBagDeOutroVoo,
+    confirmarBagDeOutroVoo,
+    atualizarVeiculoBagOutro,
     alternarBaldeDelta,
     // painel de acessos
     alternarAcesso,
