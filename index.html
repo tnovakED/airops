@@ -1215,9 +1215,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 18/09/2026, 09:09:56
+     Gerado em: 18/09/2026, 09:30:23
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 09:09";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 09:30";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1802,7 +1802,7 @@
     if (min <= 60) return "umahora";
     return "maisdeuma";
   }
-  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto;
+  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto, BALDE_NAO_CONECTA;
   var init_conexoes = __esm({
     "src/utils/conexoes.js"() {
       init_store();
@@ -1818,6 +1818,7 @@
         var _a;
         return ((_a = BALDES_AUTO_DELTA.find((b) => b.id === id)) == null ? void 0 : _a.nome) || null;
       };
+      BALDE_NAO_CONECTA = { id: "naoconecta", nome: "N\xE3o conecta" };
     }
   });
 
@@ -1992,20 +1993,21 @@
         continue;
       }
       if (distanciaBox(vChegada == null ? void 0 : vChegada.box, v.box) === 0) continue;
-      if (naoConectaDelta(pd)) continue;
       const balde = baldeAutoDaConexao(vChegada || {}, pd);
       const ja = achados.find((a) => a.id === v.id);
       if (ja) {
         ja._bag += pd.bag_qtd || 0;
         ja._pdIds.push(pd.id);
         if (ja._carretaId == null) ja._carretaId = (_b = pd.carreta_id) != null ? _b : null;
+        ja._naoConecta = ja._naoConecta && naoConectaDelta(pd);
       } else {
         achados.push({
           ...v,
           _bag: pd.bag_qtd || 0,
           _pdIds: [pd.id],
           _carretaId: (_c = pd.carreta_id) != null ? _c : null,
-          _baldeAuto: balde
+          _baldeAuto: balde,
+          _naoConecta: naoConectaDelta(pd)
         });
       }
     }
@@ -4317,7 +4319,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const fixos = baldesFixosDelta(carretasDoVoo);
     const idsFixos = new Set(fixos.filter((b) => b.real).map((b) => b.real.id));
     const baldesRct = fixos.map((b) => ({ ...b, itens: [] }));
-    const baldeNc = { chave: "naoconecta", nome: "N\xE3o conecta", real: null, itens: [] };
+    const baldeNc = { chave: BALDE_NAO_CONECTA.id, nome: BALDE_NAO_CONECTA.nome, real: null, itens: [] };
     const baldeTst = { chave: "tst", nome: "Tr\xE2nsito", real: null, itens: [] };
     const baldes = [baldeNc, baldeTst, ...baldesRct];
     for (const c of carretasDoVoo) {
@@ -9637,12 +9639,14 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     return m;
   }
   function chaveCarreta(v, mapaAuto) {
+    if (v == null ? void 0 : v._naoConecta) return BALDE_NAO_CONECTA.id;
     const id = v == null ? void 0 : v._carretaId;
     if (id != null && D.carretasDelta.some((c) => mesmoId(c.id, id))) return String(id);
     const auto = (v == null ? void 0 : v._baldeAuto) || "maisdeuma";
     return (mapaAuto == null ? void 0 : mapaAuto.get(auto)) || auto;
   }
   function nomeCarreta(chave) {
+    if (chave === BALDE_NAO_CONECTA.id) return BALDE_NAO_CONECTA.nome;
     const auto = nomeBaldeAuto(chave);
     if (auto) return auto;
     const c = D.carretasDelta.find((x) => mesmoId(x.id, chave));
@@ -9653,7 +9657,13 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const porChave = /* @__PURE__ */ new Map();
     const grupo = (chave) => {
       if (!porChave.has(chave))
-        porChave.set(chave, { chave, nome: nomeCarreta(chave), virtual: !!nomeBaldeAuto(chave), vs: [], fora: [] });
+        porChave.set(chave, {
+          chave,
+          nome: nomeCarreta(chave),
+          virtual: !!nomeBaldeAuto(chave) || chave === BALDE_NAO_CONECTA.id,
+          vs: [],
+          fora: []
+        });
       return porChave.get(chave);
     };
     for (const v of lista) grupo(chaveCarreta(v, mapaAuto)).vs.push(v);
@@ -9662,6 +9672,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       if (porChave.has(chave)) porChave.get(chave).fora.push(s.numero);
     }
     const ordemAuto = (c) => {
+      if (c.chave === BALDE_NAO_CONECTA.id) return -1;
       const i = BALDES_AUTO_DELTA.findIndex((b) => b.id === c.chave || b.nome === c.nome);
       return i < 0 ? BALDES_AUTO_DELTA.length : i;
     };
