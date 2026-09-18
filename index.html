@@ -1134,14 +1134,53 @@
   .patio-chip.solo{background:var(--blue); color:#fff} .patio-chip.descarga,.patio-chip.livre{background:var(--green); color:#fff}
   .patio-chip.chegando{background:var(--amber-dim)} .patio-chip.parado{background:var(--orange); color:#fff}
   .patio-chip.semsinal{background:var(--cinza); color:#fff} .patio-chip.viagem{background:var(--amber); color:#fff}
-  .patio-linha{display:grid; grid-template-columns:110px 1fr; gap:10px; padding:9px 12px; border-bottom:1px solid var(--line); font-size:14px; line-height:1.45}
+  /* minmax(0,1fr), nao 1fr: a coluna de conteudo tem que poder encolher
+     ABAIXO do conteudo dela. Com 1fr puro, a lista de conexoes (nome de
+     voo + bags + botao, todos sem quebra) empurrava o cartao inteiro e
+     nascia uma barra de rolagem horizontal -- e a tela do patio nunca
+     rola de lado. */
+  .patio-linha{display:grid; grid-template-columns:110px minmax(0,1fr); gap:10px; padding:9px 12px; border-bottom:1px solid var(--line); font-size:14px; line-height:1.45}
   .patio-linha .rot{font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); padding-top:3px}
+  /* Linha de LISTA: o rotulo sobe e o conteudo fica com a largura toda.
+     Com as duas colunas de sempre sobravam ~230px pra nome de voo +
+     bags + botao, e o nome saia cortado em "REC-…" -- justamente o dado
+     que identifica a conexao. Label em cima custa uma linha e devolve
+     110px pra cada uma das 9 conexoes. */
+  .patio-linha.lista{display:block}
+  .patio-linha.lista .rot{display:block; padding:0 0 4px}
   .patio-linha .ruim{color:var(--red); font-weight:700}
   .patio-grande{font-size:22px}
   .patio .patio-link{display:inline; min-height:0; padding:0; border:0; background:none; font-size:inherit; font-weight:700; text-transform:none; letter-spacing:0;
     text-decoration:underline; text-decoration-color:var(--amber-dim); text-underline-offset:3px}
   .patio-t{font-weight:700; white-space:nowrap; font-variant-numeric:tabular-nums}
   .patio-t.azul{color:var(--blue)} .patio-t.laranja{color:var(--orange)} .patio-t.ambar{color:var(--amber-mid)} .patio-t.verm{color:var(--red)} .patio-t.ok{color:var(--green)}
+  /* Conexoes do Delta no detalhe do box: uma linha por conexao, com o
+     unico botao que grava no Painel inteiro ("nao conecta", 17/09/2026).
+     wrap porque no celular a linha tem 5 pedacos e nao cabe deitada --
+     cortar com "..." aqui esconderia justamente a quantidade de bags,
+     que e o numero que decide. */
+  .patio-conexoes{display:flex; flex-direction:column}
+  .patio-conexao{padding:7px 0; border-bottom:1px solid var(--line)}
+  .patio-conexao:last-child{border-bottom:0}
+  .cx-topo,.cx-baixo{display:flex; align-items:center; gap:8px; min-width:0}
+  .cx-baixo{margin-top:1px; flex-wrap:wrap}
+  /* nowrap: "REC-1560" quebrando em "REC-" / "1560" deixa de ser um
+     numero de voo e vira duas palavras. Regra da skill ajuste-visual --
+     linha de voo nao quebra, corta com reticencias. */
+  .patio-conexao .quem{font-weight:700; font-size:15px; font-variant-numeric:tabular-nums;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .patio-conexao .num{font-weight:700; font-size:15px; font-variant-numeric:tabular-nums; white-space:nowrap}
+  .patio-conexao .note{font-size:12px; color:var(--muted); white-space:nowrap}
+  .patio-conexao small{font-size:11px; color:var(--muted)}
+  .patio-conexao .grow{flex:1}
+  .patio-conexao .patio-t.ruim{font-size:12px}
+  /* O carimbo e quem/quando andam juntos: se quebrarem, "NÃO CONECTA"
+     fica numa linha e o autor na outra, e o autor e o que da autoridade
+     pra decisao ser desfeita. */
+  .cx-carimbo{display:inline-flex; align-items:baseline; gap:5px; flex-wrap:wrap}
+  .patio-conexao.nc .quem,.patio-conexao.nc .num{text-decoration:line-through; color:var(--muted)}
+  .patio-conexao .patio-bt{flex:0 0 auto}
+  .patio-conexao .patio-bt.desfaz{color:var(--muted)}
   .patio-fonte{display:none; font-size:10px; padding:1px 5px; margin-left:6px; border-radius:3px; background:var(--surface2); border:1px solid var(--line); color:var(--muted); white-space:nowrap}
   .patio-fonte.novo{border-color:var(--orange); color:var(--orange)}
   .com-fontes .patio-fonte{display:inline-block}
@@ -1172,9 +1211,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 17/09/2026, 16:13:19
+     Gerado em: 17/09/2026, 23:25:50
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 16:13";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 23:25";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -3666,6 +3705,13 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       throw e;
     }
   }
+  async function marcarNaoConectaDelta(pontoDeltaId, marcar) {
+    const { error } = await sb.rpc(
+      "marcar_nao_conecta_delta",
+      { p_ponto_delta_id: pontoDeltaId, p_marcar: !!marcar }
+    );
+    if (error) throw error;
+  }
   async function excluirCarretaDelta(id) {
     const { error } = await sb.rpc("excluir_carreta_delta", { p_id: id });
     if (error) throw error;
@@ -3938,6 +3984,28 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
 
   // src/ui/screens/telaPontos.js
   init_patio();
+
+  // src/utils/conexoes.js
+  init_store();
+  var naoConectaDelta = (pd) => !!(pd == null ? void 0 : pd.nao_conecta_em);
+  function chegadasComNumero(numero) {
+    return D.voos.filter((v) => v.voo_chegada === numero || !v.voo_chegada && v.numero === numero);
+  }
+  function rctDaConexaoDelta(v, pd) {
+    const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
+    if (!vSaida) return null;
+    const candidatos = D.indias.filter((pi) => mesmoId(pi.voo_id, vSaida.id) && pi.voo_chegada_numero === v.voo_chegada);
+    return candidatos.length === 1 ? candidatos[0].rct : null;
+  }
+  function deltasDaLinhaIndia(pi) {
+    const viSaida = voo(pi.voo_id);
+    if (!viSaida) return [];
+    const chegadas = chegadasComNumero(pi.voo_chegada_numero);
+    if (chegadas.length !== 1) return [];
+    return D.deltas.filter((pd) => mesmoId(pd.voo_id, chegadas[0].id) && pd.voo_saida_numero === viSaida.numero);
+  }
+
+  // src/ui/screens/telaPontos.js
   init_modal();
   init_bus();
   init_regras();
@@ -4206,22 +4274,8 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       titulo: "Porta a porta \u2014 box a poucos passos, d\xE1 pra levar na m\xE3o ou de carreta."
     }
   };
-  function rctDaConexaoDelta(v, pd) {
-    const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
-    if (!vSaida) return null;
-    const candidatos = D.indias.filter((pi) => mesmoId(pi.voo_id, vSaida.id) && pi.voo_chegada_numero === v.voo_chegada);
-    return candidatos.length === 1 ? candidatos[0].rct : null;
-  }
-  function chegadasComNumero(numero) {
-    return D.voos.filter((v) => v.voo_chegada === numero || !v.voo_chegada && v.numero === numero);
-  }
   function deltaManualParaIndia(pi) {
-    const viSaida = voo(pi.voo_id);
-    if (!viSaida) return 0;
-    const chegadas = chegadasComNumero(pi.voo_chegada_numero);
-    if (chegadas.length !== 1) return 0;
-    const candidatos = D.deltas.filter((pd) => mesmoId(pd.voo_id, chegadas[0].id) && pd.voo_saida_numero === viSaida.numero);
-    return candidatos.reduce((s, pd) => s + (pd.bag_qtd_manual || 0), 0);
+    return deltasDaLinhaIndia(pi).reduce((s, pd) => s + (pd.bag_qtd_manual || 0), 0);
   }
   var BALDES_AUTO_DELTA = [
     { id: "imediatas", nome: "Imediatas" },
@@ -4246,14 +4300,17 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const fixos = baldesFixosDelta(carretasDoVoo);
     const idsFixos = new Set(fixos.filter((b) => b.real).map((b) => b.real.id));
     const baldesRct = fixos.map((b) => ({ ...b, itens: [] }));
+    const baldeNc = { chave: "naoconecta", nome: "N\xE3o conecta", real: null, itens: [] };
     const baldeTst = { chave: "tst", nome: "Tr\xE2nsito", real: null, itens: [] };
-    const baldes = [baldeTst, ...baldesRct];
+    const baldes = [baldeNc, baldeTst, ...baldesRct];
     for (const c of carretasDoVoo) {
       if (idsFixos.has(c.id)) continue;
       baldes.push({ chave: `c${c.id}`, nome: c.nome, real: c, itens: [] });
     }
     for (const pd of lista) {
-      if (pd.carreta_id != null) {
+      if (naoConectaDelta(pd)) {
+        baldeNc.itens.push(pd);
+      } else if (pd.carreta_id != null) {
         const alvo2 = baldes.find((b) => b.real && mesmoId(b.real.id, pd.carreta_id));
         (alvo2 || baldesRct[2]).itens.push(pd);
       } else if (classificarConexaoDelta(v, pd).tipo === "tst") {
@@ -4262,7 +4319,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
         baldesRct[ORDEM_BALDES_AUTO_DELTA.indexOf(baldeAutoDaConexao(v, pd))].itens.push(pd);
       }
     }
-    return baldeTst.itens.length ? baldes : baldes.slice(1);
+    return baldes.filter((b) => b !== baldeNc && b !== baldeTst || b.itens.length);
   }
   function statusConexaoDelta(pd) {
     const ps = D.prontas.filter((p) => mesmoId(p.ponto_delta_id, pd.id));
@@ -4272,7 +4329,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   }
   async function sincronizarBaldesAutoDelta(vooId) {
     const v = voo(vooId) || {};
-    const semCarreta = D.deltas.filter((pd) => pd.voo_id === vooId && pd.carreta_id == null && classificarConexaoDelta(v, pd).tipo !== "tst");
+    const semCarreta = D.deltas.filter((pd) => pd.voo_id === vooId && pd.carreta_id == null && !naoConectaDelta(pd) && classificarConexaoDelta(v, pd).tipo !== "tst");
     if (!semCarreta.length) return false;
     const carretasDoVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId));
     let mexeu = false;
@@ -4515,7 +4572,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     return abrirPontoDelta(vooId);
   }
   function elegiveisParaSolicitar(v, itens) {
-    return itens.filter((pd) => statusConexaoDelta(pd) === "livre" && classificarConexaoDelta(v, pd).tipo !== "tst");
+    return itens.filter((pd) => statusConexaoDelta(pd) === "livre" && !naoConectaDelta(pd) && classificarConexaoDelta(v, pd).tipo !== "tst");
   }
   async function solicitarCarretaDelta(vooId, chaveBalde) {
     const v = voo(vooId);
@@ -4563,6 +4620,8 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     if (pega && !solicitada)
       return "N\xE3o \xE9 poss\xEDvel solicitar operador para buscar TODA a CARRETA \u2014 ela j\xE1 saiu inteira.\n\nSe ainda h\xE1 bag no box, solicite o operador individualmente, no bot\xE3o da linha do voo.";
     if (solicitada) return "Essa carreta j\xE1 foi solicitada \u2014 aguardando um operador buscar.";
+    if (v && itens.length && itens.every((pd) => naoConectaDelta(pd)))
+      return "Essas conex\xF5es foram marcadas como \u201Cn\xE3o conecta\u201D \u2014 a bagagem n\xE3o vai para esses voos.\n\nSe alguma precisar sair mesmo assim, use o bot\xE3o de chamar da linha do voo.";
     if (v && itens.length && itens.every((pd) => classificarConexaoDelta(v, pd).tipo === "tst"))
       return "Essas conex\xF5es s\xE3o TST (mesmo box) \u2014 n\xE3o precisam de carreta.\n\nSe alguma precisar sair mesmo assim, use o bot\xE3o de chamar da linha do voo.";
     return "Essa carreta j\xE1 foi solicitada \u2014 aguardando um operador buscar.";
@@ -4743,9 +4802,11 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const bl = sit.entregue ? null : ondeEstaoAsBags(pi, sit.vc);
       const txtLocal = bl && ROTULO_LOCAL[bl.status] ? ROTULO_LOCAL[bl.status](bl) : null;
       const transito = distanciaBox(v.box, (_a = sit.vc) == null ? void 0 : _a.box) === 0;
+      const naoConecta = deltasDaLinhaIndia(pi).some(naoConectaDelta);
       return `<div class="pt-linha">
       ${lbl}
       ${txtLocal ? `<span class="chip ${bl.status === "na_carreta" ? "st-a_caminho" : "st-aceita"}">${esc(txtLocal)}</span>` : ""}
+      ${naoConecta ? `<span class="chip st-cancelada" title="A companhia avisou que essa conex\xE3o n\xE3o vai conectar \u2014 essa bagagem n\xE3o vem.">N\xC3O CONECTA</span>` : ""}
       ${transito ? `<span class="chip st-entregue" title="Bagagem tr\xE2nsito \u2014 mesmo box, n\xE3o precisa mover.">TST</span>` : ""}
       <span class="note">RCT ${esc(pi.rct || "\u2014")}</span>
       ${marca}${bagsACaminho(pi) ? ICONE_COLETADO : ""}
@@ -11315,6 +11376,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   init_store();
   init_dom();
   init_bus();
+  init_modal();
 
   // src/config/mapaPatio.js
   var PROJ = { "LON0": -47.9301, "LAT1": -15.865208, "COS": 0.9618871161168996, "K": 69197.48614860298 };
@@ -11371,6 +11433,24 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     }
     return out;
   }
+  function conexoesDoVoo(v) {
+    return D.deltas.filter((pd) => mesmoId(pd.voo_id, v.id)).map((pd) => {
+      const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
+      return {
+        id: pd.id,
+        vs: pd.voo_saida_numero || "",
+        dst: pd.destino || "",
+        bags: (pd.bag_qtd || 0) + (pd.bag_qtd_manual || 0),
+        rct: rctDaConexaoDelta(v, pd),
+        sai: minutosDe(vSaida == null ? void 0 : vSaida.saida),
+        ncEm: minutosDoIso(pd.nao_conecta_em),
+        ncPor: pd.nao_conecta_por ? nomeDe(pd.nao_conecta_por) : null
+      };
+    }).sort((a, b) => {
+      var _a, _b;
+      return ((_a = a.sai) != null ? _a : 99999) - ((_b = b.sai) != null ? _b : 99999);
+    });
+  }
   function infoVoo(v, n) {
     const ind = D.indias.filter((i) => mesmoId(i.voo_id, v.id));
     const P3 = ind.reduce((s, i) => s + (i.bag_qtd || 0), 0);
@@ -11393,7 +11473,8 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       R,
       falta: Math.max(0, P3 - R),
       onde,
-      pendente: onde.length > 0 || P3 > R
+      pendente: onde.length > 0 || P3 > R,
+      conexoes: conexoesDoVoo(v)
     };
   }
   var PESO_ESTADO = { solo: 0, descarga: 0, pernoite: 1, chegando: 2 };
@@ -11624,26 +11705,50 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   var lug = (k) => MAPA.lugares[k];
   function rot(box, vc, org, c, vs, dst, s, x) {
     const n0 = base.n0;
-    return Object.assign({
-      id: `d${box}`,
-      box,
-      vc,
-      org,
-      cheg: c == null ? null : n0 + c,
-      vs,
-      dst,
-      sai: s == null ? null : n0 + s,
-      descEm: null,
-      descPor: null,
-      oc: null,
-      P: 0,
-      R: 0,
-      faltam: {}
-    }, x || {}, x && x.desc != null ? { descEm: n0 + x.desc } : {});
+    const r = Object.assign(
+      {
+        id: `d${box}`,
+        box,
+        vc,
+        org,
+        cheg: c == null ? null : n0 + c,
+        vs,
+        dst,
+        sai: s == null ? null : n0 + s,
+        descEm: null,
+        descPor: null,
+        oc: null,
+        P: 0,
+        R: 0,
+        faltam: {},
+        conexoes: []
+      },
+      x || {},
+      x && x.desc != null ? { descEm: n0 + x.desc } : {}
+    );
+    r.conexoes = ((x == null ? void 0 : x.conex) || []).map((cx, i) => ({
+      id: `${r.id}c${i}`,
+      vs: cx[0],
+      dst: cx[1],
+      bags: cx[2],
+      rct: cx[3],
+      sai: n0 + cx[4],
+      ncEm: cx[5] == null ? null : n0 + cx[5],
+      ncPor: cx[5] == null ? null : "Duarte"
+    }));
+    delete r.conex;
+    return r;
   }
   function rotacoes() {
     return [
-      rot("14", "G3 1409", "GRU", -22, "G3 1586", "REC", 12, { desc: -11, oc: "Farias", P: 18, R: 14, faltam: { TCX: 1, TLC: 1 } }),
+      rot("14", "G3 1409", "GRU", -22, "G3 1586", "REC", 12, {
+        desc: -11,
+        oc: "Farias",
+        P: 18,
+        R: 14,
+        faltam: { TCX: 1, TLC: 1 },
+        conex: [["1766", "POA", 6, "0:42", 22, null], ["1311", "GIG", 3, "1:05", 45, -4], ["1605", "BEL", 9, "1:15", 55, null]]
+      }),
       rot("22", "G3 1122", "CGH", -18, "G3 1123", "CGH", 35, { oc: "Duarte", P: 10, R: 10 }),
       rot("29", "G3 1850", "SSA", -40, "G3 1851", "SSA", 8, { desc: -30, oc: "Castro", P: 12, R: 12 }),
       rot("5", "G3 1302", "CNF", -25, "G3 1766", "POA", 22, { desc: -15, P: 16, R: 10, faltam: { "com Lima": 1, "BOX 3": 1 } }),
@@ -12082,6 +12187,30 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const ps = c.pessoas.filter((p) => !p.v && (p.box === k || p.lugar === k));
     return linha("Aqui agora", ps.length ? ps.map((p) => `${link(`p:${p.id}`, p.nome)} <small>(${esc(p.funcao)})</small>`).join(", ") : "<small>ningu\xE9m com GPS aqui</small>", fonte("posi\xE7\xE3o do celular", true));
   }
+  function conexoesDoBox(c, v) {
+    const cx = v.conexoes || [];
+    if (!cx.length) return "";
+    const podeDecidir = pode("conexao_decidir") && !c.demo;
+    const itens = cx.map((x) => {
+      const nc = x.ncEm != null;
+      const quem = nc && x.ncPor ? `por ${esc(x.ncPor)}` : "";
+      const bt = !podeDecidir ? "" : `<button class="patio-bt${nc ? " desfaz" : ""}" onclick="marcarNaoConecta(${x.id},${nc ? "false" : "true"})">${nc ? "desfazer" : "marcar"}</button>`;
+      return `<div class="patio-conexao${nc ? " nc" : ""}">
+      <div class="cx-topo">
+        <span class="quem">${esc(`${x.dst || "\u2014"}-${x.vs}`)}</span>
+        <span class="num">${x.bags} ${x.bags === 1 ? "bag" : "bags"}</span>
+        <span class="grow"></span>${bt}
+      </div>
+      <div class="cx-baixo">
+        <span class="note">RCT ${esc(x.rct || "\u2014")}</span>
+        <span class="note">sai ${x.sai != null ? hhmm(x.sai) : "\u2014"}</span>
+        ${nc ? `<span class="cx-carimbo"><span class="patio-t ruim">N\xC3O CONECTA</span> <small>${quem} ${hhmm(x.ncEm)}</small></span>` : ""}
+      </div>
+    </div>`;
+    }).join("");
+    return `<div class="patio-linha lista"><span class="rot">Conex\xF5es${fonte("ponto_delta")}</span>
+    <div class="patio-conexoes">${itens}</div></div>`;
+  }
   function detalheBox(c, k) {
     const n = c.agora, v = c.boxes[k], e = v ? v.estado : "vazio";
     const h = [`<div class="patio-det-topo"><div><h2>BOX ${esc(k)}</h2><span class="sub">${v ? esc(`${v.org ? `${v.org} \u2192 ` : ""}BSB \u2192 ${v.dst}`) : ""}</span></div><span class="patio-chip ${e}">${NOME_ESTADO[e]}</span>${fechar2}</div>`];
@@ -12096,6 +12225,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     h.push(linha("OC no box", v.oc ? esc(v.oc) : `<span class="ruim">ningu\xE9m posicionado</span>`, fonte("voos.oc_posicionado_id")));
     if (e === "solo" || e === "descarga")
       h.push(linha("Descarga OK", v.descEm != null ? `<span class="patio-t ok">\u2713 ${hhmm(v.descEm)}</span>${v.descPor ? ` por ${esc(v.descPor)}` : ""}` : `<span class="ruim">n\xE3o marcada</span>${v.cheg != null ? ` <small>\xB7 pousou h\xE1 ${mins(n - v.cheg)} min</small>` : ""}`, fonte("voos.descarga_ok_em")));
+    h.push(conexoesDoBox(c, v));
     if (v.P) h.push(linha("Bags da sa\xEDda", `P <b>${v.P}</b> \xB7 R <b>${v.R}</b> \xB7 ${v.falta ? `<span class="ruim">faltam ${v.falta}</span>` : `<span class="patio-t ok">completo</span>`}`, fonte("ponto_india")));
     if (v.onde.length) h.push(linha("Onde est\xE1 o que falta", esc(v.onde.join(", ")), fonte("bags_local \xB7 viagens")));
     h.push(vindoESaindo(c, k));
@@ -12359,6 +12489,15 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   function patioFontes() {
     UI.patio.fontes = !UI.patio.fontes;
     bus.render();
+  }
+  async function marcarNaoConecta(pontoDeltaId, marcar) {
+    try {
+      await marcarNaoConectaDelta(pontoDeltaId, marcar);
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    await bus.recarregar();
   }
   var dedos = {};
   var ini = null;
@@ -13394,6 +13533,51 @@ Sair mesmo assim?`
       arquivo: "screens/telaPontos.js",
       desc: "Uma carreta (Imediatas, de 1h, Mais de 1h ou criada \xE0 m\xE3o), com a faixa de cor na esquerda. Tocar no nome abre/fecha."
     },
+    // ---- Painel Operacional (src/ui/screens/telaPatio.js) ----
+    // Antes de .patio-linha: a linha de LISTA tem as duas classes, e a
+    // especifica precisa ganhar.
+    {
+      nome: "linha-de-lista-do-painel",
+      seletor: ".patio-linha.lista",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "Linha do cart\xE3o do box em que o r\xF3tulo sobe e o conte\xFAdo fica com a largura toda \u2014 usada quando o conte\xFAdo \xE9 uma lista, n\xE3o um valor."
+    },
+    {
+      nome: "linha-do-painel",
+      seletor: ".patio-linha",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "Uma linha do cart\xE3o do box: r\xF3tulo curto \xE0 esquerda, o valor \xE0 direita."
+    },
+    {
+      nome: "conexao-do-painel",
+      seletor: ".patio-conexao",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "Uma conex\xE3o do Ponto Delta vista pelo CCA: em cima o voo de destino, as bags e o bot\xE3o; embaixo o RCT e a hora de sa\xEDda. Riscada quando est\xE1 marcada como \u201Cn\xE3o conecta\u201D."
+    },
+    {
+      nome: "carimbo-de-nao-conecta",
+      seletor: ".cx-carimbo",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "O \u201CN\xC3O CONECTA\u201D em vermelho com quem marcou e a que horas. S\xF3 aparece na conex\xE3o marcada."
+    },
+    {
+      nome: "lista-de-conexoes-do-painel",
+      seletor: ".patio-conexoes",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "O bloco com todas as conex\xF5es daquele voo de chegada, da que sai antes para a que sai depois."
+    },
+    {
+      nome: "botao-do-painel",
+      seletor: ".patio-bt",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "Bot\xE3o pequeno do Painel (Fechar, marcar, desfazer)."
+    },
     // ---- basicas ----
     {
       nome: "contador",
@@ -13916,7 +14100,8 @@ Sair mesmo assim?`
     patioZoom,
     patioTudo,
     patioDemo,
-    patioFontes
+    patioFontes,
+    marcarNaoConecta
   });
   boot();
   iniciarModoPecas();
