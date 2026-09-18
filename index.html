@@ -1224,9 +1224,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 18/09/2026, 09:39:42
+     Gerado em: 18/09/2026, 11:15:00
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 09:39";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 11:15";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2690,6 +2690,10 @@
   }
   async function marcarDescargaVoo(vooId) {
     const { error } = await sb.rpc("marcar_descarga", { p_voo_id: vooId });
+    if (error) throw error;
+  }
+  async function lancarPousoDb(vooId, hora2) {
+    const { error } = await sb.rpc("lancar_pouso", { p_voo_id: vooId, p_hora: hora2 || null });
     if (error) throw error;
   }
 
@@ -11546,6 +11550,12 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       vc: v.voo_chegada || null,
       org: v.origem || "",
       cheg: minutosDe(v.chegada),
+      // Hora REAL de chegada (atualizacao_41.sql). Nula enquanto ninguem
+      // lancou -- e nesse caso tudo continua contando pelo previsto, que e
+      // o comportamento de sempre. Ver docs/plano-hora-de-pouso.md.
+      pouso: minutosDe(v.pouso),
+      pousoPor: v.pouso_por ? nomeDe(v.pouso_por) : null,
+      pousoFonte: v.pouso_fonte || null,
       vs: v.numero || "",
       dst: v.destino || "",
       sai: minutosDe(v.saida),
@@ -11720,6 +11730,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     return partes.length ? ` \xB7 ${partes.join(" \xB7 ")}` : "";
   }
   function alertasPatio(c) {
+    var _a;
     const n = c.agora, out = [];
     const add = (sev, sel, onde, txt2, tempo, ord) => out.push({ sev, sel, onde, txt: txt2, tempo, ord });
     for (const v of c.voos) {
@@ -11731,8 +11742,9 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
         else if (m < 0 && m > -60)
           add("crit", selBox, rotuloLugar(v.box), `${v.vs} j\xE1 saiu (${hhmm(v.sai)}) com bag pendente${descrFalta(v)}`, `h\xE1 ${mins(-m)}\u2032`, -1e3);
       }
-      if (v.estado === "solo" && v.cheg != null && n - v.cheg > PATIO_DESCARGA_ATRASO_MIN)
-        add("aperta", selBox, rotuloLugar(v.box), `Pousou h\xE1 ${mins(n - v.cheg)} min e o Descarga OK n\xE3o foi marcado${v.oc ? ` (${v.oc} est\xE1 posicionado)` : ""}`, `h\xE1 ${mins(n - v.cheg)}\u2032`, 60 - (n - v.cheg));
+      const chegouDeFato = (_a = v.pouso) != null ? _a : v.cheg;
+      if (v.estado === "solo" && chegouDeFato != null && n - chegouDeFato > PATIO_DESCARGA_ATRASO_MIN)
+        add("aperta", selBox, rotuloLugar(v.box), `Pousou h\xE1 ${mins(n - chegouDeFato)} min e o Descarga OK n\xE3o foi marcado${v.oc ? ` (${v.oc} est\xE1 posicionado)` : ""}`, `h\xE1 ${mins(n - chegouDeFato)}\u2032`, 60 - (n - chegouDeFato));
       if (v.estado === "chegando" && !v.oc && v.cheg - n <= PATIO_OC_ANTES_MIN)
         add("info", selBox, rotuloLugar(v.box), `${v.vc || v.vs} chega em ${mins(v.cheg - n)} min e nenhum OC foi posicionado`, `em ${mins(v.cheg - n)}\u2032`, v.cheg - n);
     }
@@ -11804,10 +11816,15 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
         P: 0,
         R: 0,
         faltam: {},
-        conexoes: []
+        conexoes: [],
+        pouso: null,
+        pousoPor: null,
+        pousoFonte: null
       },
       x || {},
-      x && x.desc != null ? { descEm: n0 + x.desc } : {}
+      x && x.desc != null ? { descEm: n0 + x.desc } : {},
+      // `pousou` no extra vem em minutos relativos, igual cheg/sai.
+      x && x.pousou != null ? { pouso: n0 + x.pousou, pousoPor: "Duarte", pousoFonte: "manual" } : {}
     );
     r.conexoes = ((x == null ? void 0 : x.conex) || []).map((cx, i) => ({
       id: `${r.id}c${i}`,
@@ -11824,11 +11841,14 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   }
   function rotacoes() {
     return [
+      // pousou -15: chegou 7 min ATRASADO (STA -22). E o caso que mostra
+      // pra que serve a hora de pouso -- o previsto diria outra coisa.
       rot("14", "G3 1409", "GRU", -22, "G3 1586", "REC", 12, {
         desc: -11,
         oc: "Farias",
         P: 18,
         R: 14,
+        pousou: -15,
         faltam: { TCX: 1, TLC: 1 },
         conex: [["1766", "POA", 6, "0:42", 22, null], ["1311", "GIG", 3, "1:05", 45, -4], ["1605", "BEL", 9, "1:15", 55, null]]
       }),
@@ -12270,6 +12290,27 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const ps = c.pessoas.filter((p) => !p.v && (p.box === k || p.lugar === k));
     return linha("Aqui agora", ps.length ? ps.map((p) => `${link(`p:${p.id}`, p.nome)} <small>(${esc(p.funcao)})</small>`).join(", ") : "<small>ningu\xE9m com GPS aqui</small>", fonte("posi\xE7\xE3o do celular", true));
   }
+  function pousoDoBox(c, v) {
+    const podeLancar = pode("pouso_lancar") && !c.demo;
+    if (v.pouso == null) {
+      if (!podeLancar) return "";
+      return linha(
+        "Pousou",
+        `<span class="note">ainda n\xE3o lan\xE7ado</span> <span class="grow"></span>
+       <button class="patio-bt" onclick="lancarPouso(${v.id},'')">lan\xE7ar</button>`,
+        fonte("voos.pouso")
+      );
+    }
+    const dif = v.cheg != null ? v.pouso - v.cheg : null;
+    const desvio = dif == null ? "" : dif > 0 ? ` <span class="patio-t verm">${mins(dif)} min atrasado</span>` : dif < 0 ? ` <span class="patio-t ok">${mins(-dif)} min adiantado</span>` : ` <span class="patio-t ok">no hor\xE1rio</span>`;
+    const quem = v.pousoFonte && v.pousoFonte !== "manual" ? ` <small>\xB7 ${esc(v.pousoFonte)}</small>` : v.pousoPor ? ` <small>\xB7 por ${esc(v.pousoPor)}</small>` : "";
+    const corrigir = !podeLancar ? "" : `<button class="patio-bt" onclick="lancarPouso(${v.id},'${esc(hhmm(v.pouso))}')">corrigir</button>`;
+    return linha(
+      "Pousou",
+      `<b>${hhmm(v.pouso)}</b>${desvio}${quem} <span class="grow"></span>${corrigir}`,
+      fonte("voos.pouso")
+    );
+  }
   function conexoesDoBox(c, v) {
     const cx = v.conexoes || [];
     const podeDecidir = pode("conexao_decidir") && !c.demo;
@@ -12298,6 +12339,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     <div class="patio-conexoes">${itens}</div></div>`;
   }
   function detalheBox(c, k) {
+    var _a, _b;
     const n = c.agora, v = c.boxes[k], e = v ? v.estado : "vazio";
     const h = [`<div class="patio-det-topo"><div><h2>BOX ${esc(k)}</h2><span class="sub">${v ? esc(`${v.org ? `${v.org} \u2192 ` : ""}BSB \u2192 ${v.dst}`) : ""}</span></div><span class="patio-chip ${e}">${NOME_ESTADO[e]}</span>${fechar2}</div>`];
     if (!v) {
@@ -12306,11 +12348,12 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       return h.join("");
     }
     if (v.cheg != null) h.push(linha("Chegada", `<b>${esc(v.vc || "\u2014")}</b> de ${esc(v.org)} \xB7 <b>${hhmm(v.cheg)}</b> <small>(${n < v.cheg ? `em ${mins(v.cheg - n)}` : `h\xE1 ${mins(n - v.cheg)}`} min)</small>`, fonte("voos")));
+    h.push(pousoDoBox(c, v));
     const iminente = v.sai != null && v.sai - n > 0 && v.sai - n <= SINO_IMINENTE_MIN ? ` <span class="sino-iminente">DECOLA J\xC1</span>` : "";
     h.push(linha("Sa\xEDda", v.sai != null ? `<b>${esc(v.vs)}</b> para ${esc(v.dst)} \xB7 <b>${hhmm(v.sai)}</b> ${tempoChip(v.sai - n)}${iminente}` : `<b>${esc(v.vs)}</b> <small>sem hora de sa\xEDda</small>`, fonte("voos")));
     h.push(linha("OC no box", v.oc ? esc(v.oc) : `<span class="ruim">ningu\xE9m posicionado</span>`, fonte("voos.oc_posicionado_id")));
     if (e === "solo" || e === "descarga")
-      h.push(linha("Descarga OK", v.descEm != null ? `<span class="patio-t ok">\u2713 ${hhmm(v.descEm)}</span>${v.descPor ? ` por ${esc(v.descPor)}` : ""}` : `<span class="ruim">n\xE3o marcada</span>${v.cheg != null ? ` <small>\xB7 pousou h\xE1 ${mins(n - v.cheg)} min</small>` : ""}`, fonte("voos.descarga_ok_em")));
+      h.push(linha("Descarga OK", v.descEm != null ? `<span class="patio-t ok">\u2713 ${hhmm(v.descEm)}</span>${v.descPor ? ` por ${esc(v.descPor)}` : ""}` : `<span class="ruim">n\xE3o marcada</span>${((_a = v.pouso) != null ? _a : v.cheg) != null ? ` <small>\xB7 pousou h\xE1 ${mins(n - ((_b = v.pouso) != null ? _b : v.cheg))} min</small>` : ""}`, fonte("voos.descarga_ok_em")));
     h.push(conexoesDoBox(c, v));
     if (v.P) h.push(linha("Bags da sa\xEDda", `P <b>${v.P}</b> \xB7 R <b>${v.R}</b> \xB7 ${v.falta ? `<span class="ruim">faltam ${v.falta}</span>` : `<span class="patio-t ok">completo</span>`}`, fonte("ponto_india")));
     if (v.onde.length) h.push(linha("Onde est\xE1 o que falta", esc(v.onde.join(", ")), fonte("bags_local \xB7 viagens")));
@@ -12575,6 +12618,25 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   function patioFontes() {
     UI.patio.fontes = !UI.patio.fontes;
     bus.render();
+  }
+  async function lancarPouso(vooId, atual) {
+    const hora2 = await perguntar(
+      "Hora em que o avi\xE3o realmente chegou, no formato HH:MM.\n\nDeixe em branco para apagar o lan\xE7amento.",
+      atual || "",
+      "Hora de pouso"
+    );
+    if (hora2 === null) return;
+    return gravarPouso(vooId, hora2);
+  }
+  async function gravarPouso(vooId, hora2) {
+    try {
+      await lancarPousoDb(vooId, String(hora2 || "").trim());
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    await bus.recarregar();
+    redesenharPatio(true);
   }
   async function marcarNaoConecta(pontoDeltaId, marcar) {
     try {
@@ -14190,7 +14252,8 @@ Sair mesmo assim?`
     patioTudo,
     patioDemo,
     patioFontes,
-    marcarNaoConecta
+    marcarNaoConecta,
+    lancarPouso
   });
   boot();
   iniciarModoPecas();
