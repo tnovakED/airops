@@ -1243,9 +1243,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 18/09/2026, 11:50:17
+     Gerado em: 18/09/2026, 13:45:04
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 11:50";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 13:45";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2186,7 +2186,7 @@
   });
   function tabelasQueUso() {
     const t = ["voos"];
-    const vejoTudo = pode("viagens_cco");
+    const vejoTudo = pode("viagens_cco") || pode("patio_ver");
     if (vejoTudo || pode("levar") || pode("oc_chegando") || pode("triagem_sinalizar") || pode("oc_pontos"))
       t.push("viagens", "viagens_destinos");
     if (vejoTudo || pode("sol_abrir") || pode("sol_atender") || pode("triagem_sinalizar"))
@@ -2394,6 +2394,7 @@
     malha_ver: "voos",
     // oc_posicionar nao tem aba: libera a coluna OC dentro da malha
     viagens_cco: "viagens",
+    patio_ver: "patio",
     sol_abrir: "sol",
     sol_atender: "fila",
     levar: "levar",
@@ -2405,9 +2406,7 @@
     triagem_sinalizar: "triagem",
     admin_acessos: "acessos"
   };
-  var FERRAMENTA_ABAS_EXTRAS = {
-    viagens_cco: ["patio"]
-  };
+  var FERRAMENTA_ABAS_EXTRAS = {};
   var ABA_TITULO = {
     inicio: "In\xEDcio",
     voos: "Malha",
@@ -12952,7 +12951,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       return [...ABAS_ANTIGAS[S.me.perfil] || []];
     }
     const temLevar = S.ferramentas.some((f) => f.id === "levar");
-    const temPainel = S.ferramentas.some((f) => f.id === "viagens_cco");
+    const temPainel = S.ferramentas.some((f) => f.id === "patio_ver");
     const abas = temLevar ? ["levar"] : temPainel ? ["patio", "inicio"] : ["inicio"];
     for (const f of S.ferramentas) {
       const aba = FERRAMENTA_ABA[f.id];
@@ -13082,7 +13081,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   async function carregarTudo() {
     const dia = hoje();
     const ini2 = dia + "T00:00:00";
-    const vejoTudo = pode("viagens_cco");
+    const vejoTudo = pode("viagens_cco") || pode("patio_ver");
     const pegaViagens = vejoTudo || pode("levar") || pode("oc_chegando") || pode("triagem_sinalizar") || pode("oc_pontos");
     const pegaSols = pode("sol_abrir") || pode("sol_atender") || pode("triagem_sinalizar") || pode("delta_carretas") || vejoTudo;
     const pegaIndia = pode("oc_pontos") || pode("pontos_import") || pode("levar") || vejoTudo;
