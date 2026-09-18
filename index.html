@@ -1106,6 +1106,10 @@
   .patio-lista{flex:1; overflow-y:auto; min-height:0}
   .patio-nota{margin:0; padding:9px 12px; font-size:11px; color:var(--muted); border-top:1px solid var(--line)}
   .patio-aviso{margin:10px 12px; padding:9px 11px; border-radius:8px; background:var(--surface2); border:1px solid var(--line); font-size:13px; line-height:1.45}
+  /* Dentro de uma linha do cartao o aviso ja esta recuado pela linha: a
+     margem de fora duplicaria o recuo e ele sairia desalinhado das
+     outras linhas. */
+  .patio-aviso.compacto{margin:0}
 
   .patio .patio-alerta{display:grid; grid-template-columns:auto 1fr auto; gap:3px 10px; align-items:baseline; width:100%; min-height:56px;
     text-align:left; text-transform:none; letter-spacing:0; border:0; border-bottom:1px solid var(--line); border-radius:0; background:none; padding:10px 12px}
@@ -1211,9 +1215,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 17/09/2026, 23:25:50
+     Gerado em: 18/09/2026, 07:44:12
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="17/09 23:25";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 07:44";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -12189,8 +12193,11 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   }
   function conexoesDoBox(c, v) {
     const cx = v.conexoes || [];
-    if (!cx.length) return "";
     const podeDecidir = pode("conexao_decidir") && !c.demo;
+    if (!cx.length) {
+      return `<div class="patio-linha lista"><span class="rot">Conex\xF5es${fonte("ponto_delta")}</span>
+      <p class="patio-aviso compacto">O Ponto Delta deste voo ainda n\xE3o foi importado \u2014 sem ele n\xE3o h\xE1 conex\xF5es para marcar.</p></div>`;
+    }
     const itens = cx.map((x) => {
       const nc = x.ncEm != null;
       const quem = nc && x.ncPor ? `por ${esc(x.ncPor)}` : "";
