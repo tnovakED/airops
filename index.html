@@ -408,6 +408,21 @@
   .st-solicitada{background:rgba(193,91,31,.18); color:var(--orange)}
   .st-aceita{background:rgba(47,102,144,.15); color:var(--amber)}
   .st-cancelada{background:rgba(194,59,59,.14); color:var(--red)}
+  /* Chip que E botao (aviso de PP, 18/09/2026): parece chip, age como
+     botao. Zera o que o button traz de fabrica (altura de 56px, largura
+     total, maiuscula) pra caber na linha nowrap do Delta, e devolve o
+     alvo de toque por padding, nao por altura -- a linha inteira tem
+     42px e um botao de 56 a esticaria. */
+  button.chip-botao{min-height:0; width:auto; padding:3px 8px; border:0;
+    font-size:11px; letter-spacing:0; text-transform:none; cursor:pointer; flex:none;
+    position:relative}
+  /* O chip tem 16px de altura visivel -- longe dos 40px que mao de luva
+     no sol precisa. Este bloco estica a AREA DE TOQUE pra 40px sem
+     engordar o chip: se engordasse, a linha do Delta (42px, nowrap)
+     cresceria e o numero do voo perderia espaco. Ver a regra de alvo de
+     toque na skill tela-de-patio. */
+  button.chip-botao::after{content:""; position:absolute; left:0; right:0;
+    top:50%; transform:translateY(-50%); height:40px}
 
   /* ---------- cabeca da carreta na folha (16/09/2026) ----------
      O lider monta a carreta no Ponto Delta e ela aparece aqui agrupando
@@ -1224,9 +1239,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 18/09/2026, 11:15:00
+     Gerado em: 18/09/2026, 11:34:39
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 11:15";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 11:34";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -3809,6 +3824,13 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     if (error) throw error;
     return data;
   }
+  async function marcarPpDelta(pontoDeltaId, estado) {
+    const { error } = await sb.rpc(
+      "marcar_pp_delta",
+      { p_ponto_delta_id: pontoDeltaId, p_estado: estado || null }
+    );
+    if (error) throw error;
+  }
 
   // src/data/prontas.js
   init_supabase();
@@ -4306,6 +4328,32 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     if (dist <= RAIO_PORTA_A_PORTA_BOX) return { tipo: "pp", vSaida };
     return { tipo: null, vSaida };
   }
+  var estadoPp = (pd) => (pd == null ? void 0 : pd.pp_levada_em) ? "levada" : (pd == null ? void 0 : pd.pp_pronta_em) ? "pronta" : null;
+  var SELO_PP = {
+    pronta: {
+      texto: "PP PRONTA",
+      classe: "st-aceita",
+      titulo: "Avisado: a bag est\xE1 separada no box, esperando algu\xE9m buscar."
+    },
+    levada: {
+      texto: "PP LEVADA",
+      classe: "st-entregue",
+      titulo: "Avisado: algu\xE9m j\xE1 levou a bag."
+    }
+  };
+  function seloPp(vooId, pd, tipo) {
+    if (tipo !== "pp") return "";
+    const e = estadoPp(pd);
+    const s = e ? SELO_PP[e] : {
+      texto: "PP",
+      classe: "st-solicitada",
+      titulo: "Porta a porta \u2014 toque para avisar o l\xEDder que vai receber."
+    };
+    if (!pode("oc_pontos"))
+      return `<span class="chip ${s.classe}" title="${esc(s.titulo)}">${s.texto}</span>`;
+    return `<button class="chip ${s.classe} chip-botao" title="${esc(s.titulo)}"
+    onclick="event.stopPropagation();abrirAvisoPpDelta(${vooId},${pd.id})">${s.texto}</button>`;
+  }
   var SELO_DELTA = {
     tst: {
       texto: "TST",
@@ -4412,7 +4460,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     ${abre}
       ${vooRotulo(comoSaida(pd.destino, pd.voo_saida_numero, vSaida == null ? void 0 : vSaida.box), "saida")}
       <span class="grow"></span>
-      ${selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : ""}
+      ${seloPp(vooId, pd, tipo) || (selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : "")}
       ${seloStatus ? `<span class="delta-status ${seloStatus.classe}" title="${esc(seloStatus.titulo)}" aria-label="${seloStatus.texto}">${ico(seloStatus.icone, 18)}</span>` : ""}
       <span class="delta-qtd">${pd.bag_qtd}</span>
       ${manual}
@@ -4606,6 +4654,35 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   }
   function elegiveisParaSolicitar(v, itens) {
     return itens.filter((pd) => statusConexaoDelta(pd) === "livre" && !naoConectaDelta(pd) && classificarConexaoDelta(v, pd).tipo !== "tst");
+  }
+  function abrirAvisoPpDelta(vooId, pontoDeltaId) {
+    const pd = D.deltas.find((x) => mesmoId(x.id, pontoDeltaId));
+    if (!pd) return;
+    const e = estadoPp(pd);
+    const quem = (em, por) => em ? `<p class="note">${esc(nomeDe(por) || "algu\xE9m")} \xB7 ${hora(em)}</p>` : "";
+    abrirModal(`
+    <h3>Bagagem PP \xB7 ${vooRotulo(comoSaida(pd.destino, pd.voo_saida_numero, null), "saida")}</h3>
+    <p class="note">Avisa o l\xEDder do voo que vai receber.</p>
+    <div class="equip-grid" style="margin-top:10px">
+      <button class="${e === "pronta" ? "primary" : ""}" onclick="marcarAvisoPp(${vooId},${pontoDeltaId},'pronta')">Bag pronta no box</button>
+      <button class="${e === "levada" ? "ok" : ""}" onclick="marcarAvisoPp(${vooId},${pontoDeltaId},'levada')">Algu\xE9m levou</button>
+    </div>
+    ${quem(pd.pp_pronta_em, pd.pp_pronta_por)}
+    ${quem(pd.pp_levada_em, pd.pp_levada_por)}
+    <div style="margin-top:12px;display:flex;gap:8px">
+      ${e ? `<button class="ghost" onclick="marcarAvisoPp(${vooId},${pontoDeltaId},'')">Desfazer aviso</button>` : ""}
+      <button class="ghost" onclick="abrirPontoDelta(${vooId})">Voltar</button>
+    </div>`);
+  }
+  async function marcarAvisoPp(vooId, pontoDeltaId, estado) {
+    try {
+      await marcarPpDelta(pontoDeltaId, estado || null);
+    } catch (err) {
+      await erro(err);
+      return;
+    }
+    await bus.recarregar();
+    return abrirPontoDelta(vooId);
   }
   async function solicitarCarretaDelta(vooId, chaveBalde) {
     const v = voo(vooId);
@@ -4835,11 +4912,26 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const bl = sit.entregue ? null : ondeEstaoAsBags(pi, sit.vc);
       const txtLocal = bl && ROTULO_LOCAL[bl.status] ? ROTULO_LOCAL[bl.status](bl) : null;
       const transito = distanciaBox(v.box, (_a = sit.vc) == null ? void 0 : _a.box) === 0;
-      const naoConecta = deltasDaLinhaIndia(pi).some(naoConectaDelta);
+      const deltasDaLinha = deltasDaLinhaIndia(pi);
+      const naoConecta = deltasDaLinha.some(naoConectaDelta);
+      const pp = deltasDaLinha.some((pd) => pd.pp_levada_em) ? "levada" : deltasDaLinha.some((pd) => pd.pp_pronta_em) ? "pronta" : null;
+      const AVISO_PP = {
+        pronta: {
+          texto: "PP PRONTA NO BOX",
+          classe: "st-aceita",
+          titulo: "O l\xEDder do voo que chegou avisou que a bag est\xE1 separada, esperando algu\xE9m buscar."
+        },
+        levada: {
+          texto: "PP J\xC1 LEVARAM",
+          classe: "st-entregue",
+          titulo: "O l\xEDder do voo que chegou avisou que algu\xE9m j\xE1 levou a bag."
+        }
+      };
       return `<div class="pt-linha">
       ${lbl}
       ${txtLocal ? `<span class="chip ${bl.status === "na_carreta" ? "st-a_caminho" : "st-aceita"}">${esc(txtLocal)}</span>` : ""}
       ${naoConecta ? `<span class="chip st-cancelada" title="A companhia avisou que essa conex\xE3o n\xE3o vai conectar \u2014 essa bagagem n\xE3o vem.">N\xC3O CONECTA</span>` : ""}
+      ${pp && !naoConecta ? `<span class="chip ${AVISO_PP[pp].classe}" title="${esc(AVISO_PP[pp].titulo)}">${AVISO_PP[pp].texto}</span>` : ""}
       ${transito ? `<span class="chip st-entregue" title="Bagagem tr\xE2nsito \u2014 mesmo box, n\xE3o precisa mover.">TST</span>` : ""}
       <span class="note">RCT ${esc(pi.rct || "\u2014")}</span>
       ${marca}${bagsACaminho(pi) ? ICONE_COLETADO : ""}
@@ -14241,6 +14333,8 @@ Sair mesmo assim?`
     confirmarBagQtdManual,
     abrirEquipamentosDelta,
     pedirEquipamentoDelta,
+    abrirAvisoPpDelta,
+    marcarAvisoPp,
     alternarBaldeDelta,
     // painel de acessos
     alternarAcesso,
