@@ -418,18 +418,27 @@
      nao leva espacamento (ver skill ajuste-visual). O respiro de 12px em
      cima e o que separa uma carreta da lista da carreta anterior — sem
      ele, duas carretas viram um bloco so de linhas. */
-  /* Cor por carreta, igual a tela do lider (pedido do Tiago, 17/09/2026):
-     mesma faixa esquerda + fundo esmaecido de .balde-cor (telaPontos.js),
-     so que aqui e a linha inteira que carrega o --matiz (nao um wrapper
-     a parte). Nao briga com .marcada: sao dois canais diferentes --
-     borda/fundo dizem QUAL carreta, o check ambar diz SELECIONADA. */
-  .carreta-folha{cursor:pointer; margin-top:12px;
-    border-left:3px solid hsl(var(--matiz) 55% 45%);
-    background:hsl(var(--matiz) 55% 45% / .1); padding-left:6px}
-  .destino-lista + .carreta-folha{margin-top:14px}
-  .carreta-folha-check{flex:0 0 auto; color:var(--muted)}
+  /* Cor por carreta, igual a tela do lider (pedido do Tiago, 17/09/2026).
+     Desde 18/09/2026 o --matiz mora no .balde-cor que embrulha cabecalho
+     E voos (mesma peca do Ponto Delta), nao mais so na linha do
+     cabecalho: ele pediu "deixe tudo com a cor do cabeçalho". Por isso
+     .carreta-folha nao carrega mais borda nem fundo proprios -- se
+     carregasse, a faixa sairia dobrada. Nao briga com .marcada: sao dois
+     canais diferentes -- a cor diz QUAL carreta, o check ambar diz
+     SELECIONADA. */
+  .carreta-folha{margin-top:0}
+  .balde-cor{margin-top:12px}
+  .destino-lista + .balde-cor{margin-top:14px}
+  /* Alvo de toque proprio: a caixa marca a carreta inteira e o nome abre
+     o accordion. Sao dois toques diferentes na mesma linha, entao a
+     caixa precisa dos 44px dela pra nao roubar o toque do nome (luva,
+     sol, pressa). */
+  .carreta-folha-check{flex:0 0 auto; color:var(--muted); cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:44px; min-height:44px; margin-left:-10px}
   .carreta-folha.marcada .carreta-folha-check{color:var(--amber)}
-  .carreta-folha-nome{padding-left:8px; text-transform:uppercase; font-size:13px;
+  .carreta-folha-alterna{min-width:0; display:flex; align-items:center; gap:6px; cursor:pointer}
+  .carreta-folha-nome{padding-left:0; text-transform:uppercase; font-size:13px;
     font-weight:700; color:var(--muted)}
   .carreta-folha.marcada .carreta-folha-nome{color:var(--text)}
   /* "· 1 fora da malha" (16/09/2026): o lider pos mais voos nesta carreta
@@ -1215,9 +1224,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 18/09/2026, 09:30:23
+     Gerado em: 18/09/2026, 09:39:42
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 09:30";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 09:39";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4321,11 +4330,12 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const baldesRct = fixos.map((b) => ({ ...b, itens: [] }));
     const baldeNc = { chave: BALDE_NAO_CONECTA.id, nome: BALDE_NAO_CONECTA.nome, real: null, itens: [] };
     const baldeTst = { chave: "tst", nome: "Tr\xE2nsito", real: null, itens: [] };
-    const baldes = [baldeNc, baldeTst, ...baldesRct];
+    const baldes = [baldeTst, ...baldesRct];
     for (const c of carretasDoVoo) {
       if (idsFixos.has(c.id)) continue;
       baldes.push({ chave: `c${c.id}`, nome: c.nome, real: c, itens: [] });
     }
+    baldes.push(baldeNc);
     for (const pd of lista) {
       if (naoConectaDelta(pd)) {
         baldeNc.itens.push(pd);
@@ -9672,7 +9682,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       if (porChave.has(chave)) porChave.get(chave).fora.push(s.numero);
     }
     const ordemAuto = (c) => {
-      if (c.chave === BALDE_NAO_CONECTA.id) return -1;
+      if (c.chave === BALDE_NAO_CONECTA.id) return 99;
       const i = BALDES_AUTO_DELTA.findIndex((b) => b.id === c.chave || b.nome === c.nome);
       return i < 0 ? BALDES_AUTO_DELTA.length : i;
     };
@@ -9709,16 +9719,22 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const parcial = marcados && !todos2 ? ` (${marcados} de ${c.vs.length})` : "";
       const fora = c.fora.length ? `<span class="carreta-folha-fora">${esc(c.fora.join(", "))} fora da malha</span>` : "";
       const matiz = corBaldeDelta(c.virtual ? c.chave : `c${c.chave}`);
-      return `<div class="list-line carreta-folha${todos2 ? " marcada" : ""}" style="--matiz:${matiz}" onclick="${pre}TodosDaCarreta('${esc(c.chave)}')">
-      <span class="carreta-folha-check">${ico(todos2 ? "quadradoMarcado" : "quadrado", 22)}</span>
-      <span class="grow carreta-folha-nome">${esc(c.nome)} \xB7 ${c.vs.length} voo${c.vs.length === 1 ? "" : "s"}${parcial}${fora}</span>
-    </div>`;
+      const aberto = !carretaFechada(st, c.chave);
+      return `<div class="balde-cor${aberto ? " aberto" : ""}" style="--matiz:${matiz}">
+      <div class="list-line carreta-folha${todos2 ? " marcada" : ""}">
+        <span class="carreta-folha-check" onclick="event.stopPropagation();${pre}TodosDaCarreta('${esc(c.chave)}')">${ico(todos2 ? "quadradoMarcado" : "quadrado", 22)}</span>
+        <span class="grow carreta-folha-alterna" onclick="${pre}AlternarCarreta('${esc(c.chave)}')">
+          <span class="acordeon-seta">${ico("seta", 14)}</span>
+          <span class="carreta-folha-nome">${esc(c.nome)} \xB7 ${c.vs.length} voo${c.vs.length === 1 ? "" : "s"}${parcial}${fora}</span>
+        </span>
+      </div>
+      <div class="balde-corpo">`;
     };
     const corpoConexoes = () => {
       const cs = carretasDaLista(daConexao, semDelta ? [] : conex.semMalha, vooOrigem);
       if (cs.length === 1 && cs[0].virtual)
         return linhaTodos(daConexao, `as ${daConexao.length} conex\xF5es do ${rotOrigem}`) + grade(daConexao);
-      return cs.map((c) => linhaCarreta(c) + grade(c.vs)).join("");
+      return cs.map((c) => `${linhaCarreta(c)}${grade(c.vs)}</div></div>`).join("");
     };
     const corpo = semDelta ? `<div class="card note" style="border-color:var(--amber)">
          O Ponto Delta do ${rotOrigem} n\xE3o foi importado \u2014 mostrando todos os voos do turno.
@@ -9761,6 +9777,25 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   }
   function puTodosDaVia() {
     alternarTodosDaVia(UI.pu);
+  }
+  function carretaFechada(st, chave) {
+    var _a;
+    return ((_a = st.carretasFechadas) == null ? void 0 : _a.vooId) === st.vooOrigemId && st.carretasFechadas.chaves.includes(chave);
+  }
+  function alternarCarretaFolha(st, chave) {
+    var _a;
+    if (((_a = st.carretasFechadas) == null ? void 0 : _a.vooId) !== st.vooOrigemId)
+      st.carretasFechadas = { vooId: st.vooOrigemId, chaves: [] };
+    const cs = st.carretasFechadas.chaves;
+    const i = cs.indexOf(chave);
+    i < 0 ? cs.push(chave) : cs.splice(i, 1);
+    bus.render();
+  }
+  function opAlternarCarreta(chave) {
+    alternarCarretaFolha(UI.op, chave);
+  }
+  function puAlternarCarreta(chave) {
+    alternarCarretaFolha(UI.pu, chave);
   }
   function alternarTodosDaCarreta(st, chave) {
     const mapaAuto = mapaAutoDoVoo(st.vooOrigemId);
@@ -14050,12 +14085,14 @@ Sair mesmo assim?`
     opVerOutros,
     opTodosDaVia,
     opTodosDaCarreta,
+    opAlternarCarreta,
     opEsteira,
     puAbrirVia,
     puFecharVia,
     puVerOutros,
     puTodosDaVia,
     puTodosDaCarreta,
+    puAlternarCarreta,
     puEsteira,
     puTogEsteira,
     abrirFolhaOp,
