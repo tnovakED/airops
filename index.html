@@ -1065,7 +1065,7 @@
   .india-trazendo{color:var(--green); margin-left:2px}
   .india-coletado{color:var(--blue)}
   button.india-cancelar{color:var(--red)}
-  button.india-desfazer, button.india-substituir{width:auto; padding:0 10px; flex:none}
+  button.india-substituir{width:auto; padding:0 10px; flex:none}
   button.india-substituir{margin-bottom:8px}
   .india-rodape, .india-rodape-botao{margin-top:12px}
   /* P R D: uma coluna por letra, cor por significado (nao por espaco) */
@@ -1346,9 +1346,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 21/09/2026, 14:27:55
+     Gerado em: 21/09/2026, 14:48:09
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 14:27";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 14:48";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4237,14 +4237,13 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       { p_id: id, p_qtd: qtd != null ? qtd : null, p_completar: !!completar }
     );
   }
-  async function marcarIndiaEntregueDb(id, desfazer, qtdRecebida) {
-    if (desfazer) {
-      return sb.from("ponto_india").update({ status: "aguardando", entregue_em: null, entregue_por: null }).eq("id", id);
-    }
-    const digitado = qtdRecebida != null && qtdRecebida !== "" ? parseInt(qtdRecebida, 10) : null;
-    const { error } = await creditarBagIndiaDb(id, digitado, digitado == null);
+  async function marcarIndiaEntregueDb(id, qtd, previsto) {
+    const soma = Number.isFinite(qtd) && qtd > 0 ? qtd : null;
+    const { data: novoR, error } = await creditarBagIndiaDb(id, soma, false);
     if (error) return { error };
-    return sb.from("ponto_india").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), entregue_por: S.me.id }).eq("id", id);
+    if (previsto == null || (novoR || 0) < previsto) return { entregue: false };
+    const r = await sb.from("ponto_india").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), entregue_por: S.me.id }).eq("id", id);
+    return r.error ? { error: r.error } : { entregue: true };
   }
 
   // src/ui/screens/telaPontos.js
@@ -4315,8 +4314,10 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       const vg = D.viagens.find((x) => mesmoId(x.id, d.viagem_id));
       return mesmoId(d.origem_voo_id || vg && vg.voo_origem_id, vc.id);
     });
-    const manual = pi.status === "entregue";
-    return { entregue: manual || auto, manual, vc };
+    const { p, r } = prd(pi);
+    const parcial = r > 0 && r < p;
+    const manual = pi.status === "entregue" && !parcial;
+    return { entregue: (manual || auto) && !parcial, manual, parcial, vc };
   }
   function pedidoAtivoDaConexao(pi) {
     return D.prontas.find((p) => mesmoId(p.ponto_india_id, pi.id) && (p.status === "pronta" || p.status === "ciente" || p.status === "coletada"));
@@ -4454,9 +4455,6 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     UI.indiaArquivos = [];
     tirarFoco();
     await bus.recarregar();
-  }
-  async function marcarIndiaEntregue(id, desfazer) {
-    await marcarIndiaEntregueDb(id, desfazer);
   }
   function semConexao(v, tipo) {
     const imp = pontoImportado(v, tipo);
@@ -5362,9 +5360,11 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const sit = situacaoConexao(pi);
       const indo = aCaminhoDaConexao(pi);
       const pedido = pedidoAtivoDaConexao(pi);
-      const marca = sit.entregue ? `<span class="india-entregue" title="Conex\xE3o entregue">${ico("pacote", 19)}</span>` : indo.map((id) => `<span class="india-trazendo" title="${esc(nomeDe(id))} est\xE1 trazendo">${ico("carreta", 19)}</span>`).join("");
+      const trazendo = indo.map((id) => `<span class="india-trazendo" title="${esc(nomeDe(id))} est\xE1 trazendo">${ico("carreta", 19)}</span>`).join("");
+      const marca = (sit.entregue ? `<span class="india-entregue" title="Conex\xE3o entregue">${ico("pacote", 19)}</span>` : "") + trazendo;
       const lbl = vooRotulo(comoChegada(pi.origem, pi.voo_chegada_numero), "chegada", { box: false });
-      const bl = sit.entregue ? null : ondeEstaoAsBags(pi, sit.vc);
+      const blBruto = ondeEstaoAsBags(pi, sit.vc);
+      const bl = blBruto && (!sit.entregue || blBruto.status !== "no_local") ? blBruto : null;
       const txtLocal = bl && ROTULO_LOCAL[bl.status] ? ROTULO_LOCAL[bl.status](bl) : null;
       const transito = distanciaBox(v.box, (_a = sit.vc) == null ? void 0 : _a.box) === 0;
       const deltasDaLinha = deltasDaLinhaIndia(pi);
@@ -5382,7 +5382,9 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
           titulo: "O l\xEDder do voo que chegou avisou que algu\xE9m j\xE1 levou a bag."
         }
       };
-      const recebi = `<span class="delta-manual-grupo" onclick="event.stopPropagation()"><input id="indiaRecebi${pi.id}" class="delta-manual" type="number" inputmode="numeric" min="0" placeholder="${pi.bag_qtd || 0}" aria-label="Quantas bags voc\xEA recebeu" title="Quantas voc\xEA RECEBEU agora. Em branco = recebi todas."><button class="small ok delta-ok" onclick="confirmarRecebi(${pi.id})" aria-label="Recebi" title="Recebi">${ico("aceite", 34)}</button></span>`;
+      const { p: prev, r: real } = prd(pi);
+      const faltam2 = Math.max(0, prev - real);
+      const recebi = `<span class="delta-manual-grupo" onclick="event.stopPropagation()"><input id="indiaRecebi${pi.id}" class="delta-manual" type="number" inputmode="numeric" min="0" placeholder="${faltam2}" aria-label="Quantas bags voc\xEA recebeu" title="Quantas voc\xEA RECEBEU agora. Em branco = recebi tudo o que faltava (${faltam2})."><button class="small ok delta-ok" onclick="confirmarRecebi(${pi.id})" aria-label="Recebi" title="Recebi">${ico("aceite", 34)}</button></span>`;
       return `<div class="pt-linha">
       <div class="india-id">
         ${lbl}
@@ -5395,7 +5397,6 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       <div class="india-ctl">
         ${prdTag(pi)}
         ${recebi}
-        ${sit.manual ? `<button class="small ghost india-desfazer" onclick="marcarIndiaEntregue(${pi.id},true)">Desfazer</button>` : ""}
         ${pedido ? `<button class="small ghost delta-ok india-cancelar" onclick="cancelarBagIndia(${pi.id})" aria-label="Cancelar pedido" title="Cancelar pedido">${ico("cancelar", 34)}</button>` : `<button class="small ghost delta-ok" onclick="solicitarBagIndia(${pi.id})" aria-label="Solicitar" title="Solicitar">${ico("carreta", 34)}</button>`}
       </div>
     </div>`;
@@ -5453,12 +5454,21 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     await aviso(log);
     tipo === "delta" ? abrirPontoDelta(vooId) : abrirPontoIndiaOC(vooId);
   }
+  function qtdDoRecebi(txt2, p, r) {
+    const s = String(txt2 || "").trim();
+    if (s === "") return Math.max(0, p - r);
+    return Math.max(0, parseInt(s, 10) || 0);
+  }
   async function confirmarRecebi(id) {
     const pi = D.indias.find((x) => x.id === id);
     if (!pi) return;
     const campo = $("indiaRecebi" + id);
-    const v = campo ? campo.value.trim() : "";
-    await marcarIndiaEntregueDb(id, false, v);
+    const { p, r } = prd(pi);
+    const res = await marcarIndiaEntregueDb(id, qtdDoRecebi(campo ? campo.value : "", p, r), p);
+    if (res == null ? void 0 : res.error) {
+      await erro(res.error);
+      return;
+    }
     await bus.recarregar();
     abrirPontoIndiaOC(pi.voo_id);
   }
@@ -14985,7 +14995,6 @@ Sair mesmo assim?`
     sinalizarCarreta,
     // pontos India / Delta
     importarPontos,
-    marcarIndiaEntregue,
     abrirPontoDelta,
     abrirPontoIndiaOC,
     confirmarRecebi,
