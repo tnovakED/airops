@@ -1294,9 +1294,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 21/09/2026, 11:03:41
+     Gerado em: 21/09/2026, 11:10:27
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 11:03";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 11:10";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -3364,6 +3364,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
 
   // src/ui/components/voo.js
   init_dom();
+  init_conexoes();
   var VAZIO = "\u2014";
   function partesVoo(v, tipo) {
     v = v || {};
@@ -3382,6 +3383,10 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const canto = tipo === "chegada" ? "esq" : "dir";
     const selo = aviao && comBox ? `<span class="voo-corner ${canto} ${nomeIcone}">${ico(nomeIcone, 14)}</span>` : "";
     return `<span class="voo ${classe}${tam}">` + (iconeSolto && !o.aviaoApos ? iconeSolto : "") + `<span class="voo-apt">${esc(p.apt)}</span><span class="voo-sep">-</span><span class="voo-num">${esc(p.num)}</span>` + (comBox ? `<span class="voo-sep">-</span><span class="voo-box">${selo}${esc(placa)}</span>` : "") + (iconeSolto && o.aviaoApos ? iconeSolto : "") + (o.hora && p.hora ? `<span class="voo-hora">${esc(p.hora)}</span>` : "") + `</span>`;
+  }
+  function vooRotuloPronta(p, v, opcoesSaida) {
+    if (!ehProntaDaBase(p)) return vooRotulo(v, "saida", opcoesSaida);
+    return vooRotulo(v, "chegada", { aviao: true, aviaoApos: true, placa: `E-${(v == null ? void 0 : v.esteira) || "?"}` }) + ` <span class="chip st-base" title="Bagagem que fica em Bras\xEDlia \u2014 vai para a esteira, n\xE3o embarca">BASE</span>`;
   }
   function vooPar(vChegada, vSaida, opcoes) {
     const o = opcoes || {};
@@ -3483,7 +3488,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       const v = voo(p.voo_destino_id) || {};
       return `<div class="card"><div class="list-line" style="border:none;padding:0">
         <span class="dcode">${p.setor === "BOX" ? "BOX " + esc(p.box || "?") : p.setor}</span>
-        <span class="grow" style="padding-left:8px">${vooRotulo(v, "saida")} <span class="note">${hora(p.criada_em)}</span></span>
+        <span class="grow" style="padding-left:8px">${vooRotuloPronta(p, v)} <span class="note">${hora(p.criada_em)}</span></span>
         <span class="chip st-${p.status === "pronta" ? "solicitada" : "aceita"}">${p.status === "pronta" ? "Aguardando" : esc(nomeDe(p.ciente_por)) + " vai buscar"}</span>
       </div></div>`;
     }).join("");
@@ -10946,6 +10951,10 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     return box ? desempatarBoxes(voosChegando()).find((v) => v.box === box) : null;
   }
   function vooChegadaDaPronta(p, box) {
+    if (ehProntaDaBase(p)) {
+      const vc = voo(p.voo_destino_id);
+      if (vc) return vc;
+    }
     const pdId = p == null ? void 0 : p.ponto_delta_id;
     if (pdId != null) {
       const pd = D.deltas.find((x) => mesmoId(x.id, pdId));
@@ -10960,8 +10969,10 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
   function prontasEscolhaBox(e) {
     return e.sel.map((id) => D.prontas.find((p) => p.id === id)).filter(Boolean);
   }
+  var ehBaseId = (id) => ehProntaDaBase(D.prontas.find((p) => p.id === id));
+  var todasSaoBase = (ids) => !!(ids == null ? void 0 : ids.length) && ids.every(ehBaseId);
   function todasComVia(e) {
-    return e.sel.every((id) => !!e.vias[id]);
+    return e.sel.every((id) => ehBaseId(id) || !!e.vias[id]);
   }
   function sobraDaCarreta(e) {
     if (e.tipo !== "BOX") return [];
@@ -10983,7 +10994,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       ajuste: [],
       esteira: false
     };
-    if (prontos && tipo !== "BOX") {
+    if (prontos && (tipo !== "BOX" || todasSaoBase(ids))) {
       confirmarEscolhaVoosBox();
       return;
     }
@@ -11006,7 +11017,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       const marcado = e.sel.includes(p.id);
       return `<div class="pt-linha" onclick="alternarEscolhaVoo(${p.id})">
       ${ico(marcado ? "quadradoMarcado" : "quadrado", 20)}
-      <span class="grow">${vooRotulo(v, "saida", { aviao: true, aviaoApos: true })}${timerAlerta(v)}</span>
+      <span class="grow">${rotuloDaPronta(p, v)}${ehProntaDaBase(p) ? "" : timerAlerta(v)}</span>
     </div>`;
     };
     const linhaCarreta = (c) => {
@@ -11033,8 +11044,10 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     return `<div class="voo-btn ${ativa ? "sel" : ""}" style="padding:4px 10px" onclick="${onclick}"><span class="dcode">${id}</span></div>`;
   }
   function telaViasCarretas(e) {
+    var _a;
     const psSelecionadas = prontasEscolhaBox(e);
-    const grupos2 = carretasDoLugar(psSelecionadas);
+    const daBase = psSelecionadas.filter(ehProntaDaBase);
+    const grupos2 = carretasDoLugar(psSelecionadas.filter((p) => !ehProntaDaBase(p)));
     const vo = vooChegadaDaPronta(prontaComOrigemConhecida(psSelecionadas), e.box) || {};
     const totalPorCarreta = new Map(
       carretasDoLugar(prontasDoLugar(e.tipo, e.box)).map((c) => [c.chave, c.ps.length])
@@ -11073,7 +11086,9 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       <div class="linha-c"><span class="dcode">ESTEIRA</span>${e.esteira ? ico("check", 20) : ""}</div>
       <div class="dhora">locais \xB7 esteira ${esc(vo.esteira || "?")}</div>
     </div>`;
+    const avisoBase = daBase.length ? `<p class="note" style="margin:0 0 10px">${daBase.length === 1 ? "1 chamado" : `${daBase.length} chamados`} de <b>bags da base</b> \u2014 j\xE1 v\xE3o direto para a esteira ${esc(((_a = voo(daBase[0].voo_destino_id)) == null ? void 0 : _a.esteira) || "?")}. N\xE3o precisa escolher.</p>` : "";
     return `<h3 style="border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px">Para onde vai?</h3>
+    ${avisoBase}
     ${grupos2.map(cartaoCarreta).join("")}
     ${cartaoEsteira}
     <div class="modal-acoes" style="margin-top:12px">
@@ -11118,7 +11133,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
   function escolhaContinuar() {
     const e = UI.escolhaBox;
     if (!(e == null ? void 0 : e.sel.length)) return;
-    if (e.tipo !== "BOX") {
+    if (e.tipo !== "BOX" || todasSaoBase(e.sel)) {
       confirmarEscolhaVoosBox();
       return;
     }
@@ -11132,7 +11147,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     if (!(e == null ? void 0 : e.vias)) return;
     const grupo = carretasDoLugar(prontasEscolhaBox(e)).find((c) => c.chave === chave);
     if (!grupo) return;
-    for (const p of grupo.ps) e.vias[p.id] = via;
+    for (const p of grupo.ps) if (!ehProntaDaBase(p)) e.vias[p.id] = via;
     renderEscolhaVoosBox();
   }
   function escolhaViaVoo(id, via) {
@@ -11211,9 +11226,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     }).length;
   }
   function rotuloDaPronta(p, v) {
-    if (!ehProntaDaBase(p))
-      return `${vooRotulo(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}`;
-    return `${vooRotulo(v, "chegada", { aviao: true, aviaoApos: true, placa: `E-${v.esteira || "?"}` })} <span class="chip st-base" title="Bagagem que fica em Bras\xEDlia \u2014 vai para a esteira, n\xE3o embarca">BASE</span>`;
+    return `${vooRotuloPronta(p, v, { aviao: true, aviaoApos: true })}${ehProntaDaBase(p) ? "" : selosDoVoo(v)}`;
   }
   function timerAlerta(v) {
     const alvo2 = minutosDe(v.saida);
@@ -11462,6 +11475,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
   }
   var viaDaPronta = (p) => p.setor === "TCX" || p.setor === "TLC" ? "VOO" : "PP";
   function origemDaPronta(p) {
+    if (ehProntaDaBase(p)) return { pontoIndiaId: null, vooOrigemId: p.voo_destino_id };
     const pontoIndiaId = p.ponto_india_id != null ? Number(p.ponto_india_id) : null;
     if (!pontoIndiaId) return { pontoIndiaId: null, vooOrigemId: null };
     const pi = D.indias.find((x) => Number(x.id) === pontoIndiaId);
@@ -11487,7 +11501,8 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       }
       vg = r.data;
     }
-    const linhas = ps.map((p) => {
+    const daBase = ps.filter(ehProntaDaBase);
+    const linhas = ps.filter((p) => !ehProntaDaBase(p)).map((p) => {
       var _a;
       const o = origemDaPronta(p);
       return {
@@ -11506,6 +11521,16 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
         ponto_india_id: o.pontoIndiaId
       };
     });
+    for (const p of daBase) {
+      linhas.push({
+        viagem_id: vg.id,
+        setor_destino: "ESTEIRA",
+        entrega_via: "ESTEIRA",
+        origem_box: p.box || null,
+        origem_voo_id: p.voo_destino_id,
+        ponto_india_id: null
+      });
+    }
     if (esteira) {
       const voChegada = vooChegadaDaPronta(prontaComOrigemConhecida(ps), p0.box);
       linhas.push({
