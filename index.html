@@ -1006,12 +1006,33 @@
   .balde-cor.aberto .acordeon-seta{transform:rotate(90deg)}
   .balde-cor:not(.aberto) .balde-corpo{display:none}
   @media (prefers-reduced-motion: reduce){ .balde-cor .acordeon-seta{transition:none} }
-  /* "Bags p/ base local": o unico balde que nunca tem lista dentro (a
+  /* "BAGs p/ BASE": o unico balde que nunca tem lista dentro (a
      bag da base nao vem no arquivo). Borda tracejada pra dizer isso de
      relance -- nao e uma carreta que o sistema conhece, e um botao de
      chamar com nome. Sem acordeao: nao ha o que abrir. */
   .balde-base{border-left-style:dashed}
   .balde-base-nota{margin:0 0 6px; font-size:12px}
+  /* Um alerta da base por linha, dentro do balde: hora + estado + botoes */
+  .alerta-base{align-items:center; gap:4px; padding:4px 0}
+  .alerta-base .delta-n{margin-left:2px}
+
+  /* CARGA do Ponto Indice (lider). Tres estados no MESMO botao: livre
+     (chama), aguardando (cancela) e a caminho (desabilitado, com o trator
+     andando). O trator so anda se a pessoa aceita movimento -- consultado
+     ao vivo pelo navegador, entao vale mesmo se ela mudar com o app aberto. */
+  button.carga-botao{width:auto; display:inline-flex; align-items:center; gap:6px; font-weight:700}
+  button.carga-botao .ico{margin-right:0}
+  button.carga-botao.a-caminho{color:var(--green); border-color:var(--green); opacity:1}
+  button.carga-botao.chamada{color:var(--blue)}
+  @media (prefers-reduced-motion: no-preference){
+    .carga-botao.a-caminho .ico{animation:cargaAnda 1.1s ease-in-out infinite alternate}
+  }
+  @keyframes cargaAnda{from{transform:translateX(-3px)} to{transform:translateX(5px)}}
+
+  /* Secao CARGA dentro do card BOX do operador */
+  .carga-secao{margin-top:8px; padding-top:6px; border-top:1px dashed var(--line)}
+  .carga-titulo{margin:0 0 4px; font-weight:700; letter-spacing:.06em; color:var(--amber)}
+  .carga-hora{display:inline-flex; align-items:center; gap:3px; margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums}
   /* conexao numa linha so: nada desce pra linha de baixo */
   .balde-delta .pt-linha{flex-wrap:nowrap; gap:4px; padding:6px 0}
   .balde-delta .pt-linha .voo{font-size:20px}
@@ -1027,6 +1048,37 @@
     display:inline-flex; align-items:center; justify-content:center}
   .delta-ok .ico{margin-right:0}
   .delta-manual-grupo{display:inline-flex; align-items:center; gap:4px; flex:none}
+
+  /* ---------- Ponto Indice do lider, no formato do Delta (21/09/2026) ----------
+     Pedido do Tiago: mesma formatacao do Delta, botoes do mesmo tamanho, sem
+     RCT, cabecalho fixo (.delta-cabeca, reaproveitado) e so a lista rolando.
+     A classe .delta-popup no envelope e o que iguala os botoes a 35px.
+     Cada linha tem duas metades: .india-id (voo + avisos) e .india-ctl (P R D,
+     campo, botoes). Se nao couberem lado a lado a 360px, a de controles desce
+     INTEIRA -- o que nao pode acontecer e um botao quebrar sozinho. */
+  .india-lista .pt-linha{flex-wrap:wrap; gap:4px 6px; padding:6px 0}
+  .india-id{flex:1 1 auto; min-width:0; display:flex; align-items:center; flex-wrap:wrap; gap:4px}
+  .india-ctl{flex:none; margin-left:auto; display:flex; align-items:center; gap:4px}
+  .india-lista .voo{font-size:20px}
+  .india-lista .chip{font-size:11px; padding:1px 6px; letter-spacing:0; flex:none}
+  .india-entregue{color:#1f1f1f}
+  .india-trazendo{color:var(--green); margin-left:2px}
+  .india-coletado{color:var(--blue)}
+  button.india-cancelar{color:var(--red)}
+  button.india-desfazer, button.india-substituir{width:auto; padding:0 10px; flex:none}
+  button.india-substituir{margin-bottom:8px}
+  .india-rodape, .india-rodape-botao{margin-top:12px}
+  /* P R D: uma coluna por letra, cor por significado (nao por espaco) */
+  .prd{display:flex; gap:8px; align-items:flex-end}
+  .prd-col{text-align:center; line-height:1.15}
+  .prd-letra{font-size:11px; font-weight:700}
+  .prd-p{color:var(--green)}
+  .prd-r{color:var(--blue)}
+  .prd-d.falta{color:var(--red)}
+  .prd-d.sobra{color:var(--amber)}
+  .prd-d.zero{color:var(--muted)}
+  .prd-ajuste{font-size:10px; color:var(--amber)}
+  .prd-legenda{margin:4px 0 10px}
   /* Diferenca entre o que o lider CONTOU e o que o arquivo previa
      (sql/atualizacao_46.sql). Aparece ao vivo enquanto ele digita: e o
      que mostra na hora que "3" num voo de 5 previstas quer dizer -2, em
@@ -1294,9 +1346,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 21/09/2026, 11:10:27
+     Gerado em: 21/09/2026, 14:27:55
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 11:10";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 14:27";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1897,7 +1949,7 @@
     if (min <= 60) return "umahora";
     return "maisdeuma";
   }
-  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto, BALDE_NAO_CONECTA, BALDE_BASE_LOCAL, ehProntaDaBase;
+  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto, BALDE_NAO_CONECTA, BALDE_BASE_LOCAL, NOME_BASE_ANTIGO, ehNomeDaBase, NOME_CARGA, ehProntaDeCarga, ehProntaDaBase;
   var init_conexoes = __esm({
     "src/utils/conexoes.js"() {
       init_store();
@@ -1914,8 +1966,12 @@
         return ((_a = BALDES_AUTO_DELTA.find((b) => b.id === id)) == null ? void 0 : _a.nome) || null;
       };
       BALDE_NAO_CONECTA = { id: "naoconecta", nome: "N\xE3o conecta" };
-      BALDE_BASE_LOCAL = { id: "baselocal", nome: "Bags p/ base local" };
-      ehProntaDaBase = (p) => (p == null ? void 0 : p.carreta_nome) === BALDE_BASE_LOCAL.nome && p.ponto_delta_id == null;
+      BALDE_BASE_LOCAL = { id: "baselocal", nome: "BAGs p/ BASE" };
+      NOME_BASE_ANTIGO = "Bags p/ base local";
+      ehNomeDaBase = (nome) => nome === BALDE_BASE_LOCAL.nome || nome === NOME_BASE_ANTIGO;
+      NOME_CARGA = "CARGA";
+      ehProntaDeCarga = (p) => (p == null ? void 0 : p.setor) === "BOX" && p.carreta_nome === NOME_CARGA && p.ponto_delta_id == null;
+      ehProntaDaBase = (p) => ehNomeDaBase(p == null ? void 0 : p.carreta_nome) && p.ponto_delta_id == null;
     }
   });
 
@@ -3341,6 +3397,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     BPP: "Porta a Porta",
     BOX: "Box",
     ESTEIRA: "Esteira",
+    CARGA: "Carga",
     QTU: "QTU",
     QTA: "QTA",
     OC_BAG: "Bag faltante (OC)",
@@ -3916,6 +3973,11 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     if (error) throw error;
     return data;
   }
+  async function rechamarAlertaDeltaDb(prontaId) {
+    const { data, error } = await sb.rpc("rechamar_alerta_delta", { p_id: prontaId });
+    if (error) throw error;
+    return data;
+  }
   async function marcarPpDelta(pontoDeltaId, estado) {
     const { error } = await sb.rpc(
       "marcar_pp_delta",
@@ -4269,31 +4331,31 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const r = pi.qtd_recebida || 0;
     return { p, r, d: r - p, ajuste };
   }
-  function coluna(letra, cor, valor, titulo, extra) {
-    return `<div style="text-align:center" title="${titulo}">
-    <div style="font-size:11px;font-weight:700;color:${cor}">${letra}</div>
-    <div class="mono" style="color:${cor}">${valor}</div>
+  function coluna(classe, letra, valor, titulo, extra) {
+    return `<div class="prd-col ${classe}" title="${titulo}">
+    <div class="prd-letra">${letra}</div>
+    <div class="mono">${valor}</div>
     ${extra || ""}
   </div>`;
   }
   function prdTag(pi) {
     const { p, r, d, ajuste } = prd(pi);
-    const dCor = d < 0 ? "var(--red)" : d > 0 ? "var(--amber)" : "var(--muted)";
+    const dClasse = d < 0 ? "falta" : d > 0 ? "sobra" : "zero";
     const dTxt = d > 0 ? "+" + d : String(d);
     const pTitulo = ajuste ? `Previsto (importado) ${pi.bag_qtd || 0} ${ajuste > 0 ? "+" : ""}${ajuste} do Delta (l\xEDder)` : "Previsto (importado)";
-    const pExtra = ajuste ? `<div class="note" style="font-size:10px;color:var(--amber)">${ajuste > 0 ? "+" : ""}${ajuste} l\xEDder</div>` : "";
-    return `<div style="display:flex;gap:10px;align-items:flex-end">
-    ${coluna("P", "var(--green)", p, pTitulo, pExtra)}
-    ${coluna("R", "var(--blue)", r, "Real (recebido)")}
-    ${coluna("D", dCor, dTxt, "Diferen\xE7a (real \u2212 previsto)")}
+    const pExtra = ajuste ? `<div class="note prd-ajuste">${ajuste > 0 ? "+" : ""}${ajuste} l\xEDder</div>` : "";
+    return `<div class="prd">
+    ${coluna("prd-p", "P", p, pTitulo, pExtra)}
+    ${coluna("prd-r", "R", r, "Real (recebido)")}
+    ${coluna(`prd-d ${dClasse}`, "D", dTxt, "Diferen\xE7a (real \u2212 previsto)")}
   </div>`;
   }
-  var LEGENDA_PRD = `<p class="note" style="margin:4px 0 10px">
-  <span style="color:var(--green)">P</span> previsto \xB7
-  <span style="color:var(--blue)">R</span> real \xB7
-  <span style="color:var(--red)">D</span> diferen\xE7a (real \u2212 previsto)
+  var LEGENDA_PRD = `<p class="note prd-legenda">
+  <span class="prd-p">P</span> previsto \xB7
+  <span class="prd-r">R</span> real \xB7
+  <span class="prd-d falta">D</span> diferen\xE7a (real \u2212 previsto)
 </p>`;
-  var ICONE_COLETADO = `<span title="operador j\xE1 coletou essas bags" style="color:var(--blue)">${ico("pacote", 18)}</span>`;
+  var ICONE_COLETADO = `<span class="india-coletado" title="operador j\xE1 coletou essas bags">${ico("pacote", 18)}</span>`;
   function pontoImportado(v, tipo) {
     const em = tipo === "india" ? v.india_importado_em : v.delta_importado_em;
     if (!em) return null;
@@ -4619,14 +4681,25 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     return MATIZES_BALDE_DELTA[h % MATIZES_BALDE_DELTA.length];
   }
   function prontasDaBase(vooId) {
-    return D.prontas.filter((p) => p.carreta_nome === BALDE_BASE_LOCAL.nome && mesmoId(p.voo_destino_id, vooId) && p.ponto_delta_id == null && p.status !== "cancelada");
+    return D.prontas.filter((p) => ehProntaDaBase(p) && mesmoId(p.voo_destino_id, vooId) && p.status !== "cancelada");
   }
-  function blocoBaldeBaseDelta(vooId, balde, nSol, nPeg) {
+  function blocoBaldeBaseDelta(vooId, balde, ps) {
+    const nSol = ps.filter((p) => p.status === "pronta" || p.status === "ciente").length;
+    const nPeg = ps.filter((p) => p.status === "coletada").length;
     const partes = [];
+    if (ps.length) partes.push(`<span title="Alertas criados para as bags da base deste voo">${ps.length} alerta${ps.length === 1 ? "" : "s"}</span>`);
     if (nSol) partes.push(`<span title="${nSol} chamado(s) aguardando um operador">${nSol}${ico("ampulheta", 16)}</span>`);
     if (nPeg) partes.push(`<span title="${nPeg} j\xE1 pego(s) por um operador">${nPeg}${ico("mala-confirmada", 16)}</span>`);
     const resumo = partes.length ? `<span class="note carreta-resumo">${partes.join(" \xB7 ")}</span>` : "";
-    const cancelar = nSol ? `<button class="small ghost delta-icone" onclick="cancelarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Cancelar chamado" title="Cancelar os chamados que ningu\xE9m pegou ainda">${ico("cancelar", 34)}</button>` : "";
+    const linhas = ps.slice().sort((a, b) => String(a.criada_em).localeCompare(String(b.criada_em))).map((p, i) => {
+      const aberto = p.status === "pronta" || p.status === "ciente";
+      const selo = aberto ? `<span class="delta-status solicitado" title="Aguardando um operador buscar" aria-label="solicitado">${ico("ampulheta", 18)}</span>` : `<span class="delta-status pega" title="J\xE1 foi pego por um operador" aria-label="pego">${ico("mala-confirmada", 18)}</span>`;
+      const acoes = aberto ? `<button class="small ghost delta-icone" onclick="rechamarAlertaBase(${p.id},${vooId})" aria-label="Chamar este alerta de novo" title="Chamar de novo \u2014 o operador est\xE1 demorando">${ico("campanha", 34)}<span class="delta-n">+1</span></button>
+           <button class="small ghost delta-icone" onclick="cancelarAlertaBase(${p.id},${vooId})" aria-label="Cancelar este alerta" title="Cancelar este alerta">${ico("cancelar", 34)}</button>` : "";
+      return `<div class="list-line alerta-base">
+        <span class="grow">Alerta ${i + 1} \xB7 ${esc(hora(p.criada_em))}</span>${selo}${acoes}
+      </div>`;
+    }).join("");
     return `<div class="balde-delta">
     <div class="balde-cor aberto balde-base" style="--matiz:${corBaldeDelta(balde.chave)}">
     <div class="list-line balde-cabeca">
@@ -4634,21 +4707,49 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
         <b class="grow">${esc(balde.nome)}</b>
         ${resumo}
       </span>
-      ${cancelar}
       <button class="small ghost delta-icone" onclick="rechamarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Chamar operador para as bags da base" title="Chamar operador \u2014 pode chamar quantas vezes precisar">${ico("carreta", 34)}${ico("campanha", 34)}</button>
     </div>
+    ${linhas}
     <p class="note balde-base-nota">Bagagem que fica em Bras\xEDlia. N\xE3o vem no arquivo \u2014 chame quantas vezes precisar.</p>
     </div>
   </div>`;
+  }
+  async function cancelarAlertaBase(prontaId, vooId) {
+    const p = D.prontas.find((x) => mesmoId(x.id, prontaId));
+    if (!p) return;
+    if (p.status === "coletada") {
+      await aviso("Um operador j\xE1 pegou essas bags e est\xE1 trazendo \u2014 n\xE3o d\xE1 mais para cancelar.", "Bags a caminho");
+      return;
+    }
+    const ok = await confirmar("Cancelar este alerta? O operador deixa de ver o chamado.");
+    if (!ok) return;
+    const { error } = await cancelarSolicitacaoDeltaDb([p.id]);
+    if (error) {
+      await erro(error);
+      return;
+    }
+    await bus.recarregar();
+    return abrirPontoDelta(vooId);
+  }
+  async function rechamarAlertaBase(prontaId, vooId) {
+    const p = D.prontas.find((x) => mesmoId(x.id, prontaId));
+    if (!p) return;
+    const ok = await confirmar("Chamar este alerta de novo?\n\nO operador vai ser avisado outra vez.");
+    if (!ok) return;
+    try {
+      await rechamarAlertaDeltaDb(p.id);
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    await bus.recarregar();
+    return abrirPontoDelta(vooId);
   }
   function blocoBaldeDelta(vooId, v, balde, editavel) {
     const porStatus = (s) => balde.itens.filter((pd) => statusConexaoDelta(pd) === s);
     const livres = porStatus("livre");
     if (balde.base) {
-      const ps = prontasDaBase(vooId);
-      const nSol = ps.filter((p) => p.status === "pronta" || p.status === "ciente").length;
-      const nPeg = ps.filter((p) => p.status === "coletada").length;
-      return blocoBaldeBaseDelta(vooId, balde, nSol, nPeg);
+      return blocoBaldeBaseDelta(vooId, balde, prontasDaBase(vooId));
     }
     const nSolicitadas = porStatus("solicitada").length;
     const nPegas = porStatus("pega").length;
@@ -5156,6 +5257,9 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
     await bus.recarregar();
     return abrirEquipamentosDelta(vooId);
   }
+  function prefixoAeronave(v) {
+    return (v == null ? void 0 : v.prefixo) ? `<span class="note delta-prefixo" title="Prefixo da aeronave">${esc(v.prefixo)}</span>` : "";
+  }
   function desenharPontoDelta(vooId) {
     const v = voo(vooId) || {};
     const editavel = pode("delta_carretas");
@@ -5166,10 +5270,9 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>`;
     const novaCarreta = editavel ? `<button class="small ghost delta-icone" onclick="abrirCriarCarretaDelta(${vooId},null)" aria-label="Nova carreta" title="Nova carreta">+${ico("reboque", 34)}${ico("malha", 34)}</button>` : "";
     const equipamentos = pode("sol_abrir") ? `<button class="small equip-botao" onclick="abrirEquipamentosDelta(${vooId})" aria-label="Equipamentos" title="Pedir equipamento e ver o que j\xE1 foi pedido">Equipamentos</button>` : "";
-    const prefixo = v.prefixo ? `<span class="note delta-prefixo" title="Prefixo da aeronave">${esc(v.prefixo)}</span>` : "";
     abrirModal(`<div class="delta-popup"><div class="delta-cabeca">${substituir}
     <div class="list-line delta-topo">
-      <h3 class="grow">Delta ${vooRotulo(v, "chegada")}${prefixo}</h3>
+      <h3 class="grow">Delta ${vooRotulo(v, "chegada")}${prefixoAeronave(v)}</h3>
     </div>
     ${novaCarreta || equipamentos || descarga ? `<div class="delta-acoes">${equipamentos}${descarga}<span class="grow"></span>${novaCarreta}</div>` : ""}
     ${barraMoverSelecionadosDelta(vooId, carretasDoVoo, editavel)}
@@ -5210,16 +5313,56 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     await bus.recarregar();
     return abrirPontoDelta(vooId);
   }
+  function estadoCarga(vooId) {
+    const aCaminho = D.viagens.some((vg) => vg.carga === "CARGA" && vg.status === "a_caminho" && D.destinos.some((d) => mesmoId(d.viagem_id, vg.id) && mesmoId(d.voo_destino_id, vooId) && d.status === "a_caminho"));
+    if (aCaminho) return { estado: "aCaminho", ids: [] };
+    const abertas = D.prontas.filter((p) => ehProntaDeCarga(p) && mesmoId(p.voo_destino_id, vooId) && (p.status === "pronta" || p.status === "ciente"));
+    return abertas.length ? { estado: "chamada", ids: abertas.map((p) => p.id) } : { estado: "livre", ids: [] };
+  }
+  function botaoCarga(vooId) {
+    if (!pode("oc_pontos")) return "";
+    const { estado } = estadoCarga(vooId);
+    if (estado === "aCaminho")
+      return `<button class="small ghost carga-botao a-caminho" disabled aria-label="Carga a caminho" title="Um operador est\xE1 levando a carga deste voo">${ico("carreta", 22)}CARGA \xB7 a caminho</button>`;
+    if (estado === "chamada")
+      return `<button class="small ghost carga-botao chamada" onclick="cancelarCarga(${vooId})" aria-label="Cancelar o chamado de carga" title="Aguardando um operador \u2014 toque para cancelar">${ico("ampulheta", 18)}CARGA \xB7 aguardando</button>`;
+    return `<button class="small ok carga-botao" onclick="chamarCarga(${vooId})" aria-label="Chamar a carga" title="Chamar um operador para levar a carga deste voo">${ico("carreta", 22)}CARGA</button>`;
+  }
+  async function chamarCarga(vooId) {
+    if (estadoCarga(vooId).estado !== "livre") return;
+    const ok = await confirmar("Chamar um operador para levar a carga deste voo?");
+    if (!ok) return;
+    try {
+      await solicitarCarretaDeltaDb(vooId, [vooId], NOME_CARGA, null);
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    await bus.recarregar();
+    return abrirPontoIndiaOC(vooId);
+  }
+  async function cancelarCarga(vooId) {
+    const { estado, ids } = estadoCarga(vooId);
+    if (estado !== "chamada") return;
+    const ok = await confirmar("Cancelar o chamado de carga deste voo?");
+    if (!ok) return;
+    const { error } = await cancelarSolicitacaoDeltaDb(ids);
+    if (error) {
+      await erro(error);
+      return;
+    }
+    await bus.recarregar();
+    return abrirPontoIndiaOC(vooId);
+  }
   function conteudoPontoIndiaOC(vooId) {
     const v = voo(vooId) || {};
-    const lista = D.indias.filter((pi) => pi.voo_id === vooId).slice().sort((a, b) => duracaoMin(a.rct) - duracaoMin(b.rct));
+    const lista = D.indias.filter((pi) => pi.voo_id === vooId).slice().sort((a, b) => (parseInt(a.voo_chegada_numero, 10) || 0) - (parseInt(b.voo_chegada_numero, 10) || 0));
     const linhas = lista.length ? lista.map((pi) => {
       var _a;
       const sit = situacaoConexao(pi);
       const indo = aCaminhoDaConexao(pi);
       const pedido = pedidoAtivoDaConexao(pi);
-      const marca = sit.entregue ? `<span style="color:#1f1f1f" title="Conex\xE3o entregue">${ico("pacote", 19)}</span>` : indo.map((id) => `<span title="${esc(nomeDe(id))} est\xE1 trazendo"
-          style="color:var(--green);margin-left:2px">${ico("carreta", 19)}</span>`).join("");
+      const marca = sit.entregue ? `<span class="india-entregue" title="Conex\xE3o entregue">${ico("pacote", 19)}</span>` : indo.map((id) => `<span class="india-trazendo" title="${esc(nomeDe(id))} est\xE1 trazendo">${ico("carreta", 19)}</span>`).join("");
       const lbl = vooRotulo(comoChegada(pi.origem, pi.voo_chegada_numero), "chegada", { box: false });
       const bl = sit.entregue ? null : ondeEstaoAsBags(pi, sit.vc);
       const txtLocal = bl && ROTULO_LOCAL[bl.status] ? ROTULO_LOCAL[bl.status](bl) : null;
@@ -5239,36 +5382,48 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
           titulo: "O l\xEDder do voo que chegou avisou que algu\xE9m j\xE1 levou a bag."
         }
       };
+      const recebi = `<span class="delta-manual-grupo" onclick="event.stopPropagation()"><input id="indiaRecebi${pi.id}" class="delta-manual" type="number" inputmode="numeric" min="0" placeholder="${pi.bag_qtd || 0}" aria-label="Quantas bags voc\xEA recebeu" title="Quantas voc\xEA RECEBEU agora. Em branco = recebi todas."><button class="small ok delta-ok" onclick="confirmarRecebi(${pi.id})" aria-label="Recebi" title="Recebi">${ico("aceite", 34)}</button></span>`;
       return `<div class="pt-linha">
-      ${lbl}
-      ${txtLocal ? `<span class="chip ${bl.status === "na_carreta" ? "st-a_caminho" : "st-aceita"}">${esc(txtLocal)}</span>` : ""}
-      ${naoConecta ? `<span class="chip st-cancelada" title="A companhia avisou que essa conex\xE3o n\xE3o vai conectar \u2014 essa bagagem n\xE3o vem.">N\xC3O CONECTA</span>` : ""}
-      ${pp && !naoConecta ? `<span class="chip ${AVISO_PP[pp].classe}" title="${esc(AVISO_PP[pp].titulo)}">${AVISO_PP[pp].texto}</span>` : ""}
-      ${transito ? `<span class="chip st-entregue" title="Bagagem tr\xE2nsito \u2014 mesmo box, n\xE3o precisa mover.">TST</span>` : ""}
-      <span class="note">RCT ${esc(pi.rct || "\u2014")}</span>
-      ${marca}${bagsACaminho(pi) ? ICONE_COLETADO : ""}
-      <span class="grow"></span>
-      ${prdTag(pi)}
-      <div style="display:flex;gap:8px;flex:0 0 auto">
-        <button class="small ok" style="width:auto" onclick="abrirRecebi(${pi.id})" aria-label="Recebi" title="Recebi">${ico("aceite", 18)}</button>
-        ${sit.manual ? `<button class="small ghost" style="width:auto" onclick="marcarIndiaEntregue(${pi.id},true)">Desfazer</button>` : ""}
-        ${pedido ? `<button class="small ghost" style="width:auto;color:var(--red)" onclick="cancelarBagIndia(${pi.id})" aria-label="Cancelar pedido" title="Cancelar pedido">${ico("cancelar", 18)}</button>` : `<button class="small ghost" style="width:auto" onclick="solicitarBagIndia(${pi.id})" aria-label="Solicitar" title="Solicitar">${ico("carreta", 18)}</button>`}
+      <div class="india-id">
+        ${lbl}
+        ${txtLocal ? `<span class="chip ${bl.status === "na_carreta" ? "st-a_caminho" : "st-aceita"}">${esc(txtLocal)}</span>` : ""}
+        ${naoConecta ? `<span class="chip st-cancelada" title="A companhia avisou que essa conex\xE3o n\xE3o vai conectar \u2014 essa bagagem n\xE3o vem.">N\xC3O CONECTA</span>` : ""}
+        ${pp && !naoConecta ? `<span class="chip ${AVISO_PP[pp].classe}" title="${esc(AVISO_PP[pp].titulo)}">${AVISO_PP[pp].texto}</span>` : ""}
+        ${transito ? `<span class="chip st-entregue" title="Bagagem tr\xE2nsito \u2014 mesmo box, n\xE3o precisa mover.">TST</span>` : ""}
+        ${marca}${bagsACaminho(pi) ? ICONE_COLETADO : ""}
+      </div>
+      <div class="india-ctl">
+        ${prdTag(pi)}
+        ${recebi}
+        ${sit.manual ? `<button class="small ghost india-desfazer" onclick="marcarIndiaEntregue(${pi.id},true)">Desfazer</button>` : ""}
+        ${pedido ? `<button class="small ghost delta-ok india-cancelar" onclick="cancelarBagIndia(${pi.id})" aria-label="Cancelar pedido" title="Cancelar pedido">${ico("cancelar", 34)}</button>` : `<button class="small ghost delta-ok" onclick="solicitarBagIndia(${pi.id})" aria-label="Solicitar" title="Solicitar">${ico("carreta", 34)}</button>`}
       </div>
     </div>`;
     }).join("") : `<p class="note">Nada importado do \xCDndia pra esse voo.</p>`;
-    const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('india',${vooId})">Substituir</button>`;
-    const bagDeOutro = pode("oc_pontos") ? `<button class="ghost" style="margin-top:12px" onclick="abrirBagDeOutroVoo(${vooId})">Bag de outro voo</button>` : "";
-    return `${substituir}
-    <h3>\xCDndia \xB7 ${vooRotulo(v, "saida", { box: false })}</h3>${LEGENDA_PRD}${linhas}
+    const substituir = !pode("pontos_import") ? "" : `<button class="small ghost india-substituir" onclick="abrirSubstituirPonto('india',${vooId})">Substituir</button>`;
+    const bagDeOutro = pode("oc_pontos") ? `<button class="ghost india-rodape-botao" onclick="abrirBagDeOutroVoo(${vooId})">Bag de outro voo</button>` : "";
+    const carga = botaoCarga(vooId);
+    return `<div class="delta-popup india-popup"><div class="delta-cabeca">${substituir}
+    <div class="list-line delta-topo">
+      <h3 class="grow">\xCDndia ${vooRotulo(v, "saida")}${prefixoAeronave(v)}</h3>
+    </div>
+    ${carga ? `<div class="delta-acoes">${carga}</div>` : ""}
+    </div>
+    ${LEGENDA_PRD}<div class="india-lista">${linhas}</div>
     ${bagDeOutro}
-    <div style="margin-top:12px"><button class="ghost" onclick="fecharModal()">Fechar</button></div>`;
+    <div class="india-rodape"><button class="ghost" onclick="fecharModal()">Fechar</button></div></div>`;
   }
   function abrirPontoIndiaOC(vooId) {
     UI.modalVivo = { tipo: "india", vooId };
     abrirModal(conteudoPontoIndiaOC(vooId));
   }
   function atualizarPontoIndia(vooId) {
+    if (digitandoNoIndia()) return;
     abrirModal(conteudoPontoIndiaOC(vooId));
+  }
+  function digitandoNoIndia() {
+    const foco = typeof document !== "undefined" ? document.activeElement : null;
+    return !!foco && String(foco.id || "").startsWith("indiaRecebi");
   }
   function atualizarPontoDelta(vooId) {
     if (digitandoNoDelta()) return;
@@ -5298,24 +5453,10 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     await aviso(log);
     tipo === "delta" ? abrirPontoDelta(vooId) : abrirPontoIndiaOC(vooId);
   }
-  function abrirRecebi(id) {
-    const pi = D.indias.find((x) => x.id === id);
-    if (!pi) return;
-    UI.modalVivo = null;
-    abrirModal(`<h3>Recebi</h3>
-    <p class="note">${esc((pi.origem || "?") + "-" + pi.voo_chegada_numero)} \u2014 esperadas
-      <b style="color:var(--amber)">${pi.bag_qtd}</b> bag${pi.bag_qtd === 1 ? "" : "s"}.<br>
-      Quantas voc\xEA recebeu? (deixe em branco se recebeu todas)</p>
-    <input id="qtdrec" type="number" inputmode="numeric" placeholder="${pi.bag_qtd}">
-    <div class="row" style="margin-top:12px">
-      <button class="primary" onclick="confirmarRecebi(${id})">Confirmar</button>
-      <button class="ghost" onclick="abrirPontoIndiaOC(${pi.voo_id})">Voltar</button>
-    </div>`);
-  }
   async function confirmarRecebi(id) {
     const pi = D.indias.find((x) => x.id === id);
     if (!pi) return;
-    const campo = $("qtdrec");
+    const campo = $("indiaRecebi" + id);
     const v = campo ? campo.value.trim() : "";
     await marcarIndiaEntregueDb(id, false, v);
     await bus.recarregar();
@@ -9669,7 +9810,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   var EQUIPS = [["ESTEIRA", "Esteira"], ["ESCADA", "Escada"], ["CARRETA", "Carreta"]];
   var degrau = (rot2, aceso, acao, extra) => `<button class="deg${extra ? " " + extra : ""}${aceso ? " on" : ""}" onclick="${acao}">${rot2}</button>`;
   var linhaTrilha = (rotulo2, botoes) => `<div class="deg-linha"><span class="deg-rot">${rotulo2}</span>${botoes}</div>`;
-  var CARGAS = [["BAG", "BAG"], ["EQUIPAMENTO", "Equipamento"]];
+  var CARGAS = [["BAG", "BAG"], ["EQUIPAMENTO", "Equipamento"], ["CARGA", "CARGA"]];
   function trilhaFolha() {
     const o = UI.op;
     const linhas = [];
@@ -9684,7 +9825,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
           [1, 2, 3].map((n) => degrau(n, o.equipQtd === n, `escolherEquipQtd(${n})`, "deg-n")).join("")
         ));
     }
-    linhas.push(...trilhaOrigemDestino(o, "op"));
+    if (o.carga !== "CARGA") linhas.push(...trilhaOrigemDestino(o, "op"));
     if (!linhas.length) return "";
     return `<div class="folha-trilha">${linhas.join("")}</div>`;
   }
@@ -9861,7 +10002,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   }
   function escolherCarga(v) {
     if (UI.op.carga !== v)
-      UI.op = { carga: v, origem: null, boxOrigem: null, vooOrigemId: null, sel: [] };
+      UI.op = { carga: v, origem: v === "CARGA" ? "CARGA" : null, boxOrigem: null, vooOrigemId: null, sel: [] };
     UI.modalVivo = { tipo: "op" };
     bus.render();
   }
@@ -9906,7 +10047,14 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     <div class="origem-grid">
       <button onclick="escolherCarga('BAG')">BAG</button>
       <button onclick="escolherCarga('EQUIPAMENTO')">Equipamento</button>
+      <button onclick="escolherCarga('CARGA')">CARGA</button>
     </div>`;
+    if (o.carga === "CARGA")
+      return passoCab(
+        "QUAL VOO?",
+        "Toque nos voos cuja carga voc\xEA est\xE1 levando.",
+        botaoSaindo(o.sel.length, "confirmarSaida()")
+      ) + listaDestinos(candidatosDestinoJanela([]), o.sel, "togDest");
     if (o.carga === "EQUIPAMENTO" && !o.equipamento) return `
     <h2 class="folha-pergunta">QUAL EQUIPAMENTO?</h2>
     <div class="origem-grid">
@@ -10698,7 +10846,7 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
 
 Destino: ${esc(inf.num)}`);
     if (!ok) return;
-    if (vg && vg.carga === "EQUIPAMENTO") {
+    if (vg && (vg.carga === "EQUIPAMENTO" || vg.carga === "CARGA")) {
       await entregarDestino(destId, vgId, null);
       bus.recarregar();
       return;
@@ -10857,7 +11005,9 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     }
     const gs = [];
     for (const tipo of ordemAlertaAtual()) {
-      const ps = porTipo.get(tipo) || [];
+      const todas = porTipo.get(tipo) || [];
+      const ps = todas.filter((p) => !ehProntaDeCarga(p));
+      const carga = todas.filter((p) => ehProntaDeCarga(p) && p.status === "pronta").sort((a, b) => numeroDoVoo(voo(a.voo_destino_id)) - numeroDoVoo(voo(b.voo_destino_id)));
       const porLugar = /* @__PURE__ */ new Map();
       for (const p of ps) {
         const lugar = lugarDaPronta(p);
@@ -10866,7 +11016,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       }
       const sub = [...porLugar.values()].map((sps) => ({ lugar: lugarDaPronta(sps[0]), box: sps[0].box, ps: sps, urg: urgenciaDaPronta(sps[0]) }));
       sub.sort((a, b) => a.urg - b.urg);
-      gs.push({ tipo, sub });
+      gs.push({ tipo, sub, carga });
     }
     return gs;
   }
@@ -11252,6 +11402,42 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     ${cancelar}${acao}
   </div>`;
   }
+  var numeroDoVoo = (v) => parseInt(v == null ? void 0 : v.numero, 10) || 0;
+  function secaoCarga(ps) {
+    if (!ps.length) return "";
+    const linhas = ps.map((p) => {
+      const v = voo(p.voo_destino_id) || {};
+      return `<div class="list-line alerta-linha carga-linha">
+      <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${vooRotulo(v, "saida", { aviao: true })}
+        <span class="carga-hora" title="Decolagem">${ico("decolando", 16)}${esc(v.saida || "\u2014")}</span></span>
+      <button class="alerta-acao primary" onclick="levarCarga(${p.id})" aria-label="Levar a carga deste voo" title="Levar a carga deste voo">${ico("carreta", 20)}</button>
+    </div>`;
+    }).join("");
+    return `<div class="carga-secao"><p class="note carga-titulo">CARGA</p>${linhas}</div>`;
+  }
+  async function levarCarga(id) {
+    const p = D.prontas.find((x) => x.id === id);
+    if (!p || !ehProntaDeCarga(p) || p.status !== "pronta") return;
+    if (viagemAtiva()) {
+      await aviso("Voc\xEA j\xE1 tem uma viagem em andamento. Termine ou entregue antes de levar a carga.");
+      return;
+    }
+    const { data: vg, error } = await abrirViagem({ origem: "CARGA", carga: "CARGA" });
+    if (error) {
+      await erro(error);
+      return;
+    }
+    const r = await adicionarDestinos([{ viagem_id: vg.id, voo_destino_id: p.voo_destino_id, entrega_via: "VOO" }]);
+    if (r.error) {
+      await erro(r.error);
+      bus.recarregar();
+      return;
+    }
+    const b = await baixarPronta(p.id);
+    if (b == null ? void 0 : b.error) await erro(b.error);
+    UI.modalVivo = { tipo: "viagem" };
+    bus.recarregar();
+  }
   function linhaLugar(tipo, s) {
     const pendentes = s.ps.filter((p) => p.status === "pronta");
     const meusCientes = s.ps.filter((p) => p.status === "ciente" && p.ciente_por === S.me.id);
@@ -11397,7 +11583,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
           aria-label="${esc(g.tipo)} \u2014 arraste para reordenar">${esc(g.tipo)}</span>
       </span>
     </div>
-    <div class="alerta-lista">${corpo}</div>
+    <div class="alerta-lista">${corpo}${g.tipo === "BOX" ? secaoCarga(g.carga || []) : ""}</div>
   </div>`;
   }
   function corpoDoAlerta() {
@@ -13687,6 +13873,20 @@ Sair mesmo assim?`
       desc: "A faixa de cima do cart\xE3o: abas de se\xE7\xE3o \xE0 esquerda, sino e lugar \xE0 direita."
     },
     {
+      nome: "secao-carga",
+      seletor: ".carga-secao",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "A se\xE7\xE3o CARGA dentro do card BOX: t\xEDtulo CARGA e, embaixo, um voo por linha (YYY-XXXX[BOX]) em ordem crescente, com a hora de decolagem e o bot\xE3o de levar."
+    },
+    {
+      nome: "hora-da-carga",
+      seletor: ".carga-hora",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "O \xEDcone de decolagem e a hora de sa\xEDda do voo, na ponta direita da linha da se\xE7\xE3o CARGA."
+    },
+    {
       nome: "miolo-da-linha",
       seletor: ".alerta-linha > .grow",
       grupo: "alerta",
@@ -14160,6 +14360,48 @@ Sair mesmo assim?`
       grupo: "delta",
       arquivo: "screens/telaPontos.js",
       desc: "Campo da quantidade manual do l\xEDder (soma ao previsto, pode ser negativa), com o \u2713 ao lado. O \u2713 s\xF3 acende depois de digitar algo diferente do que est\xE1 salvo."
+    },
+    {
+      nome: "botao-carga",
+      seletor: ".carga-botao",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: 'O bot\xE3o CARGA no topo do Ponto \xCDndia de um voo. Verde escrito CARGA: chama. Azul "aguardando": toque cancela o chamado. Desabilitado "a caminho": um operador est\xE1 levando, com o trator andando.'
+    },
+    {
+      nome: "india-id",
+      seletor: ".india-id",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Ponto \xCDndia, a metade esquerda de cada linha: voo de chegada (YYY-XXXX), avisos (N\xC3O CONECTA, TST, PP) e o trator/pacote de estado."
+    },
+    {
+      nome: "india-controles",
+      seletor: ".india-ctl",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Ponto \xCDndia, a metade direita da linha: P R D, campo de quantidade recebida com o \u2713 e o bot\xE3o de solicitar (ou cancelar). Desce inteira para a linha de baixo se n\xE3o couber."
+    },
+    {
+      nome: "prd",
+      seletor: ".prd",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "As tr\xEAs colunas P (previsto, verde), R (real, azul) e D (diferen\xE7a: vermelho falta, \xE2mbar sobra, cinza zero)."
+    },
+    {
+      nome: "legenda-prd",
+      seletor: ".prd-legenda",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: 'A frase "P previsto \xB7 R real \xB7 D diferen\xE7a" no topo da lista do \xCDndia. Rola junto com a lista; o cabe\xE7alho fica preso.'
+    },
+    {
+      nome: "alerta-da-base",
+      seletor: ".alerta-base",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: 'Uma linha por alerta dentro do balde "BAGs p/ BASE": Alerta N, hora, estado, chamar de novo (+1) e cancelar. Alerta j\xE1 pego n\xE3o tem bot\xF5es.'
     },
     {
       nome: "acoes-do-delta",
@@ -14659,6 +14901,7 @@ Sair mesmo assim?`
     togDest,
     togDestPU,
     confirmarSaida,
+    levarCarga,
     confirmarColeta,
     entregar,
     confirmarEntrega,
@@ -14745,7 +14988,6 @@ Sair mesmo assim?`
     marcarIndiaEntregue,
     abrirPontoDelta,
     abrirPontoIndiaOC,
-    abrirRecebi,
     confirmarRecebi,
     solicitarBagIndia,
     cancelarBagIndia,
@@ -14761,6 +15003,10 @@ Sair mesmo assim?`
     excluirCarretaDeltaTela,
     solicitarCarretaDelta,
     rechamarCarretaDelta,
+    rechamarAlertaBase,
+    cancelarAlertaBase,
+    chamarCarga,
+    cancelarCarga,
     solicitarConexaoDelta,
     cancelarCarretaDelta,
     alternarSelecaoDelta,
