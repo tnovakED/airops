@@ -400,6 +400,22 @@
   .log-carregando .ico{animation:girar 1s linear infinite}
   @media (prefers-reduced-motion: reduce){ .log-carregando .ico{animation:none} }
 
+  /* Selo PERSISTENTE de "arquivo lido" (sql/atualizacao_45.sql). Ao
+     contrario do .log-ponto, que e o recado da importacao que ACABOU de
+     rodar na aba de quem clicou, este vem do banco: sobrevive ao F5 e
+     aparece igual pra qualquer pessoa que abrir a tela.
+     Tres estados, e o do meio e o que nao existia:
+       .ok    verde  — lido, com N conexoes
+       .vazio azul   — lido, ZERO conexoes (nao e falta de importacao)
+       .sem   cinza  — arquivo nunca subiu */
+  .ponto-selo{display:inline-flex; align-items:center; gap:2px; flex:0 0 auto;
+    vertical-align:-.15em; margin:0 4px; font-size:11px; font-weight:700;
+    font-variant-numeric:tabular-nums}
+  .ponto-selo i{font-style:normal}
+  .ponto-selo.ok{color:var(--green)}
+  .ponto-selo.vazio{color:var(--blue)}
+  .ponto-selo.sem{color:var(--muted)}
+
   /* ---------- chips de status ---------- */
   .chip{display:inline-block; text-transform:uppercase; letter-spacing:.07em;
     font-size:14px; font-weight:600; border-radius:999px; padding:3px 12px}
@@ -986,6 +1002,12 @@
   .balde-cor.aberto .acordeon-seta{transform:rotate(90deg)}
   .balde-cor:not(.aberto) .balde-corpo{display:none}
   @media (prefers-reduced-motion: reduce){ .balde-cor .acordeon-seta{transition:none} }
+  /* "Bags p/ base local": o unico balde que nunca tem lista dentro (a
+     bag da base nao vem no arquivo). Borda tracejada pra dizer isso de
+     relance -- nao e uma carreta que o sistema conhece, e um botao de
+     chamar com nome. Sem acordeao: nao ha o que abrir. */
+  .balde-base{border-left-style:dashed}
+  .balde-base-nota{margin:0 0 6px; font-size:12px}
   /* conexao numa linha so: nada desce pra linha de baixo */
   .balde-delta .pt-linha{flex-wrap:nowrap; gap:4px; padding:6px 0}
   .balde-delta .pt-linha .voo{font-size:20px}
@@ -1001,6 +1023,15 @@
     display:inline-flex; align-items:center; justify-content:center}
   .delta-ok .ico{margin-right:0}
   .delta-manual-grupo{display:inline-flex; align-items:center; gap:4px; flex:none}
+  /* Diferenca entre o que o lider CONTOU e o que o arquivo previa
+     (sql/atualizacao_46.sql). Aparece ao vivo enquanto ele digita: e o
+     que mostra na hora que "3" num voo de 5 previstas quer dizer -2, em
+     vez de deixar o engano ser descoberto do outro lado do patio.
+     Some quando a conta bate -- linha sem selo = contado e confere. */
+  .delta-dif{flex:none; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums;
+    padding:1px 4px; border-radius:6px; white-space:nowrap}
+  .delta-dif.falta{color:#fff; background:var(--red)}
+  .delta-dif.sobra{color:#fff; background:var(--orange)}
   /* marcar = tocar na linha (sem quadradinho), fundo de selecionado igual a
      folha da viagem nova; o padding lateral e o mesmo marcada ou nao, pra
      linha nao pular de lugar ao marcar */
@@ -1074,6 +1105,19 @@
   .skeleton-line{height:14px; margin:6px 0; border-radius:4px}
   @media (prefers-reduced-motion: reduce){ .skeleton{ animation:none; opacity:.5 } }
 
+  /* ---------- barra de carga (progresso REAL, ui/components/skeleton.js) ----------
+     A largura da barra vem de UI.carga: quantas consultas ja voltaram
+     do servidor. NAO ha animacao de avanco de proposito -- barra que
+     anda sozinha promete um progresso que ninguem mediu. So a transicao
+     entre um passo e o seguinte e suavizada, e ela some com
+     prefers-reduced-motion. */
+  .carga{display:flex; flex-direction:column; gap:8px; padding:18px 4px; max-width:420px; margin:0 auto}
+  .carga-rotulo{font-size:15px; font-weight:700; color:var(--text); text-align:center}
+  .carga-trilho{height:10px; border-radius:5px; background:var(--surface2); border:1px solid var(--line); overflow:hidden}
+  .carga-barra{height:100%; width:0; background:var(--amber); transition:width .25s ease}
+  .carga-txt{font-size:13px; color:var(--muted); text-align:center; font-variant-numeric:tabular-nums}
+  @media (prefers-reduced-motion: reduce){ .carga-barra{ transition:none } }
+
   /* ---------- PATIO: mapa da coordenacao (telaPatio.js) ----------
      Unica tela que usa a largura toda: o mapa e o conteudo. No celular
      o mapa vem em cima e a lista embaixo, com a pagina rolando; no
@@ -1097,6 +1141,9 @@
 
   .patio-corpo{display:grid; grid-template-columns:minmax(0,1fr) 380px; flex:1; min-height:0}
   .patio-mapa-wrap{position:relative; min-height:0; overflow:hidden; background:#E6E9E3}
+  /* So o MAPA espera. O topo (dados reais/demonstracao, relogio) e os
+     numeros do turno ja estao na tela enquanto isto aparece. */
+  .patio-carregando{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:16px}
   #patio-mapa{display:block; width:100%; height:100%; touch-action:none; user-select:none; -webkit-user-select:none}
   #patio-mapa text{font-family:'SUSE Mono',monospace; pointer-events:none}
   .patio-camadas{position:absolute; top:8px; left:8px; right:8px; display:flex; gap:6px; flex-wrap:wrap; pointer-events:none}
@@ -1243,9 +1290,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 18/09/2026, 13:45:04
+     Gerado em: 21/09/2026, 10:46:20
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="18/09 13:45";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 10:46";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1392,6 +1439,11 @@
         coordAberto: null,
         // voo expandido na tela da coordenação
         coordVerEntregues: false,
+        // Progresso REAL da carga de dados (data/carga.js). `total` e quantas
+        // consultas a carga dispara; `feitas` sobe a cada uma que volta do
+        // servidor. Nao e animacao: se parar em 7/11, sao 4 consultas presas.
+        // Quem desenha: skeletonArranque() e a tela do Painel.
+        carga: { carregando: false, feitas: 0, total: 0 },
         // mapa do patio (ui/screens/telaPatio.js). vb = recorte do mapa (zoom);
         // null = decidir pelo tamanho da tela na primeira vez que abrir.
         patio: {
@@ -1751,7 +1803,7 @@
     if (qtd == null || qtd <= 0) return null;
     return ((_a = VEICULO_POR_QTD.find((f) => qtd <= f.ate)) == null ? void 0 : _a.nome) || null;
   }
-  var JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN, SINO_IMINENTE_MIN, PATIO_PRONTA_ESPERA_MIN, PATIO_PRONTA_CRITICA_MIN, PATIO_DESCARGA_ATRASO_MIN, PATIO_OC_ANTES_MIN, PATIO_VIAGEM_LONGA_MIN, PATIO_PEDIDO_ESPERA_MIN, PATIO_SAIDA_ALERTA_MIN, VEICULO_POR_QTD;
+  var JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN, SINO_IMINENTE_MIN, PATIO_PRONTA_ESPERA_MIN, PATIO_PRONTA_CRITICA_MIN, PATIO_DESCARGA_ATRASO_MIN, PATIO_OC_ANTES_MIN, PATIO_VIAGEM_LONGA_MIN, PATIO_PEDIDO_ESPERA_MIN, PATIO_SAIDA_ALERTA_MIN, PATIO_POSICAO_VALIDA_H, VEICULO_POR_QTD;
   var init_regras = __esm({
     "src/config/regras.js"() {
       JANELA_DESCARGA_ESTIMADA_MIN = 30;
@@ -1770,6 +1822,7 @@
       PATIO_VIAGEM_LONGA_MIN = 20;
       PATIO_PEDIDO_ESPERA_MIN = 10;
       PATIO_SAIDA_ALERTA_MIN = 25;
+      PATIO_POSICAO_VALIDA_H = 12;
       VEICULO_POR_QTD = [
         { ate: 3, nome: "na m\xE3o" },
         { ate: 15, nome: "carreta" },
@@ -1840,7 +1893,7 @@
     if (min <= 60) return "umahora";
     return "maisdeuma";
   }
-  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto, BALDE_NAO_CONECTA;
+  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto, BALDE_NAO_CONECTA, BALDE_BASE_LOCAL;
   var init_conexoes = __esm({
     "src/utils/conexoes.js"() {
       init_store();
@@ -1857,6 +1910,7 @@
         return ((_a = BALDES_AUTO_DELTA.find((b) => b.id === id)) == null ? void 0 : _a.nome) || null;
       };
       BALDE_NAO_CONECTA = { id: "naoconecta", nome: "N\xE3o conecta" };
+      BALDE_BASE_LOCAL = { id: "baselocal", nome: "Bags p/ base local" };
     }
   });
 
@@ -3798,6 +3852,21 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
       throw e;
     }
   }
+  async function definirBagContadaDelta(pontoDeltaId, qtd) {
+    try {
+      const { error } = await sb.rpc(
+        "definir_bag_contada_delta",
+        { p_ponto_delta_id: pontoDeltaId, p_qtd: qtd }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("definir_bag_contada_delta", { pontoDeltaId, qtd });
+        return;
+      }
+      throw e;
+    }
+  }
   async function marcarNaoConectaDelta(pontoDeltaId, marcar) {
     const { error } = await sb.rpc(
       "marcar_nao_conecta_delta",
@@ -3951,6 +4020,12 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
   async function reconciliarPontoDeltaDb(dia, vooId, conexoes) {
     return sb.rpc("reconciliar_ponto_delta", { p_data: dia, p_voo_id: vooId, p_conexoes: conexoes });
   }
+  async function marcarPontoLidoDb(dia, vooId, tipo, qtdConexoes) {
+    return sb.rpc(
+      "marcar_ponto_lido",
+      { p_data: dia, p_voo_id: vooId, p_tipo: tipo, p_conexoes: qtdConexoes | 0 }
+    );
+  }
   function casarArquivosComVoos(arquivos, dia) {
     dia = dia || hoje();
     const vistos = /* @__PURE__ */ new Set();
@@ -3976,6 +4051,20 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     const semVoo = (msg) => {
       log.push(msg);
       entradas == null ? void 0 : entradas.push({ vooId: null, tipo: null, texto: msg });
+    };
+    const marcarLido = async (alvo2, tipo, qtd, anota) => {
+      const { error } = await marcarPontoLidoDb(dia, alvo2.id, tipo, qtd);
+      if (error) anota(`Aviso: as conex\xF5es entraram, mas n\xE3o consegui registrar a leitura do arquivo (o \xEDcone n\xE3o vai persistir): ${error.message}
+O sql/atualizacao_45.sql j\xE1 foi aplicado?`);
+    };
+    const vazio = async (alvo2, tipo, rotulo2, anota) => {
+      const jaTem = (tipo === "india" ? D.indias : D.deltas).filter((x) => x.voo_id === alvo2.id).length;
+      const nome = tipo === "india" ? "\xCDndia" : "Delta";
+      await marcarLido(alvo2, tipo, 0, anota);
+      anota(jaTem ? `${nome} - voo ${rotulo2}
+Arquivo lido: nenhuma conex\xE3o.
+ATEN\xC7\xC3O: este voo j\xE1 tinha ${jaTem} conex\xE3o(\xF5es) de uma importa\xE7\xE3o anterior, e elas foram MANTIDAS. Se o voo perdeu as conex\xF5es de verdade, apague \xE0 m\xE3o; se o arquivo veio truncado, extraia de novo.` : `${nome} - voo ${rotulo2}
+Arquivo lido: nenhuma conex\xE3o. Este voo n\xE3o conecta com nenhum outro.`);
     };
     for (const f of arquivos) {
       let texto;
@@ -4017,7 +4106,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
           anota(`Aviso: nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho diz ${r.vooCabecalho}. Confira se foi extra\xEDdo certo.`);
         }
         if (!r.conexoes.length) {
-          anota("Esse voo n\xE3o possui voos de conex\xE3o.");
+          await vazio(alvo2, "india", rotulo2, anota);
           continue;
         }
         const { data, error } = await reconciliarPontoIndiaDb(dia, alvo2.id, r.conexoes);
@@ -4025,6 +4114,7 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
           anota(`Erro ao gravar \xCDndia - voo ${rotulo2}: ${error.message}`);
           continue;
         }
+        await marcarLido(alvo2, "india", data.total, anota);
         const totalBag = r.conexoes.reduce((a, c) => a + (c.bag_qtd || 0), 0);
         anota(`\xCDndia - voo ${rotulo2}
 Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
@@ -4052,7 +4142,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
           anota(`Aviso: nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho diz ${r.vooCabecalho}. Confira se foi extra\xEDdo certo.`);
         }
         if (!r.conexoes.length) {
-          anota("Esse voo n\xE3o possui voos para conectar.");
+          await vazio(alvo2, "delta", rotulo2, anota);
           continue;
         }
         const { data, error } = await reconciliarPontoDeltaDb(dia, alvo2.id, r.conexoes);
@@ -4060,6 +4150,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
           anota(`Erro ao gravar Delta - voo ${rotulo2}: ${error.message}`);
           continue;
         }
+        await marcarLido(alvo2, "delta", data.total, anota);
         const totalBag = r.conexoes.reduce((a, c) => a + (c.bag_qtd || 0), 0);
         anota(`Delta - voo ${rotulo2}
 Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
@@ -4193,15 +4284,33 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   <span style="color:var(--red)">D</span> diferen\xE7a (real \u2212 previsto)
 </p>`;
   var ICONE_COLETADO = `<span title="operador j\xE1 coletou essas bags" style="color:var(--blue)">${ico("pacote", 18)}</span>`;
+  function pontoImportado(v, tipo) {
+    const em = tipo === "india" ? v.india_importado_em : v.delta_importado_em;
+    if (!em) return null;
+    const qtd = tipo === "india" ? v.india_conexoes : v.delta_conexoes;
+    return {
+      em,
+      por: tipo === "india" ? v.india_importado_por : v.delta_importado_por,
+      qtd: qtd == null ? null : qtd | 0
+    };
+  }
   function iconeLogPonto(v, tipo) {
+    var _a, _b;
     const processando = (UI.indiaProcessando || []).some((p) => p.vooId === v.id && p.tipo === tipo);
     if (processando) {
       return `<span class="log-carregando" title="Importando...">${ico("carregando", 16)}</span>`;
     }
     const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId === v.id && e.tipo === tipo);
-    if (!entradas.length) return "";
-    const resumo = entradas.map((e) => e.texto).join("\n");
-    return `<span class="log-ponto" title="${esc(resumo)}" onclick="verLogPonto(${v.id},'${tipo}')">${ico("exclamacao", 16)}</span>`;
+    if (entradas.length) {
+      const resumo = entradas.map((e) => e.texto).join("\n");
+      return `<span class="log-ponto" title="${esc(resumo)}" onclick="verLogPonto(${v.id},'${tipo}')">${ico("exclamacao", 16)}</span>`;
+    }
+    const imp = pontoImportado(v, tipo);
+    if (!imp) return `<span class="ponto-selo sem" title="Arquivo ainda n\xE3o subiu">${ico("ampulheta", 16)}</span>`;
+    const quando = hora(imp.em);
+    const quem = imp.por ? nomeDe(imp.por) : null;
+    const assina = `${quando}${quem ? ` por ${quem}` : ""}`;
+    return imp.qtd === 0 ? `<span class="ponto-selo vazio" title="Arquivo lido ${esc(assina)} \u2014 nenhuma conex\xE3o. Este voo n\xE3o conecta com nenhum outro.">${ico("check", 16)}<i>0</i></span>` : `<span class="ponto-selo ok" title="Arquivo lido ${esc(assina)} \u2014 ${(_a = imp.qtd) != null ? _a : "?"} conex\xE3o(\xF5es).">${ico("check", 16)}<i>${(_b = imp.qtd) != null ? _b : "?"}</i></span>`;
   }
   function iconeLogAnomalias() {
     const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId == null);
@@ -4277,6 +4386,14 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   async function marcarIndiaEntregue(id, desfazer) {
     await marcarIndiaEntregueDb(id, desfazer);
   }
+  function semConexao(v, tipo) {
+    const imp = pontoImportado(v, tipo);
+    const nome = tipo === "india" ? "\xCDndia" : "Delta";
+    if (!imp) return `O arquivo do ${nome} deste voo <b>ainda n\xE3o foi importado</b>.`;
+    const quem = imp.por ? nomeDe(imp.por) : null;
+    return `Arquivo lido ${esc(hora(imp.em))}${quem ? ` por ${esc(quem)}` : ""}: <b>nenhuma conex\xE3o</b>.
+    N\xE3o \xE9 falta de importa\xE7\xE3o \u2014 este voo n\xE3o conecta com nenhum outro.`;
+  }
   function verPontoIndia(vooId) {
     UI.modalVivo = null;
     const v = voo(vooId) || {};
@@ -4289,7 +4406,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       <td>${esc(pi.rct || "\u2014")}</td>
       <td>${pi.pax != null ? pi.pax : "\u2014"}</td>
       <td class="mono" style="color:var(--amber)">${pi.bag_qtd || 0}</td>
-    </tr>`).join("") : `<tr><td colspan="7" class="note">Nada importado do \xCDndia pra esse voo.</td></tr>`;
+    </tr>`).join("") : `<tr><td colspan="7" class="note">${semConexao(v, "india")}</td></tr>`;
     abrirModal(`<h3>\xCDndia \xB7 ${vooRotulo(v, "saida", { box: false })}</h3>
     <div class="tbl-wrap"><table>
       <tr><th>Origem</th><th>Voo</th><th>STA</th><th>ETA</th><th>RCT</th><th>PAX</th><th>Bag</th></tr>
@@ -4305,7 +4422,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       <td>${esc(pd.destino || "\u2014")}</td>
       <td class="mono">${esc(pd.voo_saida_numero || "\u2014")}</td>
       <td class="mono" style="color:var(--amber)">${pd.bag_qtd || 0}</td>
-    </tr>`).join("") : `<tr><td colspan="3" class="note">Nada importado do Delta pra esse voo.</td></tr>`;
+    </tr>`).join("") : `<tr><td colspan="3" class="note">${semConexao(v, "delta")}</td></tr>`;
     abrirModal(`<h3>Delta \xB7 ${vooRotulo(v, "chegada", { box: false })}</h3>
     <div class="tbl-wrap"><table>
       <tr><th>Destino</th><th>Voo</th><th>Bag</th></tr>
@@ -4382,7 +4499,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     }
   };
   function deltaManualParaIndia(pi) {
-    return deltasDaLinhaIndia(pi).reduce((s, pd) => s + (pd.bag_qtd_manual || 0), 0);
+    return deltasDaLinhaIndia(pi).reduce((s, pd) => pd.bag_qtd_contada == null ? s : s + (pd.bag_qtd_contada - (pd.bag_qtd || 0)), 0);
   }
   function baldesFixosDelta(carretasDoVoo) {
     return BALDES_AUTO_DELTA.map((b) => {
@@ -4403,6 +4520,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       baldes.push({ chave: `c${c.id}`, nome: c.nome, real: c, itens: [] });
     }
     baldes.push(baldeNc);
+    baldes.push({ chave: BALDE_BASE_LOCAL.id, nome: BALDE_BASE_LOCAL.nome, real: null, itens: [], base: true });
     for (const pd of lista) {
       if (naoConectaDelta(pd)) {
         baldeNc.itens.push(pd);
@@ -4415,7 +4533,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
         baldesRct[ORDEM_BALDES_AUTO_DELTA.indexOf(baldeAutoDaConexao(v, pd))].itens.push(pd);
       }
     }
-    return baldes.filter((b) => b !== baldeNc && b !== baldeTst || b.itens.length);
+    return baldes.filter((b) => b.base || (b !== baldeNc && b !== baldeTst || b.itens.length));
   }
   function statusConexaoDelta(pd) {
     const ps = D.prontas.filter((p) => mesmoId(p.ponto_delta_id, pd.id));
@@ -4462,10 +4580,12 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const selo = SELO_DELTA[tipo];
     const seloStatus = SELO_STATUS_DELTA[statusConexaoDelta(pd)];
     const marcado = editavel && ((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) === vooId && UI.deltaSelecionados.ids.includes(pd.id);
-    const salvo = pd.bag_qtd_manual != null ? String(pd.bag_qtd_manual) : "";
-    const manual = editavel ? `<span class="delta-manual-grupo" onclick="event.stopPropagation()"><input id="bagManual${pd.id}" class="delta-manual" type="number" inputmode="numeric" title="Quantidade manual (soma ao previsto, nunca substitui) \u2014 pode ser negativa"
-        value="${esc(salvo)}" data-salvo="${esc(salvo)}" oninput="this.nextElementSibling.disabled=(this.value===this.dataset.salvo)">
-       <button class="small ok delta-ok" disabled onclick="confirmarBagQtdManual(${pd.id},${vooId})" aria-label="Confirmar quantidade" title="Confirmar">${ico("aceite", 34)}</button></span>` : pd.bag_qtd_manual ? `<span class="note" title="Quantidade manual do l\xEDder, soma ao previsto">${pd.bag_qtd_manual > 0 ? "+" : ""}${pd.bag_qtd_manual}</span>` : "";
+    const salvo = pd.bag_qtd_contada != null ? String(pd.bag_qtd_contada) : "";
+    const dif = pd.bag_qtd_contada != null ? pd.bag_qtd_contada - (pd.bag_qtd || 0) : null;
+    const seloDif = dif ? `<span class="delta-dif ${dif < 0 ? "falta" : "sobra"}">${dif > 0 ? "+" : ""}${dif}</span>` : "";
+    const manual = editavel ? `<span class="delta-manual-grupo" onclick="event.stopPropagation()"><input id="bagManual${pd.id}" class="delta-manual" type="number" inputmode="numeric" min="0" placeholder="contei" aria-label="Total de bags que voc\xEA contou" title="Quantas voc\xEA CONTOU no total (n\xE3o \xE9 a diferen\xE7a). Em branco = n\xE3o contei, vale o previsto."
+        value="${esc(salvo)}" data-salvo="${esc(salvo)}" data-prev="${pd.bag_qtd || 0}" oninput="this.nextElementSibling.disabled=(this.value===this.dataset.salvo);aoContarDelta(this)">
+       <button class="small ok delta-ok" disabled onclick="confirmarBagQtdManual(${pd.id},${vooId})" aria-label="Confirmar quantidade" title="Confirmar">${ico("aceite", 34)}</button>${seloDif}</span>` : dif ? `<span class="delta-dif ${dif < 0 ? "falta" : "sobra"}" title="O l\xEDder contou ${pd.bag_qtd_contada} \u2014 o arquivo previa ${pd.bag_qtd || 0}">${dif > 0 ? "+" : ""}${dif}</span>` : "";
     const duasPernas = ehDuasPernasDelta(pd);
     const classeDuas = duasPernas ? " duas-pernas" : "";
     const tituloDuas = duasPernas ? ` title="Mesma aeronave da outra linha nesta cor \u2014 as duas t\xEAm que ir na mesma carreta"` : "";
@@ -4488,9 +4608,38 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     for (let i = 0; i < chave.length; i++) h = h * 31 + chave.charCodeAt(i) >>> 0;
     return MATIZES_BALDE_DELTA[h % MATIZES_BALDE_DELTA.length];
   }
+  function prontasDaBase(vooId) {
+    return D.prontas.filter((p) => p.carreta_nome === BALDE_BASE_LOCAL.nome && mesmoId(p.voo_destino_id, vooId) && p.ponto_delta_id == null && p.status !== "cancelada");
+  }
+  function blocoBaldeBaseDelta(vooId, balde, nSol, nPeg) {
+    const partes = [];
+    if (nSol) partes.push(`<span title="${nSol} chamado(s) aguardando um operador">${nSol}${ico("ampulheta", 16)}</span>`);
+    if (nPeg) partes.push(`<span title="${nPeg} j\xE1 pego(s) por um operador">${nPeg}${ico("mala-confirmada", 16)}</span>`);
+    const resumo = partes.length ? `<span class="note carreta-resumo">${partes.join(" \xB7 ")}</span>` : "";
+    const cancelar = nSol ? `<button class="small ghost delta-icone" onclick="cancelarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Cancelar chamado" title="Cancelar os chamados que ningu\xE9m pegou ainda">${ico("cancelar", 34)}</button>` : "";
+    return `<div class="balde-delta">
+    <div class="balde-cor aberto balde-base" style="--matiz:${corBaldeDelta(balde.chave)}">
+    <div class="list-line balde-cabeca">
+      <span class="balde-alterna" style="cursor:default">
+        <b class="grow">${esc(balde.nome)}</b>
+        ${resumo}
+      </span>
+      ${cancelar}
+      <button class="small ghost delta-icone" onclick="rechamarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Chamar operador para as bags da base" title="Chamar operador \u2014 pode chamar quantas vezes precisar">${ico("carreta", 34)}${ico("campanha", 34)}</button>
+    </div>
+    <p class="note balde-base-nota">Bagagem que fica em Bras\xEDlia. N\xE3o vem no arquivo \u2014 chame quantas vezes precisar.</p>
+    </div>
+  </div>`;
+  }
   function blocoBaldeDelta(vooId, v, balde, editavel) {
     const porStatus = (s) => balde.itens.filter((pd) => statusConexaoDelta(pd) === s);
     const livres = porStatus("livre");
+    if (balde.base) {
+      const ps = prontasDaBase(vooId);
+      const nSol = ps.filter((p) => p.status === "pronta" || p.status === "ciente").length;
+      const nPeg = ps.filter((p) => p.status === "coletada").length;
+      return blocoBaldeBaseDelta(vooId, balde, nSol, nPeg);
+    }
     const nSolicitadas = porStatus("solicitada").length;
     const nPegas = porStatus("pega").length;
     const linhas = balde.itens.length ? balde.itens.map((pd) => linhaDeltaConexao(vooId, v, pd, editavel)).join("") : `<p class="note" style="margin:4px 0">Nada aqui.</p>`;
@@ -4503,6 +4652,8 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     );
     const resumo = partesResumo.length ? `<span class="note carreta-resumo">${partesResumo.join(" \xB7 ")}</span>` : "";
     const solicitar = balde.itens.length ? `<button class="small ghost delta-icone" onclick="solicitarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Chamar operador" title="Chamar operador">${ico("carreta", 34)}${ico("campanha", 34)}${(nSolicitadas || nPegas) && livres.length ? `<span class="delta-n">(${livres.length})</span>` : ""}</button>` : "";
+    const podeRechamar = balde.base || nSolicitadas + nPegas > 0;
+    const rechamar = podeRechamar ? `<button class="small ghost delta-icone" onclick="rechamarCarretaDelta(${vooId},'${balde.chave}')" aria-label="${balde.base ? "Chamar operador" : "Chamar operador de novo"}" title="${balde.base ? "Chamar operador para as bags da base (pode chamar quantas vezes precisar)" : "Chamar de novo \u2014 sobrou bag depois da primeira carreta"}">${ico("carreta", 34)}${ico("campanha", 34)}${balde.base ? "" : `<span class="delta-n">+1</span>`}</button>` : "";
     const cancelarSolicitacao2 = nSolicitadas ? `<button class="small ghost delta-icone" onclick="cancelarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Cancelar solicita\xE7\xE3o" title="Cancelar solicita\xE7\xE3o">${ico("cancelar", 34)}</button>` : "";
     const excluir = editavel && balde.real && !balde.itens.length ? `<button class="small ghost delta-icone" onclick="excluirCarretaDeltaTela(${balde.real.id},${vooId})" aria-label="Excluir carreta" title="Excluir carreta vazia">${ico("x", 34)}</button>` : "";
     const matiz = corBaldeDelta(balde.chave);
@@ -4516,7 +4667,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
         <span class="note">${balde.itens.length}</span>
         ${resumo}
       </span>
-      ${cancelarSolicitacao2}${solicitar}${excluir}
+      ${cancelarSolicitacao2}${solicitar}${rechamar}${excluir}
     </div>
     <div class="balde-corpo">${linhas}</div>
     </div>
@@ -4544,14 +4695,37 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   }
   async function definirBagQtdManual(pontoDeltaId, valor, vooId) {
     const qtd = valor === "" ? null : parseInt(valor, 10) || 0;
+    if (qtd != null && qtd < 0) {
+      await erro("A quantidade contada n\xE3o pode ser negativa.");
+      return;
+    }
     try {
-      await definirBagQtdManualDelta(pontoDeltaId, qtd);
+      await definirBagContadaDelta(pontoDeltaId, qtd);
     } catch (e) {
       await erro(e);
       return;
     }
     await bus.recarregar();
     return abrirPontoDelta(vooId);
+  }
+  function aoContarDelta(el) {
+    var _a;
+    const grupo = el == null ? void 0 : el.parentElement;
+    if (!(grupo == null ? void 0 : grupo.querySelector)) return;
+    let selo = grupo.querySelector(".delta-dif");
+    const prev = parseInt(((_a = el.dataset) == null ? void 0 : _a.prev) || "0", 10) || 0;
+    const txt2 = String(el.value || "").trim();
+    const dif = txt2 === "" ? 0 : (parseInt(txt2, 10) || 0) - prev;
+    if (!dif) {
+      if (selo) selo.remove();
+      return;
+    }
+    if (!selo) {
+      selo = document.createElement("span");
+      grupo.appendChild(selo);
+    }
+    selo.className = `delta-dif ${dif < 0 ? "falta" : "sobra"}`;
+    selo.textContent = `${dif > 0 ? "+" : ""}${dif}`;
   }
   async function confirmarBagQtdManual(pontoDeltaId, vooId) {
     const campo = $(`bagManual${pontoDeltaId}`);
@@ -4762,12 +4936,62 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     await bus.recarregar();
     return abrirPontoDelta(vooId);
   }
+  function baldesDoVooDelta(vooId) {
+    const v = voo(vooId);
+    if (!v) return [];
+    return agruparEmBaldesDelta(
+      v,
+      D.deltas.filter((pd) => mesmoId(pd.voo_id, vooId)),
+      D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId))
+    );
+  }
+  function alvosDoRechamado(vooId, v, balde) {
+    if (!balde) return null;
+    if (balde.base) return { destinos: [vooId], pontoDeltaIds: null, nome: BALDE_BASE_LOCAL.nome };
+    const alvos = balde.itens.filter((pd) => !naoConectaDelta(pd) && classificarConexaoDelta(v, pd).tipo !== "tst");
+    if (!alvos.length) return null;
+    const vistos = /* @__PURE__ */ new Set();
+    const destinos = [], pontoDeltaIds = [];
+    for (const pd of alvos) {
+      const vd = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
+      if (!vd || vistos.has(vd.id)) continue;
+      vistos.add(vd.id);
+      destinos.push(vd.id);
+      pontoDeltaIds.push(pd.id);
+    }
+    return destinos.length ? { destinos, pontoDeltaIds, nome: balde.nome } : null;
+  }
+  async function rechamarCarretaDelta(vooId, chaveBalde) {
+    const v = voo(vooId);
+    if (!v) return;
+    const balde = baldesDoVooDelta(vooId).find((b) => b.chave === chaveBalde);
+    if (!balde) return;
+    const alvo2 = alvosDoRechamado(vooId, v, balde);
+    if (!alvo2) {
+      await aviso(balde.itens.length ? motivoSemSolicitar(balde.itens, v) : "Nenhum voo de destino dessa carreta est\xE1 na malha.");
+      return;
+    }
+    const jaChamadas = balde.base ? prontasDaBase(vooId).length : 0;
+    const pergunta = balde.base ? jaChamadas ? `Chamar mais um operador para as bags da base?
+
+J\xE1 foram chamados ${jaChamadas}.` : "Chamar operador para as bags da base deste voo?" : `Chamar o operador DE NOVO para \u201C${balde.nome}\u201D \u2014 ${alvo2.destinos.length} voo${alvo2.destinos.length === 1 ? "" : "s"}?
+
+Use quando sobrou bag depois da primeira carreta. Vai gerar um chamado novo, al\xE9m dos que j\xE1 existem.`;
+    const ok = await confirmar(pergunta);
+    if (!ok) return;
+    try {
+      await solicitarCarretaDeltaDb(vooId, alvo2.destinos, alvo2.nome, alvo2.pontoDeltaIds);
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    await bus.recarregar();
+    return abrirPontoDelta(vooId);
+  }
   async function solicitarCarretaDelta(vooId, chaveBalde) {
     const v = voo(vooId);
     if (!v) return;
-    const lista = D.deltas.filter((pd) => mesmoId(pd.voo_id, vooId));
-    const carretasDoVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId));
-    const balde = agruparEmBaldesDelta(v, lista, carretasDoVoo).find((b) => b.chave === chaveBalde);
+    const balde = baldesDoVooDelta(vooId).find((b) => b.chave === chaveBalde);
     if (!(balde == null ? void 0 : balde.itens.length)) {
       await aviso("Essa carreta est\xE1 vazia.");
       return;
@@ -4869,15 +5093,15 @@ Chamar de novo, para a bag que ficou no box?` : `Chamar operador s\xF3 para ${ro
   async function cancelarCarretaDelta(vooId, chaveBalde) {
     const v = voo(vooId);
     if (!v) return;
-    const lista = D.deltas.filter((pd) => mesmoId(pd.voo_id, vooId));
-    const carretasDoVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId));
-    const balde = agruparEmBaldesDelta(v, lista, carretasDoVoo).find((b) => b.chave === chaveBalde);
-    const solicitadas = (balde == null ? void 0 : balde.itens.filter((pd) => statusConexaoDelta(pd) === "solicitada")) || [];
-    if (!solicitadas.length) {
+    const balde = baldesDoVooDelta(vooId).find((b) => b.chave === chaveBalde);
+    const ids = (balde == null ? void 0 : balde.base) ? prontasDaBase(vooId).filter((p) => p.status === "pronta" || p.status === "ciente").map((p) => p.id) : (() => {
+      const solicitadas = (balde == null ? void 0 : balde.itens.filter((pd) => statusConexaoDelta(pd) === "solicitada")) || [];
+      return solicitadas.flatMap((pd) => D.prontas.filter((p) => mesmoId(p.ponto_delta_id, pd.id) && (p.status === "pronta" || p.status === "ciente")).map((p) => p.id));
+    })();
+    if (!ids.length) {
       await aviso("N\xE3o h\xE1 nada solicitado nessa carreta pra cancelar.");
       return;
     }
-    const ids = solicitadas.flatMap((pd) => D.prontas.filter((p) => mesmoId(p.ponto_delta_id, pd.id) && (p.status === "pronta" || p.status === "ciente")).map((p) => p.id));
     const ok = await confirmar(`Cancelar a solicita\xE7\xE3o de ${ids.length} voo${ids.length === 1 ? "" : "s"} dessa carreta?
 
 O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
@@ -9914,7 +10138,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       return cs.map((c) => `${linhaCarreta(c)}${grade(c.vs)}</div></div>`).join("");
     };
     const corpo = semDelta ? `<div class="card note" style="border-color:var(--amber)">
-         O Ponto Delta do ${rotOrigem} n\xE3o foi importado \u2014 mostrando todos os voos do turno.
+         ${vo.delta_importado_em ? `O Ponto Delta do ${rotOrigem} foi lido e n\xE3o trouxe conex\xE3o nenhuma \u2014 mostrando todos os voos do turno.` : `O Ponto Delta do ${rotOrigem} n\xE3o foi importado \u2014 mostrando todos os voos do turno.`}
        </div>
        ${linhaTodos(todos, `os ${todos.length} voos do turno`)}
        ${grade(todos)}` : `<p class="note passo-secao">Conex\xF5es do ${rotOrigem}</p>
@@ -11534,6 +11758,24 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   init_bus();
 
   // src/ui/components/skeleton.js
+  init_store();
+  function barraCarga(rotulo2) {
+    const { feitas, total } = UI.carga;
+    const pct = total ? Math.round(feitas / total * 100) : 0;
+    return `<div class="carga" role="status" aria-live="polite">
+    <div class="carga-rotulo">${rotulo2}</div>
+    <div class="carga-trilho"><div class="carga-barra" id="carga-barra" style="width:${pct}%"></div></div>
+    <div class="carga-txt" id="carga-txt">${feitas} de ${total} consultas</div>
+  </div>`;
+  }
+  function pintarCarga() {
+    if (typeof document === "undefined" || !document.getElementById) return;
+    const { feitas, total } = UI.carga;
+    const b = document.getElementById("carga-barra");
+    if (b) b.style.width = `${total ? Math.round(feitas / total * 100) : 0}%`;
+    const t = document.getElementById("carga-txt");
+    if (t) t.textContent = `${feitas} de ${total} consultas`;
+  }
   function skeletonCards(n = 3) {
     return Array.from({ length: n }, () => `
     <div class="card">
@@ -11552,6 +11794,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       </div>
     </header>
     <main id="main" role="status" aria-busy="true" aria-label="Carregando o AIROPS-Modulo_Rampa">
+      ${barraCarga("Carregando o dia")}
       ${skeletonCards(3)}
     </main>`;
   }
@@ -11700,12 +11943,16 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   }
   function conexoesDoVoo(v) {
     return D.deltas.filter((pd) => mesmoId(pd.voo_id, v.id)).map((pd) => {
+      var _a;
       const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
       return {
         id: pd.id,
         vs: pd.voo_saida_numero || "",
         dst: pd.destino || "",
-        bags: (pd.bag_qtd || 0) + (pd.bag_qtd_manual || 0),
+        // O que o lider CONTOU vence o previsto do arquivo quando existe
+        // (sql/atualizacao_46.sql). `??` e nao `||`: contar zero e uma
+        // resposta, e tem que ganhar do previsto igual a qualquer outra.
+        bags: (_a = pd.bag_qtd_contada) != null ? _a : pd.bag_qtd || 0,
         rct: rctDaConexaoDelta(v, pd),
         sai: minutosDe(vSaida == null ? void 0 : vSaida.saida),
         ncEm: minutosDoIso(pd.nao_conecta_em),
@@ -11745,7 +11992,11 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       falta: Math.max(0, P3 - R),
       onde,
       pendente: onde.length > 0 || P3 > R,
-      conexoes: conexoesDoVoo(v)
+      conexoes: conexoesDoVoo(v),
+      // Quando o arquivo do Delta foi lido (sql/atualizacao_45.sql).
+      // Nulo = nunca subiu. Nao e a mesma coisa que `conexoes` vazio:
+      // voo lido que nao conecta com ninguem tambem vem com lista vazia.
+      deltaEm: v.delta_importado_em || null
     };
   }
   var PESO_ESTADO = { solo: 0, descarga: 0, pernoite: 1, chegando: 2 };
@@ -11786,7 +12037,10 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   function pessoasReais(viagens) {
     if (!pode("patio_gps")) return [];
     const agora = Date.now(), out = [];
+    const limite = PATIO_POSICAO_VALIDA_H * 3600 * 1e3;
     for (const po of D.posicoes) {
+      const quando = new Date(po.atualizada_em).getTime();
+      if (!(agora - quando <= limite)) continue;
       const [x, y] = paraMapa(po.lat, po.lng);
       if (!(x >= -50 && x <= MAPA.largura + 50 && y >= -50 && y <= MAPA.altura + 50)) continue;
       const u = D.users.find((z) => z.id === po.usuario_id) || {};
@@ -11961,6 +12215,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
         add("aperta", vg.sel, vg.quem, `Viagem aberta h\xE1 ${mins(n - vg.desde)} min, de ${rotuloLugar(vg.de)} para ${rotuloLugar(vg.para)}`, `h\xE1 ${mins(n - vg.desde)}\u2032`, -(n - vg.desde));
     }
     for (const p of c.pessoas) {
+      if (!p.v) continue;
       if (p.estado === "parado")
         add("aperta", `p:${p.id}`, p.nome, `Parado h\xE1 ${mins(p.paradoMin)} min no meio da viagem, entre ${rotuloLugar(p.v.de)} e ${rotuloLugar(p.v.para)}, com ${p.v.qtd} bags`, `h\xE1 ${mins(p.paradoMin)}\u2032`, -p.paradoMin);
       if (p.estado === "semsinal")
@@ -12258,8 +12513,8 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     }
     return formas.join("") + rotulos.join("");
   }
-  var BALAO = { TCX: [115, -95], ESTEIRA: [-140, -10], TLC: [-130, 40] };
-  var BALAO_ESTREITO = { TCX: [-20, -105], ESTEIRA: [-56, -28], TLC: [-52, 62] };
+  var BALAO = { TCX: [-50, -135], ESTEIRA: [-140, -10], TLC: [-130, 40] };
+  var BALAO_ESTREITO = { TCX: [-45, -135], ESTEIRA: [-56, -28], TLC: [-45, 0] };
   function balao(k, s, linhas, sel) {
     const estreito = (UI.patio.largura || 1e3) < 600;
     const L = LUG[k], o = (estreito ? BALAO_ESTREITO : BALAO)[k], w = (estreito ? 116 : 130) / s, h = (linhas.length * 15 + 12) / s;
@@ -12358,6 +12613,9 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       }
     }
     return `<i style="width:${Math.round(m / MAPA.mPorUnidade * s)}px"></i><span>${m} m \xB7 N \u2191</span>`;
+  }
+  function kpisEsperando() {
+    return ["Em solo", "Chegam em 60 min", "Saem em 60 min", "Dessas, com bag pendente", "Viagens abertas"].map((l) => `<div class="patio-kpi"><b>\u2014</b><span>${l}</span></div>`).join("");
   }
   function kpis(c) {
     const n = c.agora, bx = Object.keys(c.boxes).map((k) => c.boxes[k]);
@@ -12493,8 +12751,9 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const cx = v.conexoes || [];
     const podeDecidir = pode("conexao_decidir") && !c.demo;
     if (!cx.length) {
+      const lido2 = v.deltaEm != null;
       return `<div class="patio-linha lista"><span class="rot">Conex\xF5es${fonte("ponto_delta")}</span>
-      <p class="patio-aviso compacto">O Ponto Delta deste voo ainda n\xE3o foi importado \u2014 sem ele n\xE3o h\xE1 conex\xF5es para marcar.</p></div>`;
+      <p class="patio-aviso compacto">${lido2 ? "Ponto Delta lido: este voo n\xE3o conecta com nenhum outro \u2014 n\xE3o h\xE1 o que marcar." : "O Ponto Delta deste voo ainda n\xE3o foi importado \u2014 sem ele n\xE3o h\xE1 conex\xF5es para marcar."}</p></div>`;
     }
     const itens = cx.map((x) => {
       const nc = x.ncEm != null;
@@ -12616,9 +12875,10 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       <button class="patio-bt" aria-pressed="${P3.fontes}" onclick="patioFontes()">Fontes</button>
     </div>
     ${P3.demo ? `<div class="patio-demo-aviso">Demonstra\xE7\xE3o: turno inventado, com GPS simulado e nomes fict\xEDcios. Nada disto est\xE1 acontecendo.</div>` : ""}
-    <div class="patio-kpis" id="patio-kpis">${kpis(c)}</div>
+    <div class="patio-kpis" id="patio-kpis">${UI.carga.carregando ? kpisEsperando() : kpis(c)}</div>
     <div class="patio-corpo">
       <div class="patio-mapa-wrap">
+        ${UI.carga.carregando ? `<div class="patio-carregando">${barraCarga("Montando o mapa do p\xE1tio")}</div>` : `
         <svg id="patio-mapa" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa do p\xE1tio de BSB">
           <defs>
             <pattern id="patio-hach" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#fff"/><rect width="3" height="7" fill="#97B2C7"/></pattern>
@@ -12663,7 +12923,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
           <button onclick="patioZoom(1.4)" aria-label="Aproximar">+</button>
           <button onclick="patioZoom(1/1.4)" aria-label="Afastar">\u2212</button>
           <button onclick="patioTudo()" aria-label="Ver o p\xE1tio inteiro">\u2922</button>
-        </div>
+        </div>`}
       </div>
       <aside class="patio-rail">
         <div id="patio-railtopo">${railTopo(c)}</div>
@@ -12946,6 +13206,16 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
 
   // src/core/render.js
   var app = () => document.getElementById("app");
+  function telaQuebrou(tab, e) {
+    const nome = ABA_TITULO[tab] || tab;
+    return `<div class="card">
+    <h3 style="color:var(--red)">A tela \u201C${esc(nome)}\u201D n\xE3o conseguiu desenhar</h3>
+    <p>O resto do app continua funcionando \u2014 d\xE1 para sair daqui pelo menu.
+       Se isto se repetir, mande o recado abaixo junto com a hora.</p>
+    <p class="note" style="word-break:break-word">${esc(String((e == null ? void 0 : e.message) || e))}</p>
+    <button class="primary" onclick="recarregar()">Buscar os dados de novo</button>
+  </div>`;
+  }
   function abasDoUsuario() {
     if (!S.ferramentas.length) {
       return [...ABAS_ANTIGAS[S.me.perfil] || []];
@@ -13011,9 +13281,17 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     </header>
     ${naOperador ? barraOperador() : ""}
     <main id="main"${UI.tab === "patio" ? ` class="largo"` : ""}></main>`;
-    document.getElementById("main").innerHTML = conteudo(UI.tab);
+    let html, quebrou = false;
+    try {
+      html = conteudo(UI.tab);
+    } catch (e) {
+      quebrou = true;
+      console.error("[tela]", UI.tab, e);
+      html = telaQuebrou(UI.tab, e);
+    }
+    document.getElementById("main").innerHTML = html;
     voltarRolagem();
-    if (UI.tab === "patio") patioMontado();
+    if (UI.tab === "patio" && !quebrou) patioMontado();
     atualizarModalVivo();
     sincronizarMenu(abas);
     religarAnimacoes();
@@ -13078,6 +13356,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   init_supabase();
   init_store();
   init_horas();
+  init_regras();
   async function carregarTudo() {
     const dia = hoje();
     const ini2 = dia + "T00:00:00";
@@ -13089,33 +13368,61 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const pegaDelta = pegaIndia || vejoTudo || pode("levar") || pode("triagem_sinalizar");
     const pegaCarretas = pode("oc_pontos") || pode("levar");
     const pegaPosicoes = pode("patio_gps");
+    const posicaoDesde = new Date(Date.now() - PATIO_POSICAO_VALIDA_H * 3600 * 1e3).toISOString();
     let qv = sb.from("viagens").select("*").gte("saiu_em", ini2).order("saiu_em", { ascending: false });
     if (pode("levar") && !vejoTudo && !pode("oc_chegando")) qv = qv.eq("operador_id", S.me.id);
     const pegaLocal = pegaProntas;
-    const [v, g, s, u, pr, pi, pd, bl, cd, po] = await Promise.all([
-      sb.from("voos").select("*").eq("data", dia).order("chegada", { ascending: true, nullsFirst: false }),
-      pegaViagens ? qv : Promise.resolve({ data: [] }),
-      pegaSols ? sb.from("solicitacoes").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] }),
-      sb.from("usuarios").select("id,nome,nome_de_guerra,perfil"),
-      pegaProntas ? sb.from("prontas").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] }),
-      pegaIndia ? sb.from("ponto_india").select("*").eq("data", dia) : Promise.resolve({ data: [] }),
-      pegaDelta ? sb.from("ponto_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] }),
-      pegaLocal ? sb.from("bags_local").select("*").eq("data", dia) : Promise.resolve({ data: [] }),
-      pegaCarretas ? sb.from("carretas_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] }),
-      pegaPosicoes ? sb.from("posicoes").select("*") : Promise.resolve({ data: [] })
-    ]);
-    D.users = (u.data || []).map((x) => ({ ...x, nome: x.nome_de_guerra || x.nome }));
-    D.voos = v.data || [];
-    D.viagens = g.data || [];
-    D.sols = s.data || [];
-    D.prontas = pr.data || [];
-    D.indias = pi.data || [];
-    D.deltas = pd.data || [];
-    D.bagsLocal = bl.data || [];
-    D.carretasDelta = cd.data || [];
-    D.posicoes = po.data || [];
-    const ids = D.viagens.map((x) => x.id);
-    D.destinos = ids.length ? (await sb.from("viagens_destinos").select("*").in("viagem_id", ids)).data || [] : [];
+    const PASSOS = 11;
+    UI.carga.carregando = true;
+    UI.carga.feitas = 0;
+    UI.carga.total = PASSOS;
+    const marcar = (p) => Promise.resolve(p).then(
+      (r) => {
+        UI.carga.feitas++;
+        pintarCarga();
+        return r;
+      },
+      (e) => {
+        UI.carga.feitas++;
+        pintarCarga();
+        throw e;
+      }
+    );
+    try {
+      const [v, g, s, u, pr, pi, pd, bl, cd, po] = await Promise.all([
+        marcar(sb.from("voos").select("*").eq("data", dia).order("chegada", { ascending: true, nullsFirst: false })),
+        marcar(pegaViagens ? qv : Promise.resolve({ data: [] })),
+        marcar(pegaSols ? sb.from("solicitacoes").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] })),
+        marcar(sb.from("usuarios").select("id,nome,nome_de_guerra,perfil")),
+        marcar(pegaProntas ? sb.from("prontas").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] })),
+        marcar(pegaIndia ? sb.from("ponto_india").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
+        marcar(pegaDelta ? sb.from("ponto_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
+        marcar(pegaLocal ? sb.from("bags_local").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
+        marcar(pegaCarretas ? sb.from("carretas_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
+        marcar(pegaPosicoes ? sb.from("posicoes").select("*").gte("atualizada_em", posicaoDesde) : Promise.resolve({ data: [] }))
+      ]);
+      D.users = (u.data || []).map((x) => ({ ...x, nome: x.nome_de_guerra || x.nome }));
+      D.voos = v.data || [];
+      D.viagens = g.data || [];
+      D.sols = s.data || [];
+      D.prontas = pr.data || [];
+      D.indias = pi.data || [];
+      D.deltas = pd.data || [];
+      D.bagsLocal = bl.data || [];
+      D.carretasDelta = cd.data || [];
+      D.posicoes = po.data || [];
+      const ids = D.viagens.map((x) => x.id);
+      if (ids.length) {
+        D.destinos = (await marcar(sb.from("viagens_destinos").select("*").in("viagem_id", ids))).data || [];
+      } else {
+        D.destinos = [];
+        UI.carga.feitas++;
+        pintarCarga();
+      }
+    } finally {
+      UI.carga.carregando = false;
+      pintarCarga();
+    }
   }
 
   // src/core/auth.js
@@ -14268,6 +14575,11 @@ Sair mesmo assim?`
     sinalizar_pronta: (p) => sinalizarProntaDb(p.setor, p.vooId, p.box, p.pontoIndiaId, p.qtd),
     mover_conexao_carreta_delta: (p) => moverConexaoCarretaDelta(p.pontoDeltaId, p.carretaId),
     mover_conexoes_carreta_delta: (p) => moverConexoesCarretaDelta(p.pontoDeltaIds, p.carretaId),
+    definir_bag_contada_delta: (p) => definirBagContadaDelta(p.pontoDeltaId, p.qtd),
+    // Acao ANTIGA (o campo era diferenca, nao total). Continua aqui
+    // porque pode haver uma dessas parada na fila do celular de alguem
+    // que ficou sem rede antes da atualizacao_46 -- descartar perderia um
+    // lancamento de bag de verdade. Some sozinha quando a fila drenar.
     definir_bag_qtd_manual_delta: (p) => definirBagQtdManualDelta(p.pontoDeltaId, p.qtd),
     pegar_conexoes_delta: (p) => pegarConexoesDelta(p.destinos, p.pontoDeltaIds)
   });
@@ -14412,11 +14724,13 @@ Sair mesmo assim?`
     confirmarCriarCarretaDelta,
     excluirCarretaDeltaTela,
     solicitarCarretaDelta,
+    rechamarCarretaDelta,
     solicitarConexaoDelta,
     cancelarCarretaDelta,
     alternarSelecaoDelta,
     confirmarMoverSelecionados,
     confirmarBagQtdManual,
+    aoContarDelta,
     abrirEquipamentosDelta,
     pedirEquipamentoDelta,
     abrirAvisoPpDelta,
