@@ -1353,9 +1353,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 21/09/2026, 18:32:04
+     Gerado em: 21/09/2026, 18:37:13
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 18:32";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 18:37";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -12200,8 +12200,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const enviada = enviadosPor(pi.id).length > 0;
     const chips = [
       deixaramNaTcx(pi) ? `<span class="chip st-aceita tcx-sinal" title="Um operador registrou que deixou bag desse voo na TCX.">TCX</span>` : "",
-      enviada ? `<span class="chip st-a_caminho" title="Esta linha j\xE1 foi enviada aos operadores. D\xE1 para editar enquanto ningu\xE9m pegou.">enviada</span>` : "",
-      av.qtd || av.semNumero ? `<span class="chip st-a_caminho" title="J\xE1 avisado aos operadores e ningu\xE9m buscou ainda.">avisado${av.qtd ? ` ${av.qtd}` : ""}${av.semNumero ? " \xB7 pedido do l\xEDder" : ""}</span>` : ""
+      enviada ? `<span class="chip st-a_caminho" title="Esta linha j\xE1 foi enviada aos operadores. D\xE1 para editar enquanto ningu\xE9m pegou.">enviada</span>` : ""
     ].join("");
     return `<div class="pt-linha">
     <div class="india-id">${lbl}${chips}</div>
