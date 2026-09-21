@@ -424,6 +424,10 @@
   .st-solicitada{background:rgba(193,91,31,.18); color:var(--orange)}
   .st-aceita{background:rgba(47,102,144,.15); color:var(--amber)}
   .st-cancelada{background:rgba(194,59,59,.14); color:var(--red)}
+  /* Bag que fica em Brasília: vai pra esteira, não embarca. Usa --text
+     (a cor de CHEGADA) de propósito — a linha dela é a ponta de chegada
+     da rotação, e o chip repete essa leitura em vez de brigar com ela. */
+  .st-base{background:rgba(22,66,91,.12); color:var(--text)}
   /* Chip que E botao (aviso de PP, 18/09/2026): parece chip, age como
      botao. Zera o que o button traz de fabrica (altura de 56px, largura
      total, maiuscula) pra caber na linha nowrap do Delta, e devolve o
@@ -1290,9 +1294,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 21/09/2026, 10:46:20
+     Gerado em: 21/09/2026, 11:00:05
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 10:46";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 11:00";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1893,7 +1897,7 @@
     if (min <= 60) return "umahora";
     return "maisdeuma";
   }
-  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto, BALDE_NAO_CONECTA, BALDE_BASE_LOCAL;
+  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto, BALDE_NAO_CONECTA, BALDE_BASE_LOCAL, ehProntaDaBase;
   var init_conexoes = __esm({
     "src/utils/conexoes.js"() {
       init_store();
@@ -1911,6 +1915,7 @@
       };
       BALDE_NAO_CONECTA = { id: "naoconecta", nome: "N\xE3o conecta" };
       BALDE_BASE_LOCAL = { id: "baselocal", nome: "Bags p/ base local" };
+      ehProntaDaBase = (p) => (p == null ? void 0 : p.carreta_nome) === BALDE_BASE_LOCAL.nome && p.ponto_delta_id == null;
     }
   });
 
@@ -10796,7 +10801,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     }).join("");
   }
   function urgenciaDaPronta(p) {
-    return urgenciaDoVoo(p.voo_destino_id);
+    return ehProntaDaBase(p) ? Infinity : urgenciaDoVoo(p.voo_destino_id);
   }
   function prontasNotificaveis() {
     const calado = viagemAtiva() ? UI.deixadas : [];
@@ -11199,10 +11204,16 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
   }
   function contarUrgentes(ps) {
     return ps.filter((p) => {
+      if (ehProntaDaBase(p)) return false;
       const v = voo(p.voo_destino_id) || {};
       const alvo2 = minutosDe(v.saida);
       return alvo2 != null && corTimer(alvo2 - agoraMin()) === "timer-vermelho";
     }).length;
+  }
+  function rotuloDaPronta(p, v) {
+    if (!ehProntaDaBase(p))
+      return `${vooRotulo(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}`;
+    return `${vooRotulo(v, "chegada", { aviao: true, aviaoApos: true })} <span class="chip st-base" title="Bagagem que fica em Bras\xEDlia \u2014 vai para a esteira, n\xE3o embarca">BASE</span>`;
   }
   function timerAlerta(v) {
     const alvo2 = minutosDe(v.saida);
@@ -11256,8 +11267,8 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       const marcado = sel.includes(p.id);
       return `<div class="pt-linha alerta-voo${marcado ? " sel" : ""}" onclick="togVooAlerta(${p.id})">
       ${ico(marcado ? "quadradoMarcado" : "quadrado", 20)}
-      <span class="grow">${vooRotulo(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}${qtdDaPronta(p)}</span>
-      ${timerAlerta(v)}
+      <span class="grow">${rotuloDaPronta(p, v)}${qtdDaPronta(p)}</span>
+      ${ehProntaDaBase(p) ? "" : timerAlerta(v)}
     </div>`;
     };
     return `<div class="alerta-carretas">${grupos2.map((c) => {
@@ -11265,8 +11276,8 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
         const p = c.ps[0];
         const v = voo(p.voo_destino_id) || {};
         return `<div class="pt-linha alerta-voo alerta-solto">
-          <span class="grow">${vooRotulo(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}${qtdDaPronta(p)}</span>
-          ${timerAlerta(v)}
+          <span class="grow">${rotuloDaPronta(p, v)}${qtdDaPronta(p)}</span>
+          ${ehProntaDaBase(p) ? "" : timerAlerta(v)}
         </div>
         <div class="bag-misturada" title="Esta bag foi chamada sozinha, mas est\xE1 no meio da carreta ${esc(c.nome)} \u2014 vai ter que separar">BAG MISTURADA</div>
         <button class="primary alerta-pegar" onclick="pegarDoAlerta('${tipo}',${boxArg},[${p.id}],[${p.id}])">PEGAR</button>`;
