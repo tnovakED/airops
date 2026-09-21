@@ -1294,9 +1294,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 21/09/2026, 11:00:05
+     Gerado em: 21/09/2026, 11:03:41
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 11:00";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 11:03";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -11213,7 +11213,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
   function rotuloDaPronta(p, v) {
     if (!ehProntaDaBase(p))
       return `${vooRotulo(v, "saida", { aviao: true, aviaoApos: true })}${selosDoVoo(v)}`;
-    return `${vooRotulo(v, "chegada", { aviao: true, aviaoApos: true })} <span class="chip st-base" title="Bagagem que fica em Bras\xEDlia \u2014 vai para a esteira, n\xE3o embarca">BASE</span>`;
+    return `${vooRotulo(v, "chegada", { aviao: true, aviaoApos: true, placa: `E-${v.esteira || "?"}` })} <span class="chip st-base" title="Bagagem que fica em Bras\xEDlia \u2014 vai para a esteira, n\xE3o embarca">BASE</span>`;
   }
   function timerAlerta(v) {
     const alvo2 = minutosDe(v.saida);
