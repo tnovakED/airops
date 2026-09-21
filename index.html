@@ -1061,6 +1061,12 @@
   .india-id{flex:1 1 auto; min-width:0; display:flex; align-items:center; flex-wrap:wrap; gap:4px}
   .india-ctl{flex:none; margin-left:auto; display:flex; align-items:center; gap:4px}
   .india-lista .voo{font-size:20px}
+  /* P e R da TCX: colados um no outro e no campo de quantidade, a direita da
+     linha (.india-ctl ja empurra para a direita). Sem D e sem "faltam". */
+  .tcx-pr{display:inline-flex; align-items:baseline; gap:2px; white-space:nowrap;
+    font-size:12px; font-weight:700; margin-right:4px}
+  .tcx-pr b{font-size:17px; font-weight:700; font-variant-numeric:tabular-nums}
+  .tcx-pr i{font-style:normal; color:var(--muted); margin:0 3px}
   .india-lista .chip{font-size:11px; padding:1px 6px; letter-spacing:0; flex:none}
   .india-entregue{color:#1f1f1f}
   .india-trazendo{color:var(--green); margin-left:2px}
@@ -1347,9 +1353,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 21/09/2026, 18:01:52
+     Gerado em: 21/09/2026, 18:32:04
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 18:01";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 18:32";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1950,29 +1956,53 @@
     if (min <= 60) return "umahora";
     return "maisdeuma";
   }
-  function avisadoDaConexao(piId, prontas, setor = "TCX") {
+  function avisadoDaConexao(piId, prontas, setor = "TCX", exceto = null) {
     let qtd = 0, semNumero = 0;
     for (const p of prontas) {
       if (!abertaDaConexao(p, piId, setor)) continue;
+      if (exceto != null && p.criada_por === exceto) continue;
       if (p.qtd == null) semNumero++;
       else qtd += Number(p.qtd) || 0;
     }
     return { qtd, semNumero };
   }
-  function planoDeMarcasTcx(marcas, prontas, setor = "TCX") {
-    const inserir = [], atualizar = [], jaAvisado = [];
+  function planoDeMarcasTcx(marcas, prontas, setor = "TCX", meuId = null) {
+    const inserir = [], atualizar = [], cancelar = [], jaAvisado = [], bloqueadas = [];
     const usadas = /* @__PURE__ */ new Set();
     for (const m of marcas) {
-      const aberta = prontas.find((p) => abertaDaConexao(p, m.piId, setor) && p.qtd == null && !usadas.has(p.id));
-      if (aberta) {
-        usadas.add(aberta.id);
-        if (m.qtd != null) atualizar.push({ id: aberta.id, qtd: m.qtd, piId: m.piId, vooId: m.vooId });
-        else jaAvisado.push(m);
+      const on = m.on !== false;
+      const propria = meuId == null ? null : prontas.find((p) => abertaDaConexao(p, m.piId, setor) && p.criada_por === meuId && !usadas.has(p.id));
+      if (!on) {
+        if (!propria) continue;
+        usadas.add(propria.id);
+        if (propria.status === "pronta") cancelar.push({ id: propria.id, piId: m.piId, vooId: m.vooId, motivo: "tirar" });
+        else bloqueadas.push({ ...m, id: propria.id });
+        continue;
+      }
+      if (propria) {
+        usadas.add(propria.id);
+        if (m.qtd != null && m.qtd !== propria.qtd)
+          atualizar.push({ id: propria.id, qtd: m.qtd, piId: m.piId, vooId: m.vooId });
+        continue;
+      }
+      const doLider = prontas.find((p) => abertaDaConexao(p, m.piId, setor) && p.qtd == null && !usadas.has(p.id));
+      if (doLider) {
+        usadas.add(doLider.id);
+        if (m.qtd == null) {
+          jaAvisado.push(m);
+          continue;
+        }
+        if (doLider.status === "pronta") {
+          inserir.push(m);
+          cancelar.push({ id: doLider.id, piId: m.piId, vooId: m.vooId, motivo: "troca" });
+        } else {
+          atualizar.push({ id: doLider.id, qtd: m.qtd, piId: m.piId, vooId: m.vooId });
+        }
         continue;
       }
       inserir.push(m);
     }
-    return { inserir, atualizar, jaAvisado };
+    return { inserir, atualizar, cancelar, jaAvisado, bloqueadas };
   }
   function faltamParaOperador(p, indias, prdFn) {
     if (!p || p.qtd != null || p.ponto_india_id == null) return null;
@@ -12103,28 +12133,49 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   function lerMarca(m) {
     const bruto = m || { on: false, qtd: "" };
     const n = parseInt(bruto.qtd, 10);
-    return { on: !!bruto.on || String(bruto.qtd || "").trim() !== "", txt: String(bruto.qtd || ""), qtd: n > 0 ? n : null };
+    return { on: !!bruto.on, txt: String(bruto.qtd || ""), qtd: n > 0 ? n : null };
   }
   var marcaSalva = (piId) => lerMarca(marcasTcx()[piId]);
-  function resumoSalvo(linhas) {
-    const salvas = linhas.map((pi) => marcaSalva(pi.id)).filter((m) => m.on);
-    const bags = salvas.reduce((a, m) => a + (m.qtd || 0), 0);
-    const semNumero = salvas.filter((m) => m.qtd == null).length;
-    return { n: salvas.length, bags, semNumero };
+  function enviadosPor(piId) {
+    var _a;
+    const eu = (_a = S.me) == null ? void 0 : _a.id;
+    return D.prontas.filter((p) => mesmoId(p.ponto_india_id, piId) && p.setor === "TCX" && (p.status === "pronta" || p.status === "ciente") && eu != null && p.criada_por === eu);
+  }
+  function resumoCard(linhas) {
+    let enviadas = 0, bagsEnv = 0;
+    for (const pi of linhas) {
+      const e = enviadosPor(pi.id);
+      if (!e.length) continue;
+      enviadas++;
+      bagsEnv += e.reduce((a, p) => a + (Number(p.qtd) || 0), 0);
+    }
+    const salvas = linhas.filter((pi) => marcasTcx()[pi.id]).map((pi) => marcaSalva(pi.id));
+    const ligadas = salvas.filter((m) => m.on);
+    return {
+      enviadas,
+      bagsEnv,
+      pendentes: salvas.length,
+      bags: ligadas.reduce((a, m) => a + (m.qtd || 0), 0),
+      semNumero: ligadas.filter((m) => m.qtd == null).length,
+      aTirar: salvas.length - ligadas.length
+    };
   }
   function blocoCardsTcx() {
     const cards = cardsTcx();
     if (!cards.length) return `<div class="card note">Nenhum voo com Ponto \xCDndia importado sai dentro da janela. Ajuste o hor\xE1rio no rel\xF3gio ou importe o \xCDndia do voo.</div>`;
     return cards.map((c) => {
-      const r = resumoSalvo(c.linhas);
-      const salvo = r.n ? `<span class="chip st-aceita">${r.n} linha${r.n === 1 ? "" : "s"}${r.bags ? ` \xB7 ${r.bags} bag${r.bags === 1 ? "" : "s"}` : ""}${r.semNumero ? ` \xB7 ${r.semNumero} sem contagem` : ""}</span>` : `<span class="note">nada montado</span>`;
+      const r = resumoCard(c.linhas);
+      const chips = [
+        r.enviadas ? `<span class="chip st-aceita" title="J\xE1 avisado aos operadores. Ainda d\xE1 para editar enquanto ningu\xE9m pegou.">enviada \xB7 ${r.enviadas} linha${r.enviadas === 1 ? "" : "s"}${r.bagsEnv ? ` \xB7 ${r.bagsEnv} bag${r.bagsEnv === 1 ? "" : "s"}` : ""}</span>` : "",
+        r.pendentes ? `<span class="chip st-a_caminho" title="Salvo neste aparelho, ainda n\xE3o enviado.">salvo \xB7 ${r.pendentes - r.aTirar} linha${r.pendentes - r.aTirar === 1 ? "" : "s"}${r.bags ? ` \xB7 ${r.bags} bag${r.bags === 1 ? "" : "s"}` : ""}${r.semNumero ? ` \xB7 ${r.semNumero} sem contagem` : ""}${r.aTirar ? ` \xB7 ${r.aTirar} a tirar` : ""}</span>` : ""
+      ].join("");
       return `<div class="card">
       <div class="list-line" style="border:none;padding:0 0 6px"><b class="grow">${vooRotulo(c.v, "saida")}</b>
         <span class="note">box ${esc(c.v.box || "?")}${c.v.saida ? ` \xB7 ${esc(c.v.saida)}` : ""}</span></div>
-      <div class="list-line" style="border:none;padding:0 0 8px">${salvo}</div>
+      <div class="list-line" style="border:none;padding:0 0 8px">${chips || `<span class="note">nada montado</span>`}</div>
       <div class="row">
         <button class="ghost" onclick="tcxMontar(${c.vooId})">Montar carreta</button>
-        <button class="primary" ${r.n ? "" : "disabled"} onclick="tcxCarretaPronta(${c.vooId})">Carreta pronta${r.n ? ` \xB7 ${r.n}` : ""}</button>
+        <button class="primary" ${r.pendentes ? "" : "disabled"} onclick="tcxCarretaPronta(${c.vooId})">${r.enviadas ? "Atualizar carreta" : "Carreta pronta"}${r.pendentes ? ` \xB7 ${r.pendentes}` : ""}</button>
       </div>
     </div>`;
     }).join("");
@@ -12134,24 +12185,33 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     if (!vc) return false;
     return D.bagsLocal.some((b) => b.local === "TCX" && b.status !== "a_caminho" && mesmoId(b.voo_destino_id, pi.voo_id) && mesmoId(b.voo_origem_id, vc.id));
   }
+  var prHtml = (pi) => {
+    const { p, r } = prd(pi);
+    return `<span class="prd-p">P<b>${p}</b></span><i>\xB7</i><span class="prd-r">R<b>${r}</b></span>`;
+  };
   function linhaMontar(pi, rasc) {
+    var _a;
     const { p, r } = prd(pi);
     const faltam2 = Math.max(0, p - r);
-    const av = avisadoDaConexao(pi.id, D.prontas);
+    const av = avisadoDaConexao(pi.id, D.prontas, "TCX", (_a = S.me) == null ? void 0 : _a.id);
     const sugerido = Math.max(0, faltam2 - av.qtd);
     const mk = lerMarca(rasc[pi.id]);
     const lbl = vooRotulo({ origem: pi.origem, voo_chegada: pi.voo_chegada_numero }, "chegada", { box: false });
+    const enviada = enviadosPor(pi.id).length > 0;
     const chips = [
-      deixaramNaTcx(pi) ? `<span class="chip st-aceita" title="Um operador registrou que deixou bag desse voo na TCX.">deixaram na TCX</span>` : "",
+      deixaramNaTcx(pi) ? `<span class="chip st-aceita tcx-sinal" title="Um operador registrou que deixou bag desse voo na TCX.">TCX</span>` : "",
+      enviada ? `<span class="chip st-a_caminho" title="Esta linha j\xE1 foi enviada aos operadores. D\xE1 para editar enquanto ningu\xE9m pegou.">enviada</span>` : "",
       av.qtd || av.semNumero ? `<span class="chip st-a_caminho" title="J\xE1 avisado aos operadores e ningu\xE9m buscou ainda.">avisado${av.qtd ? ` ${av.qtd}` : ""}${av.semNumero ? " \xB7 pedido do l\xEDder" : ""}</span>` : ""
     ].join("");
     return `<div class="pt-linha">
-    <div class="india-id">${lbl}${chips}
-      <span class="note">P <b>${p}</b> \xB7 R <b>${r}</b> \xB7 faltam <b>${faltam2}</b></span></div>
-    <div class="india-ctl"><span class="delta-manual-grupo">
-      <input id="tcxQtd${pi.id}" class="delta-manual" type="number" inputmode="numeric" min="0" placeholder="${sugerido}" value="${esc(mk.txt)}" oninput="tcxDigitou(${pi.id},this.value)" aria-label="Quantas bags voc\xEA montou na carreta" title="Quantas voc\xEA colocou na carreta. Em branco = marcou sem contar; o operador v\xEA o que falta (${faltam2}).">
-      <button id="tcxChk${pi.id}" class="small ${mk.on ? "ok" : "ghost"} delta-ok" onclick="tcxMarcar(${pi.id})" aria-pressed="${mk.on}" aria-label="Incluir na carreta" title="Incluir na carreta">${ico(mk.on ? "quadradoMarcado" : "quadrado", 34)}</button>
-    </span></div>
+    <div class="india-id">${lbl}${chips}</div>
+    <div class="india-ctl">
+      <span class="tcx-pr" id="tcxPR${pi.id}" title="P previsto \xB7 R real (o mesmo do Ponto \xCDndia do l\xEDder)">${prHtml(pi)}</span>
+      <span class="delta-manual-grupo">
+        <input id="tcxQtd${pi.id}" class="delta-manual" type="number" inputmode="numeric" min="0" placeholder="${sugerido}" value="${esc(mk.txt)}" oninput="tcxDigitou(${pi.id},this.value)" aria-label="Quantas bags voc\xEA montou na carreta" title="Quantas voc\xEA colocou na carreta. Em branco = marcou sem contar; o operador v\xEA o que falta.">
+        <button id="tcxChk${pi.id}" class="small ${mk.on ? "ok" : "ghost"} delta-ok" onclick="tcxMarcar(${pi.id})" aria-pressed="${mk.on}" aria-label="Incluir na carreta" title="Incluir na carreta">${ico(mk.on ? "quadradoMarcado" : "quadrado", 34)}</button>
+      </span>
+    </div>
   </div>`;
   }
   function htmlMontar(vooId) {
@@ -12171,26 +12231,48 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
   function tcxMontar(vooId) {
     const salvo = marcasTcx();
     UI.tri.rascunho = {};
-    for (const pi of linhasDoVoo(vooId)) if (salvo[pi.id]) UI.tri.rascunho[pi.id] = { ...salvo[pi.id] };
+    UI.tri.montarVoo = vooId;
+    for (const pi of linhasDoVoo(vooId)) {
+      if (salvo[pi.id]) {
+        UI.tri.rascunho[pi.id] = { ...salvo[pi.id] };
+        continue;
+      }
+      const env = enviadosPor(pi.id)[0];
+      if (env) UI.tri.rascunho[pi.id] = { on: true, qtd: env.qtd != null ? String(env.qtd) : "" };
+    }
     UI.modalVivo = null;
     abrirModal(htmlMontar(vooId));
   }
+  function atualizarMontarTcx() {
+    var _a;
+    const vooId = (_a = UI.tri) == null ? void 0 : _a.montarVoo;
+    if (vooId == null) return;
+    for (const pi of linhasDoVoo(vooId)) {
+      const el = $(`tcxPR${pi.id}`);
+      if (el) el.innerHTML = prHtml(pi);
+    }
+  }
+  function pintarCheck(piId, on) {
+    const b = $(`tcxChk${piId}`);
+    if (!b) return;
+    b.className = `small ${on ? "ok" : "ghost"} delta-ok`;
+    b.innerHTML = ico(on ? "quadradoMarcado" : "quadrado", 34);
+    if (b.setAttribute) b.setAttribute("aria-pressed", String(on));
+  }
   function tcxDigitou(piId, valor) {
     UI.tri.rascunho = UI.tri.rascunho || {};
+    const txt2 = String(valor || "");
     const atual = UI.tri.rascunho[piId];
-    UI.tri.rascunho[piId] = { on: !!(atual == null ? void 0 : atual.on), qtd: String(valor || "") };
+    const on = txt2.trim() !== "" ? true : !!(atual == null ? void 0 : atual.on);
+    UI.tri.rascunho[piId] = { on, qtd: txt2 };
+    if (on && !(atual == null ? void 0 : atual.on)) pintarCheck(piId, true);
   }
   function tcxMarcar(piId) {
     UI.tri.rascunho = UI.tri.rascunho || {};
     const atual = UI.tri.rascunho[piId] || { on: false, qtd: "" };
-    UI.tri.rascunho[piId] = { on: !atual.on, qtd: atual.qtd };
-    const b = $(`tcxChk${piId}`);
-    if (b) {
-      const on = UI.tri.rascunho[piId].on;
-      b.className = `small ${on ? "ok" : "ghost"} delta-ok`;
-      b.innerHTML = ico(on ? "quadradoMarcado" : "quadrado", 34);
-      if (b.setAttribute) b.setAttribute("aria-pressed", String(on));
-    }
+    const on = !atual.on;
+    UI.tri.rascunho[piId] = { on, qtd: atual.qtd };
+    pintarCheck(piId, on);
   }
   function tcxSalvar(vooId) {
     const salvo = marcasTcx();
@@ -12198,9 +12280,14 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     for (const pi of linhasDoVoo(vooId)) {
       const campo = $(`tcxQtd${pi.id}`);
       const atual = rasc[pi.id] || { on: false, qtd: "" };
-      const m = lerMarca({ on: atual.on, qtd: campo && campo.value != null && campo.value !== "" ? campo.value : atual.qtd });
-      if (m.on) salvo[pi.id] = { on: atual.on, qtd: m.txt };
-      else delete salvo[pi.id];
+      const digitouSemAviso = campo && campo.value != null && campo.value !== "" && atual.qtd === "";
+      const on = !!atual.on || !!digitouSemAviso;
+      const txt2 = digitouSemAviso ? String(campo.value) : atual.qtd;
+      const m = lerMarca({ on, qtd: txt2 });
+      const env = enviadosPor(pi.id)[0];
+      const igualAoEnviado = !!env && m.on && (m.qtd == null || m.qtd === env.qtd);
+      if (igualAoEnviado || !m.on && !env) delete salvo[pi.id];
+      else salvo[pi.id] = { on: m.on, qtd: m.txt };
     }
     UI.tri.rascunho = {};
     guardarMarcas();
@@ -12218,65 +12305,90 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     }
   }
   async function enviarCarretaTcx(vooId) {
-    const marcadas = linhasDoVoo(vooId).filter((pi) => marcaSalva(pi.id).on);
-    if (!marcadas.length) {
+    var _a;
+    const linhas = linhasDoVoo(vooId).filter((pi) => marcasTcx()[pi.id]);
+    if (!linhas.length) {
       await aviso("Nada salvo para esse voo. Toque em Montar carreta, conte o que colocou e salve.");
       return;
     }
-    const marcas = marcadas.map((pi) => ({ piId: pi.id, vooId, qtd: marcaSalva(pi.id).qtd }));
-    const plano = planoDeMarcasTcx(marcas, D.prontas);
+    const marcas = linhas.map((pi) => {
+      const m = marcaSalva(pi.id);
+      return { piId: pi.id, vooId, on: m.on, qtd: m.qtd };
+    });
+    const plano = planoDeMarcasTcx(marcas, D.prontas, "TCX", (_a = S.me) == null ? void 0 : _a.id);
+    const limpar = (lista) => {
+      for (const m of lista) delete marcasTcx()[m.piId];
+      guardarMarcas();
+    };
     const rotulo2 = (piId) => {
       const pi = D.indias.find((x) => mesmoId(x.id, piId)) || {};
       return `${esc(pi.origem || "")}-${esc(pi.voo_chegada_numero || "")}`;
     };
-    if (!plano.inserir.length && !plano.atualizar.length) {
-      for (const m of plano.jaAvisado) delete marcasTcx()[m.piId];
-      guardarMarcas();
-      await aviso("Os operadores j\xE1 foram avisados dessas bags (pedido do l\xEDder) e ningu\xE9m buscou ainda. Digite a quantidade se quiser completar o aviso.");
+    const nada = !plano.inserir.length && !plano.atualizar.length && !plano.cancelar.length;
+    if (nada) {
+      limpar(marcas);
+      const msgs = [];
+      if (plano.jaAvisado.length) msgs.push("Os operadores j\xE1 foram avisados dessas bags (pedido do l\xEDder) e ningu\xE9m buscou ainda. Digite a quantidade se quiser completar o aviso.");
+      if (plano.bloqueadas.length) msgs.push("Um operador j\xE1 aceitou essa carreta: n\xE3o d\xE1 para tirar a linha. Combine com ele.");
+      if (!msgs.length) msgs.push("Nada mudou em rela\xE7\xE3o ao que j\xE1 foi enviado.");
+      await aviso(msgs.join("\n\n"));
       bus.render();
       return;
     }
-    const linhasTxt = [...plano.atualizar, ...plano.inserir].map((x) => `\u2022 ${rotulo2(x.piId)}: ${x.qtd != null ? `${x.qtd} bag${x.qtd === 1 ? "" : "s"}` : "sem contagem"}`).join("\n");
-    const ok = await confirmar(`Avisar os operadores da carreta?
+    const textoLinha = (x) => x.qtd != null ? `${x.qtd} bag${x.qtd === 1 ? "" : "s"}` : "sem contagem";
+    const linhasTxt = [
+      ...plano.inserir.map((x) => `\u2022 ${rotulo2(x.piId)}: ${textoLinha(x)}`),
+      ...plano.atualizar.map((x) => `\u2022 ${rotulo2(x.piId)}: passa a ${textoLinha(x)}`),
+      ...plano.cancelar.filter((x) => x.motivo === "tirar").map((x) => `\u2022 ${rotulo2(x.piId)}: sai da carreta`)
+    ].join("\n");
+    const ok = await confirmar(`${D.prontas.some((p) => {
+      var _a2;
+      return p.criada_por === ((_a2 = S.me) == null ? void 0 : _a2.id) && p.setor === "TCX" && (p.status === "pronta" || p.status === "ciente") && linhas.some((pi) => mesmoId(pi.id, p.ponto_india_id));
+    }) ? "Atualizar a carreta" : "Avisar os operadores da carreta"}?
 
 ${linhasTxt}`);
     if (!ok) return;
     let fila = false;
     const feitos = [];
     try {
-      for (const a of plano.atualizar) {
-        const { error } = await definirQtdProntaDb(a.id, a.qtd);
-        if (error) throw error;
-        feitos.push(a.piId);
-      }
       for (const i of plano.inserir) {
         const r = await sinalizarProntaDb("TCX", i.vooId, null, i.piId, i.qtd);
         if (r == null ? void 0 : r.error) throw r.error;
         if (r == null ? void 0 : r.fila) fila = true;
-        feitos.push(i.piId);
+        feitos.push(i);
+      }
+      for (const a of plano.atualizar) {
+        const { error } = await definirQtdProntaDb(a.id, a.qtd);
+        if (error) throw error;
+        feitos.push(a);
+      }
+      for (const c of plano.cancelar) {
+        const { error } = await cancelarProntaDb(c.id);
+        if (error) throw error;
+        feitos.push(c);
       }
     } catch (e) {
-      for (const id of feitos) delete marcasTcx()[id];
-      guardarMarcas();
+      limpar(feitos);
       await bus.recarregar();
-      await erro(feitos.length ? `${feitos.length} linha${feitos.length === 1 ? "" : "s"} foram avisadas; as demais N\xC3O. Confira e toque de novo s\xF3 nas que sobraram.
+      await erro(feitos.length ? `${feitos.length} altera\xE7${feitos.length === 1 ? "\xE3o foi feita" : "\xF5es foram feitas"}; as demais N\xC3O. Confira e toque de novo.
 
 ${e.message || e}` : e);
       return;
     }
     const falhasLocal = [];
-    for (const pi of marcadas) {
-      const vc = vooChegadaConexao(pi.voo_chegada_numero);
+    for (const m of [...plano.inserir, ...plano.atualizar]) {
+      const pi = D.indias.find((x) => mesmoId(x.id, m.piId));
+      const vc = pi ? vooChegadaConexao(pi.voo_chegada_numero) : null;
       try {
         await marcarLocalBags(vooId, vc ? vc.id : null, "TCX", null, "na_carreta");
       } catch (e) {
         falhasLocal.push(e.message || String(e));
       }
     }
-    for (const m of marcas) delete marcasTcx()[m.piId];
-    guardarMarcas();
+    limpar(marcas);
     await bus.recarregar();
     if (fila) await aviso("Sem sinal agora: o aviso ficou na fila e sai sozinho quando a rede voltar. N\xE3o precisa avisar de novo.");
+    else if (plano.bloqueadas.length) await aviso("Um operador j\xE1 aceitou essa carreta: a linha que voc\xEA tirou n\xE3o saiu. Combine com ele.");
     else if (falhasLocal.length) await aviso(`Os operadores foram avisados, mas o \xCDndia do l\xEDder pode n\xE3o mostrar "carreta da TCX" (falha ao gravar o local): ${falhasLocal[0]}`);
   }
 
@@ -13828,6 +13940,7 @@ ${e.message || e}` : e);
     religarAnimacoes();
   }
   function atualizarModalVivo() {
+    atualizarMontarTcx();
     const m = UI.modalVivo;
     if (!m) return;
     if (m.tipo === "india") atualizarPontoIndia(m.vooId);
@@ -14690,6 +14803,20 @@ Sair mesmo assim?`
       grupo: "delta",
       arquivo: "screens/telaPontos.js",
       desc: "Ponto \xCDndia, a metade direita da linha: P R D, campo de quantidade recebida com o \u2713 e o bot\xE3o de solicitar (ou cancelar). Desce inteira para a linha de baixo se n\xE3o couber."
+    },
+    {
+      nome: "pr-da-tcx",
+      seletor: ".tcx-pr",
+      grupo: "delta",
+      arquivo: "screens/telaTriagem.js",
+      desc: 'Montar carreta (TCX): o P (verde) e o R (azul) da conex\xE3o, colados um no outro e no campo de quantidade, \xE0 direita da linha. Sem D e sem "faltam". \xC9 a mesma linha do Ponto \xCDndia do l\xEDder e acompanha ao vivo.'
+    },
+    {
+      nome: "sinal-tcx",
+      seletor: ".tcx-sinal",
+      grupo: "delta",
+      arquivo: "screens/telaTriagem.js",
+      desc: 'O selo "TCX" na linha do Montar carreta: um operador registrou que deixou bag desse voo na TCX. S\xF3 um sinal para o auxiliar procurar; a linha aparece com ou sem ele.'
     },
     {
       nome: "prd",
