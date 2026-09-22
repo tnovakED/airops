@@ -1476,9 +1476,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 22/09/2026, 14:15:23
+     Gerado em: 22/09/2026, 15:52:35
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 14:15";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 15:52";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4137,12 +4137,9 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     return data;
   }
   function localDasBags(vooDestinoId, vooChegadaId) {
-    const linhas = D.bagsLocal.filter((b) => {
-      if (!mesmoId(b.voo_destino_id, vooDestinoId)) return false;
-      if (b.status === "retirada") return false;
-      if (vooChegadaId != null && b.voo_origem_id != null && !mesmoId(b.voo_origem_id, vooChegadaId)) return false;
-      return true;
-    });
+    const todos = D.bagsLocal.filter((b) => mesmoId(b.voo_destino_id, vooDestinoId) && b.status !== "retirada");
+    if (!todos.length) return null;
+    const linhas = vooChegadaId == null ? todos : todos.filter((b) => mesmoId(b.voo_origem_id, vooChegadaId));
     if (!linhas.length) return null;
     linhas.sort((a, b) => String(b.atualizado_em || "").localeCompare(String(a.atualizado_em || "")));
     return linhas[0];
@@ -4484,6 +4481,12 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
         if (data.bloqueadas > 0) {
           anota(`Aviso: ${data.bloqueadas} conex\xE3o(\xF5es) sumiu(ram) do arquivo mas j\xE1 tem bag em andamento; n\xE3o foi(ram) removida(s). Confira manualmente.`);
         }
+        if (data.religadas > 0) {
+          anota(`${data.religadas} entrega(s) feita(s) antes deste \xCDndice existir foi(ram) religada(s) a esta conex\xE3o${data.creditadas_retro > 0 ? `, ${data.creditadas_retro} bag(s) creditada(s) retroativamente no R` : ""}.`);
+        }
+        if (data.ambiguas > 0) {
+          anota(`Aviso: ${data.ambiguas} entrega(s) antiga(s) bateu(ram) com mais de uma conex\xE3o deste voo por n\xFAmero de chegada; nenhuma foi religada automaticamente. Confira manualmente.`);
+        }
       } else {
         const r = processarPontoDelta(texto);
         if (r.erro) {
@@ -4562,20 +4565,25 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       return vg.operador_id;
     });
   }
+  function conexaoUnicaDoVoo(pi) {
+    return D.indias.filter((i) => mesmoId(i.voo_id, pi.voo_id)).length === 1;
+  }
   function ondeEstaoAsBags(pi, vc) {
-    const bl = localDasBags(pi.voo_id, vc ? vc.id : null);
+    let bl = localDasBags(pi.voo_id, vc ? vc.id : null);
+    if (!bl && vc && conexaoUnicaDoVoo(pi)) bl = localDasBags(pi.voo_id, null);
     if (bl) return bl;
-    const ds = D.destinos.filter((d) => {
+    const origemDe2 = (d) => {
+      const vg = D.viagens.find((x) => mesmoId(x.id, d.viagem_id));
+      return d.origem_voo_id || (vg == null ? void 0 : vg.voo_origem_id) || null;
+    };
+    const todos = D.destinos.filter((d) => {
       if (!mesmoId(d.voo_destino_id, pi.voo_id) || d.status !== "entregue") return false;
       const via = d.entrega_via || "PP";
-      if (via !== "TCX" && via !== "TLC") return false;
-      if (vc) {
-        const vg = D.viagens.find((x) => mesmoId(x.id, d.viagem_id));
-        const orig = d.origem_voo_id || vg && vg.voo_origem_id;
-        if (orig != null && !mesmoId(orig, vc.id)) return false;
-      }
-      return true;
+      return via === "TCX" || via === "TLC";
     });
+    if (!todos.length) return null;
+    let ds = vc ? todos.filter((d) => mesmoId(origemDe2(d), vc.id)) : todos;
+    if (vc && !ds.length && conexaoUnicaDoVoo(pi)) ds = todos.filter((d) => origemDe2(d) == null);
     if (!ds.length) return null;
     ds.sort((a, b) => String(b.entregue_em || "").localeCompare(String(a.entregue_em || "")));
     return { local: ds[0].entrega_via, status: "no_local", _origem: "viagens_destinos" };
@@ -4814,11 +4822,13 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   }
   function classificarConexaoDelta(v, pd) {
     const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
-    const dist = distanciaBox(v.box, vSaida == null ? void 0 : vSaida.box);
-    if (dist == null) return { tipo: null, vSaida };
-    if (dist === 0) return { tipo: "tst", vSaida };
-    if (dist <= RAIO_PORTA_A_PORTA_BOX) return { tipo: "pp", vSaida };
-    return { tipo: null, vSaida };
+    if (!vSaida) return { tipo: null, vSaida };
+    if (pd.voo_saida_numero === v.numero) return { tipo: "tst", vSaida };
+    const dist = distanciaBox(v.box, vSaida.box);
+    if (dist == null || dist > RAIO_PORTA_A_PORTA_BOX) return { tipo: null, vSaida };
+    const tc = minutosDe(v.chegada), ts = minutosDe(vSaida.saida);
+    if (tc == null || ts == null || ts - tc < 60) return { tipo: null, vSaida };
+    return { tipo: "pp", vSaida };
   }
   var estadoPp = (pd) => (pd == null ? void 0 : pd.pp_levada_em) ? "levada" : (pd == null ? void 0 : pd.pp_pronta_em) ? "pronta" : null;
   var SELO_PP = {
