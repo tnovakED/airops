@@ -601,16 +601,36 @@
   td .mono{color:var(--amber); font-weight:600}
   .tbl-wrap{overflow-x:auto}
 
-  /* Cabecalho preso SO da malha (.malha-tabela th, telaVoos.js) --
-     pedido do Tiago (22/09/2026), rolar uma malha longa sem perder de
-     vista qual coluna e qual. .tbl-wrap/th tambem servem telaPontos.js
-     (mini-malha do Subir Pontos) e telaPatio.js, que nao pediram isso;
-     por isso o seletor e escopado, nao o th generico. Gruda logo abaixo
-     do cabecalho do app (--header-h) -- esta tela nao tem uma segunda
-     barra sticky embaixo dele (isso so existe no Operador/Triagem, ver
-     .op-barra). Fundo solido obrigatorio: sem ele as linhas passam por
-     baixo transparentes ao rolar. */
-  .malha-tabela th{position:sticky; top:var(--header-h); background:var(--surface); z-index:2}
+  /* Cabecalho preso SO da malha -- pedido do Tiago (22/09/2026), rolar
+     uma malha longa sem perder de vista qual coluna e qual.
+     .tbl-wrap/th tambem servem telaPontos.js (mini-malha do Subir
+     Pontos) e telaPatio.js, que nao pediram isso; por isso os
+     seletores sao escopados a .malha-tbl-wrap/.malha-tabela, nao os
+     genericos.
+     Por que top:0 num container proprio, e nao top:var(--header-h) na
+     pagina inteira (primeira tentativa, NAO funcionou -- relatado pelo
+     Tiago, 22/09/2026): `.tbl-wrap{overflow-x:auto}` faz o navegador
+     tratar overflow-y como auto tambem (regra do proprio CSS: um eixo
+     visible e o outro nao vira os dois "auto") -- e isso faz
+     .malha-tbl-wrap virar o "ancestral com rolagem" que o
+     position:sticky gruda nele, nao na pagina. Sem altura maxima
+     nenhuma esse ancestral nunca rola de verdade, entao o sticky nunca
+     acontecia -- ficava parado igual a um th comum. A correcao: assume
+     isso de proposito, dando altura maxima e rolagem propria (nos dois
+     eixos) pro container -- o sticky gruda no topo DELE, que agora
+     realmente rola. */
+  .malha-tbl-wrap{overflow:auto; max-height:65vh}
+  .malha-tabela th{position:sticky; top:0; background:var(--surface); z-index:2}
+
+  /* Colunas coladas (pedido do Tiago, 22/09/2026: "muito espaçada") --
+     so na malha, o td/th genericos (8px) continuam servindo as outras
+     tabelas. Mantem o padding vertical (toque, altura da linha), zera
+     so o horizontal. */
+  .malha-tabela th, .malha-tabela td{padding-left:0; padding-right:0}
+
+  /* Numero do voo mais forte que o .mono padrao (600) -- e a info que
+     mais importa bater o olho na malha (pedido do Tiago, 22/09/2026). */
+  .malha-tabela .mono{font-weight:700}
 
   /* Malha: arrastar troca o lado inteiro (Cheg./Arr./STA./REG ou
      SAIDA./TO/STD) entre duas linhas -- ver arrastarLadoVoo() em
@@ -1426,9 +1446,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 22/09/2026, 10:52:17
+     Gerado em: 22/09/2026, 11:39:57
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 10:52";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 11:39";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2913,9 +2933,11 @@
     return sb.from("voos").insert(campos);
   }
   async function apagarMalhaDoDia(dia) {
-    const [a, b] = await Promise.all([
+    const [a, b, c, d] = await Promise.all([
       sb.from("viagens").select("voo_origem_id"),
-      sb.from("viagens_destinos").select("voo_destino_id,origem_voo_id")
+      sb.from("viagens_destinos").select("voo_destino_id,origem_voo_id"),
+      sb.from("ponto_india").select("voo_id").eq("data", dia),
+      sb.from("ponto_delta").select("voo_id").eq("data", dia)
     ]);
     const ref = /* @__PURE__ */ new Set();
     (a.data || []).forEach((x) => {
@@ -2924,6 +2946,12 @@
     (b.data || []).forEach((x) => {
       if (x.voo_destino_id) ref.add(x.voo_destino_id);
       if (x.origem_voo_id) ref.add(x.origem_voo_id);
+    });
+    (c.data || []).forEach((x) => {
+      if (x.voo_id) ref.add(x.voo_id);
+    });
+    (d.data || []).forEach((x) => {
+      if (x.voo_id) ref.add(x.voo_id);
     });
     let q = sb.from("voos").delete().eq("data", dia);
     if (ref.size) q = q.not("id", "in", "(" + [...ref].join(",") + ")");
@@ -3110,7 +3138,7 @@
   ${editar ? `<div style="margin-bottom:10px"><button class="small" style="width:auto"
       onclick="adicionarVoo()">+ Adicionar voo</button></div>` : ""}
   <div style="display:flex;justify-content:flex-end;margin:-2px 2px 6px"><span class="note">${dm(hoje())}</span></div>
-  <div class="card tbl-wrap">${lista.length ? `
+  <div class="card tbl-wrap malha-tbl-wrap">${lista.length ? `
     <table class="malha-tabela"><tr>
       <th>Cheg.</th><th>Arr.</th>
       <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('chegada')">STA ${UI.malhaOrdem.col === "chegada" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
@@ -3214,7 +3242,7 @@
     valor = campo === "chegada" || campo === "saida" ? normHora(valor) : valor.trim();
     const alvo2 = valor || null;
     if (campo === "box" && alvo2) {
-      const outros = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2));
+      const outros = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2) && !jaDecolou(v));
       if (outros.length) {
         abrirEscolhaTrocaBox(id, alvo2, outros);
         return;
@@ -3241,7 +3269,7 @@
       <span style="display:block;font-size:12px;opacity:.85">
         O voo ${linha2}</span></button>`;
     }).join("");
-    const jaNoBox = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2)).map((v) => v.numero || v.voo_chegada || "?");
+    const jaNoBox = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2) && !jaDecolou(v)).map((v) => v.numero || v.voo_chegada || "?");
     const dica = jaNoBox.length ? `os voos ${esc(jaNoBox.join(", "))} v\xE3o sair no box ${esc(alvo2)} \u2014 use quando o voo de chegada mais tarde est\xE1 programado para esse box` : `use quando o voo de chegada mais tarde est\xE1 programado para o box ${esc(alvo2)}`;
     const manter = `<button style="margin-bottom:8px;text-align:left"
     onclick="confirmarTrocaBox(${id},'${esc(alvo2)}',null)">
@@ -3381,8 +3409,9 @@
         \xE0 aeronave que pousou, n\xE3o \xE0 linha da tabela.</li>
       <li><b>SAIDA. / TO / STD</b> \u2014 mesma ideia: arraste pela al\xE7a para
         trocar s\xF3 o voo de sa\xEDda entre duas linhas.</li>
-      <li><b>BOX</b> \u2014 digite direto. Se o box j\xE1 estiver em uso, o
-        sistema pergunta se \xE9 para trocar com quem est\xE1 l\xE1.</li>
+      <li><b>BOX</b> \u2014 digite direto. Se o box j\xE1 estiver em uso por um
+        voo que AINDA N\xC3O DECOLOU, o sistema pergunta se \xE9 para trocar
+        com ele (quem j\xE1 decolou n\xE3o entra na pergunta).</li>
       <li><b>Esteira</b> \u2014 digite direto, sem troca nenhuma.</li>
       <li>Hor\xE1rio de sa\xEDda em <span style="color:var(--red)">laranja/vermelho</span>
         = menos de 30 min entre o pouso (STA) e a decolagem (STD).</li>
@@ -3414,11 +3443,11 @@
   }
   async function apagarVoo(id) {
     const v = D.voos.find((x) => x.id === id) || {};
-    const usado = D.viagens.some((g) => g.voo_origem_id === id) || D.destinos.some((d) => d.voo_destino_id === id || d.origem_voo_id === id);
+    const usado = D.viagens.some((g) => g.voo_origem_id === id) || D.destinos.some((d) => d.voo_destino_id === id || d.origem_voo_id === id) || D.indias.some((i) => i.voo_id === id) || D.deltas.some((dl) => dl.voo_id === id);
     if (usado) {
-      await aviso(`O voo ${esc(v.numero || v.voo_chegada || "?")} j\xE1 tem viagens ou bags registradas.
+      await aviso(`O voo ${esc(v.numero || v.voo_chegada || "?")} j\xE1 tem viagens, bags ou Ponto \xCDndice/Delta registrados.
 
-Apagar deixaria esse hist\xF3rico \xF3rf\xE3o. Se ele n\xE3o vai mais operar, limpe o hor\xE1rio de sa\xEDda em vez de apagar.`, "N\xE3o d\xE1 para apagar");
+Apagar deixaria esse hist\xF3rico \xF3rf\xE3o. Se ele n\xE3o vai mais operar, limpe o hor\xE1rio de sa\xEDda em vez de apagar. Se algum dado do voo est\xE1 errado (n\xFAmero, REG, hora, box), corrija direto na linha em vez de apagar.`, "N\xE3o d\xE1 para apagar");
       return;
     }
     const ok = await confirmar(`Apagar a linha do voo ${esc(v.numero || v.voo_chegada || "?")}${v.box ? " (box " + esc(v.box) + ")" : ""}?`);
@@ -3480,7 +3509,7 @@ A pr\xF3xima reimporta\xE7\xE3o da malha vai poder sobrescrever estes campos.`);
     const dia = UI.malhaData || hoje();
     const ok = await confirmar(`Apagar todos os voos de ${esc(dia)}?
 
-Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico.`);
+Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, ficam preservados para n\xE3o perder o hist\xF3rico.`);
     if (!ok) return;
     const log = $("mlog");
     if (log) log.textContent = "Limpando...";
