@@ -1476,9 +1476,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 22/09/2026, 15:52:35
+     Gerado em: 22/09/2026, 19:22:46
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 15:52";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 19:22";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2543,6 +2543,15 @@
       bus.recarregar();
     }, 400);
   }
+  function repeteLoteRecente(lote) {
+    if (lote == null) return false;
+    const repetiu = lote === ultimoLotePr && Date.now() < ultimoLotePrAte;
+    if (!repetiu) {
+      ultimoLotePr = lote;
+      ultimoLotePrAte = Date.now() + 5e3;
+    }
+    return repetiu;
+  }
   function aplicarMudanca(tabela, p) {
     const chave = CHAVE2[tabela];
     const idDe = (row2) => row2 && (tabela === "posicoes" ? row2.usuario_id : row2.id);
@@ -2573,7 +2582,7 @@
       const somSol = tabela === "solicitacoes" && !meu && (pode("sol_atender") || pode("viagens_cco"));
       const somTlc = tabela === "solicitacoes" && row.tipo === "BAG_TLC" && row.status === "solicitada" && pode("triagem_sinalizar");
       const somVg = tabela === "viagens" && !meu && (pode("viagens_cco") || pode("oc_chegando"));
-      const somPr = tabela === "prontas" && !meu && pode("levar");
+      const somPr = tabela === "prontas" && !meu && pode("levar") && !repeteLoteRecente(row.lote);
       if (somSol || somTlc || somVg || somPr) {
         beep();
         if (navigator.vibrate) navigator.vibrate(250);
@@ -2581,7 +2590,7 @@
     }
     bus.renderSeguro();
   }
-  var CHAVE2, recargaMarcada;
+  var CHAVE2, recargaMarcada, ultimoLotePr, ultimoLotePrAte;
   var init_realtime = __esm({
     "src/core/realtime.js"() {
       init_supabase();
@@ -2603,6 +2612,8 @@
         posicoes: "posicoes"
       };
       recargaMarcada = null;
+      ultimoLotePr = null;
+      ultimoLotePrAte = 0;
     }
   });
 
@@ -4285,6 +4296,34 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     } catch (e) {
       if (erroDeRede(e)) {
         enfileirarAcao("sinalizar_pronta", { setor, vooId, box, pontoIndiaId, qtd });
+        return { error: null, fila: true };
+      }
+      throw e;
+    }
+  }
+  async function sinalizarCarretaTcxDb(itens) {
+    if (!(itens == null ? void 0 : itens.length)) return { error: null };
+    const lote = crypto.randomUUID();
+    const linhas = itens.map((i) => {
+      var _a;
+      return {
+        setor: "TCX",
+        box: null,
+        voo_destino_id: i.vooId,
+        criada_por: S.me.id,
+        ponto_india_id: i.piId || null,
+        qtd: (_a = i.qtd) != null ? _a : null,
+        lote,
+        carreta_nome: "Carreta"
+      };
+    });
+    try {
+      const res = await sb.from("prontas").insert(linhas);
+      if ((res == null ? void 0 : res.error) && erroDeRede(res.error)) throw res.error;
+      return res;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("sinalizar_carreta_tcx", { itens });
         return { error: null, fila: true };
       }
       throw e;
@@ -12564,11 +12603,11 @@ ${linhasTxt}`);
     let fila = false;
     const feitos = [];
     try {
-      for (const i of plano.inserir) {
-        const r = await sinalizarProntaDb("TCX", i.vooId, null, i.piId, i.qtd);
+      if (plano.inserir.length) {
+        const r = await sinalizarCarretaTcxDb(plano.inserir);
         if (r == null ? void 0 : r.error) throw r.error;
         if (r == null ? void 0 : r.fila) fila = true;
-        feitos.push(i);
+        feitos.push(...plano.inserir);
       }
       for (const a of plano.atualizar) {
         const { error } = await definirQtdProntaDb(a.id, a.qtd);
@@ -15613,6 +15652,10 @@ Sair mesmo assim?`
     // mostra o erro de quem lanca, e sem isto o alerta era descartado calado.
     sinalizar_pronta: async (p) => {
       const r = await sinalizarProntaDb(p.setor, p.vooId, p.box, p.pontoIndiaId, p.qtd);
+      if (r == null ? void 0 : r.error) throw r.error;
+    },
+    sinalizar_carreta_tcx: async (p) => {
+      const r = await sinalizarCarretaTcxDb(p.itens);
       if (r == null ? void 0 : r.error) throw r.error;
     },
     mover_conexao_carreta_delta: (p) => moverConexaoCarretaDelta(p.pontoDeltaId, p.carretaId),
