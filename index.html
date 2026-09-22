@@ -1476,9 +1476,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 22/09/2026, 19:22:46
+     Gerado em: 22/09/2026, 19:38:12
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 19:22";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 19:38";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1596,6 +1596,9 @@
         olhoLugar: null,
         // lugar (chave de lugarDaPronta) com a lista de carretas
         // pendentes expandida no card do alerta BOX; null = fechado
+        alertaLoteAberto: null,
+        // lote (carreta da TCX/TLC) com os voos dela expandidos no
+        // alerta; null = fechado. So um por vez, igual olhoLugar.
         // Carreta aberta DENTRO do olho, com o que esta marcado nela:
         // {lugar, chave, sel:[ids]}. Uma so aberta por vez; trocar de carreta
         // zera a selecao junto (fechar e abrir e "comecar de novo", nao
@@ -11771,6 +11774,39 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     return restam > 0 && restam <= SINO_IMINENTE_MIN;
   }
   var selosDoVoo = (v) => sinoIminente(v) ? ` <span class="sino-iminente" title="Decola em ${SINO_IMINENTE_MIN} minutos ou menos" aria-label="decolagem iminente">${ico("sinoAtivo", 16)}</span>` : "";
+  function linhasSolicitacoes(ps) {
+    const vistos = /* @__PURE__ */ new Set();
+    const partes = [];
+    for (const p of ps) {
+      if (p.lote == null) {
+        partes.push(linhaSolicitacao(p));
+        continue;
+      }
+      if (vistos.has(p.lote)) continue;
+      vistos.add(p.lote);
+      const grupo = ps.filter((x) => x.lote === p.lote);
+      partes.push(grupo.length > 1 ? linhaCarretaSolicitacao(grupo) : linhaSolicitacao(grupo[0]));
+    }
+    return partes.join("");
+  }
+  function linhaCarretaSolicitacao(ps) {
+    const lote = ps[0].lote;
+    const v = voo(ps[0].voo_destino_id) || {};
+    const urgentes = contarUrgentes(ps);
+    const aberta = UI.alertaLoteAberto === lote;
+    return `<div class="list-line alerta-linha alerta-carreta-tcx" onclick="alternarLoteAlerta('${esc(lote)}')" style="cursor:pointer">
+    <span class="acordeon-seta">${ico("seta", 14)}</span>
+    <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      ${vooRotulo(v, "saida", { aviao: true })}
+      <span class="alerta-contagem">${ps.length} voos</span>
+      ${urgentes > 0 ? `<span class="alerta-urgentes">${ico("alerta", 16)} ${urgentes}</span>` : ""}
+    </span>
+  </div>${aberta ? `<div class="alerta-carretas">${ps.map(linhaSolicitacao).join("")}</div>` : ""}`;
+  }
+  function alternarLoteAlerta(lote) {
+    UI.alertaLoteAberto = UI.alertaLoteAberto === lote ? null : lote;
+    bus.render();
+  }
   function linhaSolicitacao(p) {
     const v = voo(p.voo_destino_id) || {};
     const minha = p.status === "ciente" && p.ciente_por === S.me.id;
@@ -11923,7 +11959,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     bus.render();
   }
   function boxFiltrado(g) {
-    const linhas = (s) => g.tipo === "BOX" ? linhaLugar(g.tipo, s) : s.ps.map(linhaSolicitacao).join("");
+    const linhas = (s) => g.tipo === "BOX" ? linhaLugar(g.tipo, s) : linhasSolicitacoes(s.ps);
     if (g.tipo !== "BOX") return { abas: "", corpo: g.sub.map(linhas).join("") };
     const porSecao = /* @__PURE__ */ new Map();
     for (const s of g.sub) {
@@ -15776,6 +15812,7 @@ Sair mesmo assim?`
     escolhaEsteira,
     escolhaVoltar,
     alternarOlhoLugar,
+    alternarLoteAlerta,
     // OC
     assumirVoo: assumirVoo2,
     soltarVoo: soltarVoo2,
