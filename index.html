@@ -621,6 +621,15 @@
      realmente rola. */
   .malha-tbl-wrap{overflow:auto; max-height:65vh}
   .malha-tabela th{position:sticky; top:0; background:var(--surface); z-index:2}
+  /* `table{width:100%}` (regra generica acima) trava a tabela na largura
+     do container -- na malha, com varios campos de largura fixa (BOX,
+     Esteira, REG...), isso forcava o navegador a ESPREMER as colunas
+     pra caber, em vez de crescer e deixar `.malha-tbl-wrap{overflow:auto}`
+     rolar de lado. No celular isso vira coluna em cima de coluna
+     (relatado pelo Tiago, 22/09/2026). width:auto + min-width:100% deixa
+     a tabela crescer alem do container quando o conteudo pede, sem ficar
+     estreita demais quando nao pede. */
+  .malha-tabela{width:auto; min-width:100%}
 
   /* Colunas coladas (pedido do Tiago, 22/09/2026: "muito espaçada") --
      so na malha, o td/th genericos (8px) continuam servindo as outras
@@ -631,6 +640,27 @@
   /* Numero do voo mais forte que o .mono padrao (600) -- e a info que
      mais importa bater o olho na malha (pedido do Tiago, 22/09/2026). */
   .malha-tabela .mono{font-weight:700}
+
+  /* BOX e Esteira: campo do tamanho do que cabe neles de verdade (pedido
+     do Tiago, 22/09/2026) -- 3 e 2 caracteres. `ch` e exato aqui porque a
+     fonte do app inteiro e monoespaçada (SUSE Mono, ver body{}).
+     width:3ch sozinho NAO bastava: box-sizing:border-box (regra global,
+     topo do arquivo) faz o padding do input ser DESCONTADO do width em
+     vez de somado -- sobrava espaco pra 1 caractere so, cortando o
+     resto (visto no preview, 22/09/2026). calc() devolve o padding pro
+     width, garantindo os caracteres de verdade. */
+  .malha-in-box{width:calc(3ch + 12px); padding:4px 6px}
+  .malha-in-esteira{width:calc(2ch + 12px); padding:4px 6px}
+
+  /* Botoes so-icone da malha (Editar = lapis; Destravar chegada/saida =
+     cadeado + pousando/decolando) -- do tamanho do que mostram, nao do
+     texto que carregavam antes (pedido do Tiago, 22/09/2026). O alvo de
+     toque continua >=40px (min-height, regra da skill tela-de-patio); so
+     a LARGURA visivel encolhe pro tamanho do icone (ou dos dois, na
+     destrava) -- por isso width:auto + padding baixo, nao um numero
+     fixo: o mesmo seletor serve 1 icone (Editar) e 2 (Destravar). */
+  .malha-btn-icone{display:inline-flex; align-items:center; justify-content:center;
+    gap:2px; width:auto; min-height:40px; padding:4px 8px}
 
   /* Malha: arrastar troca o lado inteiro (Cheg./Arr./STA./REG ou
      SAIDA./TO/STD) entre duas linhas -- ver arrastarLadoVoo() em
@@ -1446,9 +1476,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 22/09/2026, 11:39:57
+     Gerado em: 22/09/2026, 14:07:18
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 11:39";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 14:07";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2736,7 +2766,10 @@
     reboque: "0 -960 960 960",
     campanha: "0 -960 960 960",
     ampulheta: "0 -960 960 960",
-    "mala-confirmada": "0 -960 960 960"
+    "mala-confirmada": "0 -960 960 960",
+    lapis: "0 -960 960 960",
+    cadeadoAberto: "0 -960 960 960",
+    cadeadoFechado: "0 -960 960 960"
   };
   var P = {
     "mala-check": `<path d="m696-150 141.33-142-28.66-28.67L696-207.33 638-266l-28.67 29.33L696-150Zm-337.33-46.67v-406h-57.34v406h57.34ZM481.33-130h-180q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-406q0-27 19.83-46.83t46.83-19.83h267.34v-144h-16q-27 0-46.84-19.84Q486-853 486-880h149.33v392.67q-17.33 6-34.16 14.66-16.84 8.67-32.5 20.67v-150.67H425.33v406h37.34q1.66 18 6.33 34.34Q473.67-146 481.33-130Zm380.84-245.5q57.16 57.17 57.16 138.83 0 81.67-57.16 138.84Q805-40.67 723.33-40.67q-81.66 0-138.83-57.16-57.17-57.17-57.17-138.84 0-81.66 57.17-138.83 57.17-57.17 138.83-57.17 81.67 0 138.84 57.17ZM392-400Zm-33.33 203.33v-406 406Zm66.66 0v-406 406Z"/>`,
@@ -2814,8 +2847,14 @@
     // material symbols: visibility (Apache 2.0) — botao de expandir as carretas pendentes no card do alerta BOX (14/09/2026)
     reboque: `<path d="M782.67-100.67 735.33-148 792-204.67H470.67q-10.67 38-42.67 61t-70.67 23q-38.66 0-70.5-23-31.83-23-42.83-61h-44q-52 0-86-34t-34-86V-562h240.67v-131.33H80V-760h520q27 0 46.83 19.83 19.84 19.84 19.84 46.84v422h124.66l-56-56 47.34-48L920-238 782.67-100.67ZM387.33-562H600v-131.33H387.33V-562Zm7.17 359.83q14.83-14.83 14.83-37.16 0-22.34-14.83-37.17-14.83-14.83-37.17-14.83-22.33 0-37.16 14.83-14.84 14.83-14.84 37.17 0 22.33 14.84 37.16 14.83 14.84 37.16 14.84 22.34 0 37.17-14.84ZM244-271.33q11-38 42.83-62.34Q318.67-358 357.33-358 396-358 428-333.67q32 24.34 42.67 62.34H600v-224H146.67v170.66q0 23.67 14.83 38.5 14.83 14.84 38.5 14.84h44Zm0-224h-97.33H600 244Z"/>`,
     // icones/carreta_37dp (Material Symbols, Apache 2.0) — a CARRETA de bag (reboque), nao o trator de "carreta" acima. Botoes Nova carreta e +carreta vazia do Ponto Delta (15/09/2026)
-    campanha: `<path d="M726.67-446.67v-66.66H880v66.66H726.67ZM776-160l-123.33-92 40-53.33 123.33 92L776-160Zm-81.33-495.33-40-53.34L776-800l40 53.33-121.33 91.34ZM206.67-200v-160h-60q-27.5 0-47.09-19.58Q80-399.17 80-426.67v-106.66q0-27.5 19.58-47.09Q119.17-600 146.67-600H320l200-120v480L320-360h-46.67v160h-66.66Zm246.66-158v-244L338-533.33H146.67v106.66H338L453.33-358ZM560-346v-268q27 24 43.5 58.5T620-480q0 41-16.5 75.5T560-346ZM300-480Z"/>`
+    campanha: `<path d="M726.67-446.67v-66.66H880v66.66H726.67ZM776-160l-123.33-92 40-53.33 123.33 92L776-160Zm-81.33-495.33-40-53.34L776-800l40 53.33-121.33 91.34ZM206.67-200v-160h-60q-27.5 0-47.09-19.58Q80-399.17 80-426.67v-106.66q0-27.5 19.58-47.09Q119.17-600 146.67-600H320l200-120v480L320-360h-46.67v160h-66.66Zm246.66-158v-244L338-533.33H146.67v106.66H338L453.33-358ZM560-346v-268q27 24 43.5 58.5T620-480q0 41-16.5 75.5T560-346ZM300-480Z"/>`,
     // icones/campaign_37dp (Material Symbols, Apache 2.0) — megafone junto do trator no botao de chamar operador de cada carreta do Ponto Delta (15/09/2026)
+    lapis: `<path d="M186.67-186.67H235L680-631l-48.33-48.33-445 444.33v48.33ZM120-120v-142l559.33-558.33q9.34-9 21.5-14 12.17-5 25.5-5 12.67 0 25 5 12.34 5 22 14.33L821-772q10 9.67 14.5 22t4.5 24.67q0 12.66-4.83 25.16-4.84 12.5-14.17 21.84L262-120H120Zm652.67-606-46-46 46 46Zm-117 71-24-24.33L680-631l-24.33-24Z"/>`,
+    // material symbols: edit (Apache 2.0) — botao "Editar" da malha, so-icone (telaVoos.js, 22/09/2026)
+    cadeadoAberto: `<path d="M226.67-636h380v-90.67q0-52.77-36.92-89.72-36.93-36.94-89.67-36.94-52.75 0-89.75 36.94-37 36.95-37 89.72h-66.66q0-80.33 56.57-136.83Q399.81-920 480.07-920q80.26 0 136.76 56.55 56.5 56.55 56.5 136.78V-636h60q27.5 0 47.09 19.58Q800-596.83 800-569.33v422.66q0 27.5-19.58 47.09Q760.83-80 733.33-80H226.67q-27.5 0-47.09-19.58Q160-119.17 160-146.67v-422.66q0-27.5 19.58-47.09Q199.17-636 226.67-636Zm0 489.33h506.66v-422.66H226.67v422.66Zm308.5-155.85Q558-325.04 558-356.67q0-31-22.95-55.16Q512.11-436 479.89-436t-55.06 24.17Q402-387.67 402-356.33q0 31.33 22.95 53.83 22.94 22.5 55.16 22.5t55.06-22.52Zm-308.5 155.85v-422.66 422.66Z"/>`,
+    // material symbols: lock_open (Apache 2.0) — Destravar chegada/saida da malha, ANTES de destravar (telaVoos.js, 22/09/2026)
+    cadeadoFechado: `<path d="M226.67-80q-27.5 0-47.09-19.58Q160-119.17 160-146.67v-422.66q0-27.5 19.58-47.09Q199.17-636 226.67-636h60v-90.67q0-80.23 56.57-136.78T480.07-920q80.26 0 136.76 56.55 56.5 56.55 56.5 136.78V-636h60q27.5 0 47.09 19.58Q800-596.83 800-569.33v422.66q0 27.5-19.58 47.09Q760.83-80 733.33-80H226.67Zm0-66.67h506.66v-422.66H226.67v422.66Zm308.5-155.85Q558-325.04 558-356.67q0-31-22.95-55.16Q512.11-436 479.89-436t-55.06 24.17Q402-387.67 402-356.33q0 31.33 22.95 53.83 22.94 22.5 55.16 22.5t55.06-22.52ZM353.33-636h253.34v-90.67q0-52.77-36.92-89.72-36.93-36.94-89.67-36.94-52.75 0-89.75 36.94-37 36.95-37 89.72V-636ZM226.67-146.67v-422.66 422.66Z"/>`
+    // material symbols: lock (Apache 2.0) — Destravar chegada/saida da malha, DEPOIS de destravado (telaVoos.js, 22/09/2026)
   };
   function ico(nome, tam) {
     const d = P[nome];
@@ -3169,9 +3208,12 @@
     aviso(entradas.map((e) => e.texto).join("\n"), "Avisos da importa\xE7\xE3o da malha");
   }
   function blocoDestrava(v, lado, travado) {
-    if (v[`${lado}_destravada_em`]) return `<span class="note">destravado, aguardando reimporta\xE7\xE3o</span>`;
+    const icOperacao = lado === "chegada" ? "pousando" : "decolando";
+    if (v[`${lado}_destravada_em`])
+      return `<span class="malha-btn-icone" aria-label="${lado} destravado, aguardando reimporta\xE7\xE3o">${ico("cadeadoFechado", 16)}${ico(icOperacao, 16)}</span>`;
     if (!travado) return "";
-    return `<button class="small ghost" style="width:auto" onclick="destravarLado(${v.id},'${lado}')">Destravar ${lado}</button>`;
+    return `<button class="small ghost malha-btn-icone" onclick="destravarLado(${v.id},'${lado}')"
+    aria-label="Destravar ${lado}">${ico("cadeadoAberto", 16)}${ico(icOperacao, 16)}</button>`;
   }
   var temSaida = (v) => !!(v.saida || v.destino) || v.numero && v.numero !== v.voo_chegada;
   function soloMin(v) {
@@ -3206,7 +3248,8 @@
     const campoHora = (nome) => emEdicao && editar ? `<input value="${esc(v[nome] || "")}" style="width:76px" inputmode="numeric"
          oninput="this.value=mascaraHora(this.value)"
          onchange="mudarVoo(${v.id},'${nome}',this.value)">` : `<span class="mono">${esc(v[nome] || "\u2014")}</span>`;
-    const botao = !podeAlgo ? "" : emEdicao ? `<button class="small ok" style="width:auto" onclick="UI.linhaEditando=null;render()">OK</button>` : `<button class="small ghost" style="width:auto" onclick="UI.linhaEditando=${v.id};render()">Editar</button>`;
+    const botao = !podeAlgo ? "" : emEdicao ? `<button class="small ok" style="width:auto" onclick="UI.linhaEditando=null;render()">OK</button>` : `<button class="small ghost malha-btn-icone" onclick="UI.linhaEditando=${v.id};render()"
+        aria-label="Editar">${ico("lapis", 16)}</button>`;
     const btnApagar = emEdicao && editar ? `<button class="small ghost" style="width:auto;color:var(--red);border-color:var(--red)"
          onclick="apagarVoo(${v.id})">Apagar</button>` : "";
     const destravaChegada = emEdicao && editar ? blocoDestrava(v, "chegada", !!v.chegada && jaPousou(v)) : "";
@@ -3221,8 +3264,8 @@
     <td class="mono lado-b" data-campo="numero" style="color:var(--amber)">${alca(v.id, "saida", editar && temSaida(v), emEdicao)}${temSaida(v) || emEdicao && editar ? campo("numero", 64) : '<span class="note">\u2014</span>'}</td>
     <td class="lado-b" data-campo="destino">${campo("destino", 56)}</td>
     <td class="lado-b${soloApertado(v) ? " solo-apertado" : ""}" data-campo="saida"${tituloSolo}>${campoHora("saida")}</td>
-    <td>${editar ? `<input value="${esc(v.box || "")}" style="width:64px" onchange="mudarVoo(${v.id},'box',this.value)">` : `<span class="badge sm">${esc(v.box || "?")}</span>`}</td>
-    <td><input value="${esc(v.esteira || "")}" style="width:56px"
+    <td>${editar ? `<input class="malha-in-box" value="${esc(v.box || "")}" onchange="mudarVoo(${v.id},'box',this.value)">` : `<span class="badge sm">${esc(v.box || "?")}</span>`}</td>
+    <td><input class="malha-in-esteira" value="${esc(v.esteira || "")}"
       onchange="mudarVoo(${v.id},'esteira',this.value)"></td>
     <td>${iconeLogMalha(v)}${botao}${btnApagar}${destravaChegada}${destravaSaida}${blocoOc(v, posicionar, emEdicao)}</td>
   </tr>`;
@@ -15113,6 +15156,87 @@ Sair mesmo assim?`
       grupo: "painel",
       arquivo: "screens/telaPatio.js",
       desc: "Bot\xE3o pequeno do Painel (Fechar, marcar, desfazer)."
+    },
+    // ---- malha (src/ui/screens/telaVoos.js) ----
+    // Especificas ANTES das genericas de "basicas" logo abaixo (table,
+    // input/select, button) -- senao a generica vence e a etiqueta nunca
+    // bate "malha-alguma-coisa".
+    {
+      nome: "malha-tabela",
+      seletor: ".malha-tabela",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: "A tabela da malha em si. Cabe\xE7alho preso ao rolar (rola dentro da pr\xF3pria caixa, n\xE3o a p\xE1gina)."
+    },
+    {
+      nome: "malha-caixa-rolagem",
+      seletor: ".malha-tbl-wrap",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: "A caixa que envolve a tabela e rola (pros dois lados) com altura m\xE1xima pr\xF3pria \u2014 \xE9 o que faz o cabe\xE7alho ficar preso de verdade."
+    },
+    {
+      nome: "malha-alca",
+      seletor: ".malha-alca",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: "\xCDcone pequeno (\u28FF) antes do n\xFAmero de Cheg. ou de SAIDA: segura e arrasta pra trocar o lado inteiro com outra linha."
+    },
+    {
+      nome: "malha-lado-chegada",
+      seletor: ".lado-a",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: "Lavagem azul-clara nas c\xE9lulas Cheg./Arr./STA./REG \u2014 marca visualmente que andam juntas num arrasto."
+    },
+    {
+      nome: "malha-lado-saida",
+      seletor: ".lado-b",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: "Lavagem laranja nas c\xE9lulas SAIDA./TO/STD \u2014 marca visualmente que andam juntas num arrasto."
+    },
+    {
+      nome: "malha-solo-apertado",
+      seletor: ".solo-apertado",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: "Hor\xE1rio de sa\xEDda em vermelho: menos de 30 min entre o pouso (STA) e a decolagem (STD)."
+    },
+    {
+      nome: "malha-fantasma",
+      seletor: ".malha-fantasma",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: "Card que acompanha o dedo/cursor durante o arrasto \u2014 \xEDcone de pouso/decolagem, n\xFAmero do voo, REG ou destino+hor\xE1rio. Some ao soltar."
+    },
+    {
+      nome: "malha-ajuda",
+      seletor: ".malha-ajuda",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: '\xCDcone de informa\xE7\xE3o ao lado do t\xEDtulo "Malha de hoje" \u2014 abre o resumo de como usar.'
+    },
+    {
+      nome: "malha-campo-box",
+      seletor: ".malha-in-box",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: "Campo de digitar o BOX \u2014 largura de 3 caracteres."
+    },
+    {
+      nome: "malha-campo-esteira",
+      seletor: ".malha-in-esteira",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: "Campo de digitar a Esteira \u2014 largura de 2 caracteres."
+    },
+    {
+      nome: "malha-botao-icone",
+      seletor: ".malha-btn-icone",
+      grupo: "malha",
+      arquivo: "screens/telaVoos.js",
+      desc: "Bot\xE3o (ou selo, quando n\xE3o \xE9 mais clic\xE1vel) do tamanho do(s) \xEDcone(s) que mostra: o l\xE1pis de Editar, ou o cadeado + pouso/decolagem de Destravar chegada/sa\xEDda (cadeado aberto = ainda travado, fechado = j\xE1 destravado)."
     },
     // ---- basicas ----
     {
