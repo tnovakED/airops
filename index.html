@@ -1476,9 +1476,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 22/09/2026, 14:07:18
+     Gerado em: 22/09/2026, 14:15:23
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 14:07";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 14:15";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -3179,12 +3179,12 @@
   <div style="display:flex;justify-content:flex-end;margin:-2px 2px 6px"><span class="note">${dm(hoje())}</span></div>
   <div class="card tbl-wrap malha-tbl-wrap">${lista.length ? `
     <table class="malha-tabela"><tr>
-      <th>Cheg.</th><th>Arr.</th>
+      <th>VAR</th><th>Arr.</th>
       <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('chegada')">STA ${UI.malhaOrdem.col === "chegada" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
       <th>REG</th>
-      <th>Sa\xEDda</th><th>TO</th>
+      <th>VDP</th><th>DEP</th>
       <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('saida')">STD ${UI.malhaOrdem.col === "saida" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
-      <th>Box</th><th>Esteira</th><th></th></tr>
+      <th>Box</th><th>EST</th><th></th></tr>
     ${ordenar(lista).map((v) => linhaVoo(v, editar, posicionar)).join("")}</table>` : `<p class="note">Nenhum voo nesta janela.</p>`}
   </div>`;
   }
@@ -3446,16 +3446,16 @@
   function abrirAjudaMalha() {
     abrirModal(`<h3>Como mexer na malha</h3>
     <ul style="padding-left:18px;line-height:1.7">
-      <li><b>Cheg. / Arr. / STA. / REG</b> \u2014 arraste pela al\xE7a ${ico("arrastar", 14)}
+      <li><b>VAR / Arr. / STA. / REG</b> \u2014 arraste pela al\xE7a ${ico("arrastar", 14)}
         at\xE9 OUTRA linha para trocar os dois voos de chegada inteiros.
-        V\xE3o junto o <b>BOX</b>, a <b>Esteira</b> e o Descarga OK: pertencem
+        V\xE3o junto o <b>BOX</b>, o <b>EST</b> e o Descarga OK: pertencem
         \xE0 aeronave que pousou, n\xE3o \xE0 linha da tabela.</li>
-      <li><b>SAIDA. / TO / STD</b> \u2014 mesma ideia: arraste pela al\xE7a para
+      <li><b>VDP / DEP / STD</b> \u2014 mesma ideia: arraste pela al\xE7a para
         trocar s\xF3 o voo de sa\xEDda entre duas linhas.</li>
       <li><b>BOX</b> \u2014 digite direto. Se o box j\xE1 estiver em uso por um
         voo que AINDA N\xC3O DECOLOU, o sistema pergunta se \xE9 para trocar
         com ele (quem j\xE1 decolou n\xE3o entra na pergunta).</li>
-      <li><b>Esteira</b> \u2014 digite direto, sem troca nenhuma.</li>
+      <li><b>EST</b> (esteira) \u2014 digite direto, sem troca nenhuma.</li>
       <li>Hor\xE1rio de sa\xEDda em <span style="color:var(--red)">laranja/vermelho</span>
         = menos de 30 min entre o pouso (STA) e a decolagem (STD).</li>
       <li>A malha aqui \xE9 sempre a <b>de hoje</b> \u2014 d\xE1 pra filtrar por
