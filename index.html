@@ -601,6 +601,79 @@
   td .mono{color:var(--amber); font-weight:600}
   .tbl-wrap{overflow-x:auto}
 
+  /* Cabecalho preso SO da malha (.malha-tabela th, telaVoos.js) --
+     pedido do Tiago (22/09/2026), rolar uma malha longa sem perder de
+     vista qual coluna e qual. .tbl-wrap/th tambem servem telaPontos.js
+     (mini-malha do Subir Pontos) e telaPatio.js, que nao pediram isso;
+     por isso o seletor e escopado, nao o th generico. Gruda logo abaixo
+     do cabecalho do app (--header-h) -- esta tela nao tem uma segunda
+     barra sticky embaixo dele (isso so existe no Operador/Triagem, ver
+     .op-barra). Fundo solido obrigatorio: sem ele as linhas passam por
+     baixo transparentes ao rolar. */
+  .malha-tabela th{position:sticky; top:var(--header-h); background:var(--surface); z-index:2}
+
+  /* Malha: arrastar troca o lado inteiro (Cheg./Arr./STA./REG ou
+     SAIDA./TO/STD) entre duas linhas -- ver arrastarLadoVoo() em
+     telaVoos.js. Mesmo gesto (Pointer Events) e mesmo touch-action:none
+     + cursor:grab do .lugar (cartao de alerta do Operador, mais acima):
+     o alvo muda, o jeito de segurar e o mesmo. */
+  /* O icone e 16px, mas o alvo de toque nao pode ser -- tela que funciona
+     no patio (skill tela-de-patio): alvo pequeno erra com luva. Acolchoa
+     com padding e desconta com margem negativa, entao o alvo de fato fica
+     ~36px sem empurrar o resto da celula nem crescer visualmente na
+     tabela densa. */
+  .malha-alca{display:inline-flex; align-items:center; justify-content:center;
+    padding:9px; margin:-9px 2px -9px -9px; vertical-align:middle;
+    color:var(--muted); touch-action:none; cursor:grab}
+  .malha-alca:active{cursor:grabbing}
+
+  /* Lavagem bem sutil pra marcar os dois blocos que andam juntos --
+     pedido do Tiago (22/09/2026): "deixa visivel que e um bloco so".
+     Cor diferente por lado (--accent-light pro que chega, --orange pro
+     que sai) pra nao precisar ler a coluna pra saber de qual lado e. */
+  td.lado-a{background:rgba(129,195,215,.12)}
+  td.lado-b{background:rgba(193,91,31,.08)}
+
+  /* Feedback do arrasto: o lado segurado fica translucido (pedido
+     original "opacity/blur no elemento sendo arrastado"), e a linha
+     embaixo do dedo ganha uma borda por dentro -- nao desloca nada, so
+     acende onde vai cair. */
+  tr.arrastando-chegada td.lado-a, tr.arrastando-saida td.lado-b{
+    opacity:.35; transition:opacity .12s ease}
+  tr.solta-aqui{box-shadow:inset 0 0 0 2px var(--amber)}
+  @media (prefers-reduced-motion: reduce){
+    tr.arrastando-chegada td.lado-a, tr.arrastando-saida td.lado-b{transition:none}
+  }
+
+  /* "Fantasma": card que acompanha o dedo/cursor durante o arrasto, pra
+     lembrar QUAL voo esta sendo arrastado mesmo rolando muitas linhas pra
+     longe da origem (pedido do Tiago, 22/09/2026). left/top vem do JS
+     (clientX/clientY, crus) -- o deslocamento pra cima do toque, pra nao
+     ficar escondido debaixo do proprio dedo, e so este transform.
+     pointer-events:none e essencial: sem isso o proprio fantasma vira o
+     alvo de document.elementFromPoint() em mover() (telaVoos.js),
+     atrapalhando o gesto que ele deveria so acompanhar.
+     Cor por lado (mesma logica de .lado-a/.lado-b, acima): amarra
+     visualmente o card arrastado ao bloco que ele representa. */
+  .malha-fantasma{position:fixed; transform:translate(-50%, calc(-100% - 14px));
+    display:none; align-items:center; gap:8px; max-width:min(78vw, 280px);
+    background:var(--surface); color:var(--text); border:2px solid var(--amber);
+    border-radius:14px; padding:8px 12px; box-shadow:0 6px 18px rgba(22,66,91,.4);
+    opacity:.95; pointer-events:none; z-index:15}
+  .malha-fantasma.chegada{border-color:var(--accent-light)}
+  .malha-fantasma.saida{border-color:var(--orange)}
+  .malha-fantasma .ico{flex:0 0 auto}
+  .malha-fantasma-txt{font-size:13px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .malha-fantasma-txt b{display:block; font-size:15px; color:var(--amber)}
+
+  /* Alerta de solo apertado (STD - STA < 30min, telaVoos.js:soloApertado) --
+     so no horario de saida, que e onde o aperto realmente se ve. */
+  td.solo-apertado{color:var(--red); font-weight:700}
+
+  /* Icone de ajuda ao lado do titulo da malha (abrirAjudaMalha) -- o
+     texto de como usar fica fora da tela ali direto, so num popup. */
+  .malha-ajuda{display:inline-flex; color:var(--muted); cursor:pointer}
+
   /* Navegacao entre abas mora no SideMenu — ver "menu lateral (navegacao)"
      mais abaixo (.modal-bg.menu, .menu-lista, .menu-item). */
 
@@ -1353,9 +1426,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 21/09/2026, 18:37:13
+     Gerado em: 22/09/2026, 10:52:17
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="21/09 18:37";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="22/09 10:52";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1521,17 +1594,18 @@
           arrastando: false,
           cam: { boxes: true, estacoes: true, viagens: true, pessoas: true, pedidos: true, nomes: true }
         },
-        // malha (CCO)
+        // malha (CCO) -- so mostra HOJE, sempre (22/09/2026): nao existe mais
+        // seletor de data pra ver a malha de outro dia, so a janela de horario
+        // (vHDe/vHAte) pra filtrar dentro de hoje.
         malhaArquivo: null,
         malhaData: null,
-        voosVista: null,
         malhaOrdem: { col: null, dir: 1 },
         linhaEditando: null,
         // id do voo com a linha destravada
         malhaEntradas: [],
         // avisos de campo travado ignorado no ultimo import
-        vDe: null,
-        vAte: null,
+        malhaArrastando: false,
+        // arrastarLadoVoo em andamento (render.js segura o redesenho)
         vHDe: "",
         vHAte: "",
         // pontos India/Delta
@@ -2832,10 +2906,6 @@
   async function alterarVoo(id, campos) {
     return sb.from("voos").update(campos).eq("id", id);
   }
-  async function buscarIntervalo(de, ate) {
-    const { data } = await sb.from("voos").select("*").gte("data", de).lte("data", ate).order("data").order("chegada", { ascending: true, nullsFirst: false });
-    return data || [];
-  }
   async function apagarVooDb(id) {
     return sb.from("voos").delete().eq("id", id);
   }
@@ -3003,9 +3073,7 @@
 
   // src/ui/screens/telaVoos.js
   function telaVoos() {
-    const de = UI.vDe || hoje(), ate = UI.vAte || hoje();
-    const usaVista = !(de === hoje() && ate === hoje());
-    const lista = (usaVista ? UI.voosVista || [] : D.voos).filter(passaVista);
+    const lista = D.voos.filter((v) => v.data === hoje()).filter(passaVista);
     const editar = pode("malha_editar");
     const posicionar = pode("oc_posicionar");
     const cartaoImportar = !editar ? "" : `
@@ -3025,34 +3093,39 @@
   </div>`;
     return `
   ${cartaoImportar}
-  <div class="board-title"><h2>Malha ${de === ate ? de === hoje() ? "de hoje" : "de " + de.slice(8, 10) + "/" + de.slice(5, 7) : de.slice(8, 10) + "/" + de.slice(5, 7) + " \u2192 " + ate.slice(8, 10) + "/" + ate.slice(5, 7)}</h2><span class="flip">${lista.length}</span></div>
+  <div class="board-title">
+    <h2>Malha de hoje</h2>
+    <span class="flip">${lista.length}</span>
+    <span class="malha-ajuda" onclick="abrirAjudaMalha()" aria-label="Como usar a malha">${ico("notificacao", 18)}</span>
+  </div>
   <div class="card" style="padding:10px 12px">
     <div class="row" style="align-items:end">
-      <div style="flex:0 0 auto"><label>&nbsp;</label><button class="small" style="width:auto" onclick="andarVista(-1)">\u25C0</button></div>
-      <div><label>Decolagem de</label><input type="date" value="${esc(de)}" onchange="UI.vDe=this.value;mudarVista()"></div>
-      <div style="flex:0 0 84px"><label>Hora</label><input value="${esc(UI.vHDe)}" inputmode="numeric" oninput="this.value=mascaraHora(this.value)" onchange="UI.vHDe=normHora(this.value);mudarVista()" placeholder="\u2014"></div>
-      <div><label>At\xE9</label><input type="date" value="${esc(ate)}" onchange="UI.vAte=this.value;mudarVista()"></div>
-      <div style="flex:0 0 84px"><label>Hora</label><input value="${esc(UI.vHAte)}" inputmode="numeric" oninput="this.value=mascaraHora(this.value)" onchange="UI.vHAte=normHora(this.value);mudarVista()" placeholder="\u2014"></div>
-      <div style="flex:0 0 auto"><label>&nbsp;</label><button class="small" style="width:auto" onclick="andarVista(1)">\u25B6</button></div>
+      <div style="flex:0 0 84px"><label>Janela de</label><input value="${esc(UI.vHDe)}" inputmode="numeric"
+        oninput="this.value=mascaraHora(this.value)" onchange="UI.vHDe=normHora(this.value);renderSeguro()" placeholder="\u2014"></div>
+      <div style="flex:0 0 84px"><label>At\xE9</label><input value="${esc(UI.vHAte)}" inputmode="numeric"
+        oninput="this.value=mascaraHora(this.value)" onchange="UI.vHAte=normHora(this.value);renderSeguro()" placeholder="\u2014"></div>
+      <p class="note" style="margin:0 0 10px 4px">Vazio = sem limite. Filtra por hor\xE1rio \u2014 a malha continua sendo s\xF3 a de hoje.</p>
     </div>
   </div>
   ${editar ? `<div style="margin-bottom:10px"><button class="small" style="width:auto"
       onclick="adicionarVoo()">+ Adicionar voo</button></div>` : ""}
+  <div style="display:flex;justify-content:flex-end;margin:-2px 2px 6px"><span class="note">${dm(hoje())}</span></div>
   <div class="card tbl-wrap">${lista.length ? `
-    <table><tr>
-      <th>Data</th><th>Cheg.</th><th>ARR</th>
+    <table class="malha-tabela"><tr>
+      <th>Cheg.</th><th>Arr.</th>
       <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('chegada')">STA ${UI.malhaOrdem.col === "chegada" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
+      <th>REG</th>
       <th>Sa\xEDda</th><th>TO</th>
       <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('saida')">STD ${UI.malhaOrdem.col === "saida" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
-      <th>REG</th><th>Box</th><th>Esteira</th><th>OC</th><th>Descarga</th><th></th></tr>
-    ${ordenar(lista).map((v) => linhaVoo(v, editar, posicionar)).join("")}</table>` : `<p class="note">Nenhum voo nesta data/filtro.</p>`}
+      <th>Box</th><th>Esteira</th><th></th></tr>
+    ${ordenar(lista).map((v) => linhaVoo(v, editar, posicionar)).join("")}</table>` : `<p class="note">Nenhum voo nesta janela.</p>`}
   </div>`;
   }
   function ordenar(lista) {
     return lista.sort((a, b) => {
       const col = UI.malhaOrdem.col || "chegada";
       const dir = UI.malhaOrdem.col ? UI.malhaOrdem.dir : 1;
-      return (String(a.data).localeCompare(String(b.data)) || minPlain(a[col]) - minPlain(b[col])) * dir;
+      return (minPlain(a[col]) - minPlain(b[col])) * dir;
     });
   }
   var dm = (d) => d ? d.slice(8, 10) + "/" + d.slice(5, 7) : "";
@@ -3073,6 +3146,30 @@
     return `<button class="small ghost" style="width:auto" onclick="destravarLado(${v.id},'${lado}')">Destravar ${lado}</button>`;
   }
   var temSaida = (v) => !!(v.saida || v.destino) || v.numero && v.numero !== v.voo_chegada;
+  function soloMin(v) {
+    const c = minutosDe(v.chegada), s = minutosDe(v.saida);
+    return c == null || s == null ? null : s - c;
+  }
+  var SOLO_APERTO_MIN = 30;
+  function soloApertado(v) {
+    const m = soloMin(v);
+    return m != null && m < SOLO_APERTO_MIN;
+  }
+  function alca(vooId, lado, pode2, emEdicao) {
+    if (!pode2 || emEdicao) return "";
+    const rot2 = lado === "chegada" ? "chegada" : "sa\xEDda";
+    return `<span class="malha-alca" onpointerdown="arrastarLadoVoo(event,${vooId},'${lado}')"
+    aria-label="Arraste para trocar o lado ${rot2} com outra linha">${ico("arrastar", 16)}</span>`;
+  }
+  function blocoOc(v, posicionar, emEdicao) {
+    if (!posicionar || !emEdicao) return "";
+    const ocs = D.users.filter((u) => u.perfil === "oc");
+    return `<label class="note" style="display:block;margin-top:8px">OC do box
+    <select onchange="posicionarOcTela(${v.id},this.value)">
+      <option value="">\u2014</option>
+      ${ocs.map((u) => `<option value="${u.id}" ${v.oc_posicionado_id === u.id ? "selected" : ""}>${esc(u.nome)}</option>`).join("")}
+    </select></label>`;
+  }
   function linhaVoo(v, editar, posicionar) {
     const emEdicao = UI.linhaEditando === v.id;
     const podeAlgo = editar || posicionar;
@@ -3081,62 +3178,32 @@
     const campoHora = (nome) => emEdicao && editar ? `<input value="${esc(v[nome] || "")}" style="width:76px" inputmode="numeric"
          oninput="this.value=mascaraHora(this.value)"
          onchange="mudarVoo(${v.id},'${nome}',this.value)">` : `<span class="mono">${esc(v[nome] || "\u2014")}</span>`;
-    const ocs = D.users.filter((u) => u.perfil === "oc");
-    const colunaOc = emEdicao && posicionar ? `<select onchange="posicionarOcTela(${v.id},this.value)">
-         <option value="">\u2014</option>
-         ${ocs.map((u) => `<option value="${u.id}" ${v.oc_posicionado_id === u.id ? "selected" : ""}>${esc(u.nome)}</option>`).join("")}
-       </select>` : v.oc_posicionado_id ? esc(nomeDe(v.oc_posicionado_id)) : '<span class="note">\u2014</span>';
     const botao = !podeAlgo ? "" : emEdicao ? `<button class="small ok" style="width:auto" onclick="UI.linhaEditando=null;render()">OK</button>` : `<button class="small ghost" style="width:auto" onclick="UI.linhaEditando=${v.id};render()">Editar</button>`;
     const btnApagar = emEdicao && editar ? `<button class="small ghost" style="width:auto;color:var(--red);border-color:var(--red)"
          onclick="apagarVoo(${v.id})">Apagar</button>` : "";
     const destravaChegada = emEdicao && editar ? blocoDestrava(v, "chegada", !!v.chegada && jaPousou(v)) : "";
     const destravaSaida = emEdicao && editar ? blocoDestrava(v, "saida", jaDecolou(v)) : "";
-    return `<tr${emEdicao ? ' style="background:var(--surface2)"' : ""}>
-    <td class="note">${dm(v.data)}</td>
-    <td class="mono">${campo("voo_chegada", 64)}</td>
-    <td>${campo("origem", 56)}</td>
-    <td>${campoHora("chegada")}</td>
-    <td class="mono" style="color:var(--amber)">${temSaida(v) || emEdicao && editar ? campo("numero", 64) : '<span class="note">\u2014</span>'}</td>
-    <td>${campo("destino", 56)}</td>
-    <td>${campoHora("saida")}</td>
-    <td>${campo("prefixo", 82)}</td>
-    <td>${emEdicao && editar ? campo("box", 64) : `<span class="badge sm">${esc(v.box || "?")}</span>`}</td>
+    const solo = soloMin(v);
+    const tituloSolo = solo != null ? ` title="Solo: ${solo} min"` : "";
+    return `<tr data-voo-id="${v.id}"${emEdicao ? ' style="background:var(--surface2)"' : ""}>
+    <td class="mono lado-a" data-campo="voo_chegada">${alca(v.id, "chegada", editar && !!v.voo_chegada, emEdicao)}${campo("voo_chegada", 64)}</td>
+    <td class="lado-a" data-campo="origem">${campo("origem", 56)}</td>
+    <td class="lado-a" data-campo="chegada">${campoHora("chegada")}</td>
+    <td class="lado-a" data-campo="prefixo">${campo("prefixo", 82)}</td>
+    <td class="mono lado-b" data-campo="numero" style="color:var(--amber)">${alca(v.id, "saida", editar && temSaida(v), emEdicao)}${temSaida(v) || emEdicao && editar ? campo("numero", 64) : '<span class="note">\u2014</span>'}</td>
+    <td class="lado-b" data-campo="destino">${campo("destino", 56)}</td>
+    <td class="lado-b${soloApertado(v) ? " solo-apertado" : ""}" data-campo="saida"${tituloSolo}>${campoHora("saida")}</td>
+    <td>${editar ? `<input value="${esc(v.box || "")}" style="width:64px" onchange="mudarVoo(${v.id},'box',this.value)">` : `<span class="badge sm">${esc(v.box || "?")}</span>`}</td>
     <td><input value="${esc(v.esteira || "")}" style="width:56px"
       onchange="mudarVoo(${v.id},'esteira',this.value)"></td>
-    <td>${colunaOc}</td>
-    <td>${v.descarga_ok_em ? `<span class="chip st-entregue">OK ${hora(v.descarga_ok_em)}</span>` : `<span class="note">\u2014</span>`}</td>
-    <td>${iconeLogMalha(v)}${botao}${btnApagar}${destravaChegada}${destravaSaida}</td>
+    <td>${iconeLogMalha(v)}${botao}${btnApagar}${destravaChegada}${destravaSaida}${blocoOc(v, posicionar, emEdicao)}</td>
   </tr>`;
   }
   function passaVista(v) {
-    const de = UI.vDe || hoje(), ate = UI.vAte || hoje();
     const t = minPlain(v.saida || v.chegada);
-    if (v.data === de && UI.vHDe && t !== 99999 && t < minPlain(UI.vHDe)) return false;
-    if (v.data === ate && UI.vHAte && t !== 99999 && t > minPlain(UI.vHAte)) return false;
+    if (UI.vHDe && t !== 99999 && t < minPlain(UI.vHDe)) return false;
+    if (UI.vHAte && t !== 99999 && t > minPlain(UI.vHAte)) return false;
     return true;
-  }
-  async function mudarVista() {
-    const de = UI.vDe || hoje(), ate = UI.vAte || hoje();
-    if (String(ate) < String(de)) {
-      UI.vAte = de;
-    }
-    if (de === hoje() && (UI.vAte || hoje()) === hoje()) {
-      UI.voosVista = null;
-      bus.renderSeguro();
-      return;
-    }
-    UI.voosVista = await buscarIntervalo(de, UI.vAte || hoje());
-    bus.renderSeguro();
-  }
-  function andarVista(delta) {
-    const mexe = (d) => {
-      const b = /* @__PURE__ */ new Date((d || hoje()) + "T12:00:00");
-      b.setDate(b.getDate() + delta);
-      return b.toLocaleDateString("en-CA");
-    };
-    UI.vDe = mexe(UI.vDe);
-    UI.vAte = mexe(UI.vAte);
-    mudarVista();
   }
   function ordenarMalha(col) {
     if (UI.malhaOrdem.col === col) UI.malhaOrdem.dir *= -1;
@@ -3146,93 +3213,53 @@
   async function mudarVoo(id, campo, valor) {
     valor = campo === "chegada" || campo === "saida" ? normHora(valor) : valor.trim();
     const alvo2 = valor || null;
-    const lista = UI.voosVista || D.voos;
-    const trocaveis = { box: "BOX", prefixo: "PREFIXO", voo_chegada: "VOO DE CHEGADA", numero: "VOO DE SA\xCDDA" };
-    if (alvo2 && trocaveis[campo]) {
-      const outros = lista.filter((v) => v.id !== id && String(v[campo] || "") === String(alvo2));
+    if (campo === "box" && alvo2) {
+      const outros = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2));
       if (outros.length) {
-        abrirEscolhaTroca(id, campo, alvo2, outros);
+        abrirEscolhaTrocaBox(id, alvo2, outros);
         return;
       }
     }
     await gravarCampo(id, campo, alvo2);
   }
-  var BLOCO_DO_CAMPO = { voo_chegada: "chegada", prefixo: "chegada", numero: "saida" };
   function rotacaoTexto(vooChegada, vooSaida, box) {
     const c = esc(vooChegada || "?");
     const s = vooSaida ? `vai sair como ${esc(vooSaida)}` : "n\xE3o tem sa\xEDda na malha";
     const b = box ? `, no box ${esc(box)}` : "";
     return `${c} (chegando) ${s}${b}`;
   }
-  function resultadoDaTroca(campo, eu, outro, alvo2) {
-    if (campo === "box") {
-      return [
-        rotacaoTexto(eu.voo_chegada, eu.numero, alvo2),
-        rotacaoTexto(outro.voo_chegada, outro.numero, eu.box)
-      ];
-    }
-    if (BLOCO_DO_CAMPO[campo] === "saida") {
-      return [
-        rotacaoTexto(eu.voo_chegada, outro.numero, eu.box),
-        rotacaoTexto(outro.voo_chegada, eu.numero, outro.box)
-      ];
-    }
-    return [
-      rotacaoTexto(outro.voo_chegada, eu.numero, outro.box),
-      rotacaoTexto(eu.voo_chegada, outro.numero, eu.box)
-    ];
-  }
-  function abrirEscolhaTroca(id, campo, alvo2, outros) {
-    const lista = UI.voosVista || D.voos;
-    const eu = lista.find((v) => v.id === id) || {};
-    const rot2 = { box: "BOX", prefixo: "PREFIXO", voo_chegada: "VOO DE CHEGADA", numero: "VOO DE SA\xCDDA" }[campo];
+  function abrirEscolhaTrocaBox(id, alvo2, outros) {
+    const eu = D.voos.find((v) => v.id === id) || {};
     const opcoes = outros.map((o) => {
-      const [linha1, linha2] = resultadoDaTroca(campo, eu, o, alvo2);
+      const linha1 = rotacaoTexto(eu.voo_chegada, eu.numero, alvo2);
+      const linha2 = rotacaoTexto(o.voo_chegada, o.numero, eu.box);
       return `<button class="primary" style="margin-bottom:8px;text-align:left"
-      onclick="confirmarTroca(${id},'${campo}','${esc(alvo2)}',${o.id})">
+      onclick="confirmarTrocaBox(${id},'${esc(alvo2)}',${o.id})">
       Trocar
       <span style="display:block;font-size:12px;opacity:.85;margin-top:4px">
         O voo ${linha1}</span>
       <span style="display:block;font-size:12px;opacity:.85">
         O voo ${linha2}</span></button>`;
     }).join("");
-    let manter = "";
-    if (campo !== "numero") {
-      let dica;
-      if (campo === "box") {
-        const jaNoBox = lista.filter((v) => v.id !== id && String(v.box || "") === String(alvo2)).map((v) => v.numero || v.voo_chegada || "?");
-        dica = jaNoBox.length ? `os voos ${esc(jaNoBox.join(", "))} v\xE3o sair no box ${esc(alvo2)} \u2014 use quando o voo de chegada mais tarde est\xE1 programado para esse box` : `use quando o voo de chegada mais tarde est\xE1 programado para o box ${esc(alvo2)}`;
-      } else {
-        dica = `os dois ficam com ${esc(alvo2)} \u2014 use quando o outro voo chega mais tarde`;
-      }
-      manter = `<button style="margin-bottom:8px;text-align:left"
-      onclick="confirmarTroca(${id},'${campo}','${esc(alvo2)}',null)">
-      S\xF3 colocar ${esc(alvo2)} neste voo
-      <span style="display:block;font-size:12px;opacity:.75;margin-top:4px">${dica}</span></button>`;
-    }
-    abrirModal(`<h3>${rot2} ${esc(alvo2)} j\xE1 est\xE1 em uso</h3>
+    const jaNoBox = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2)).map((v) => v.numero || v.voo_chegada || "?");
+    const dica = jaNoBox.length ? `os voos ${esc(jaNoBox.join(", "))} v\xE3o sair no box ${esc(alvo2)} \u2014 use quando o voo de chegada mais tarde est\xE1 programado para esse box` : `use quando o voo de chegada mais tarde est\xE1 programado para o box ${esc(alvo2)}`;
+    const manter = `<button style="margin-bottom:8px;text-align:left"
+    onclick="confirmarTrocaBox(${id},'${esc(alvo2)}',null)">
+    S\xF3 colocar ${esc(alvo2)} neste voo
+    <span style="display:block;font-size:12px;opacity:.75;margin-top:4px">${dica}</span></button>`;
+    abrirModal(`<h3>BOX ${esc(alvo2)} j\xE1 est\xE1 em uso</h3>
     <p class="note">Escolha o que fazer:</p>
     ${opcoes}${manter}
     <button class="ghost" onclick="fecharModal();render()">Desfazer a edi\xE7\xE3o</button>`);
   }
-  async function confirmarTroca(id, campo, alvo2, outroId) {
+  async function confirmarTrocaBox(id, alvo2, outroId) {
     fecharModal();
     if (outroId == null) {
-      await gravarCampo(id, campo, alvo2);
+      await gravarCampo(id, "box", alvo2);
       return;
     }
-    const bloco = BLOCO_DO_CAMPO[campo];
-    if (bloco) {
-      const { error } = await trocarVoos(id, outroId, bloco);
-      if (error) await erro(error);
-      UI.linhaEditando = null;
-      await bus.recarregar();
-      forcarDesenho();
-      return;
-    }
-    const lista = UI.voosVista || D.voos;
-    const eu = lista.find((v) => v.id === id) || {};
-    const outro = lista.find((v) => v.id === outroId) || {};
+    const eu = D.voos.find((v) => v.id === id) || {};
+    const outro = D.voos.find((v) => v.id === outroId) || {};
     const boxEu = eu.box || null;
     const ocEu = eu.oc_posicionado_id || null;
     const ocOutro = outro.oc_posicionado_id || null;
@@ -3254,6 +3281,118 @@
     aplicarLocal(outro.id, { box: boxEu, oc_posicionado_id: ocEu });
     forcarDesenho();
   }
+  function campoLado(linha2, campo) {
+    const td = linha2.querySelector ? linha2.querySelector(`[data-campo="${campo}"]`) : null;
+    return td ? (td.textContent || "").trim() : "";
+  }
+  function conteudoFantasma(linha2, lado) {
+    if (lado === "chegada") {
+      const voo3 = campoLado(linha2, "voo_chegada"), reg = campoLado(linha2, "prefixo"), hora3 = campoLado(linha2, "chegada");
+      return { icone: "pousando", titulo: voo3 || "?", legenda: [reg, hora3].filter(Boolean).join(" \xB7 ") };
+    }
+    const voo2 = campoLado(linha2, "numero"), destino = campoLado(linha2, "destino"), hora2 = campoLado(linha2, "saida");
+    return { icone: "decolando", titulo: voo2 || "?", legenda: [destino, hora2].filter(Boolean).join(" \xB7 ") };
+  }
+  function elementoFantasma() {
+    let f = document.getElementById("malha-fantasma");
+    if (!f) {
+      f = document.createElement("div");
+      f.id = "malha-fantasma";
+      document.body.appendChild(f);
+    }
+    return f;
+  }
+  function mostrarFantasma(linha2, lado, x, y) {
+    const f = elementoFantasma();
+    const { icone, titulo, legenda } = conteudoFantasma(linha2, lado);
+    f.className = `malha-fantasma ${lado === "chegada" ? "chegada" : "saida"}`;
+    f.innerHTML = `${ico(icone, 22)}
+    <span class="malha-fantasma-txt"><b>${esc(titulo)}</b>${legenda ? `<br>${esc(legenda)}` : ""}</span>`;
+    f.style.left = `${x}px`;
+    f.style.top = `${y}px`;
+    f.style.display = "flex";
+  }
+  function moverFantasma(x, y) {
+    const f = document.getElementById("malha-fantasma");
+    if (f) {
+      f.style.left = `${x}px`;
+      f.style.top = `${y}px`;
+    }
+  }
+  function esconderFantasma() {
+    const f = document.getElementById("malha-fantasma");
+    if (f) f.style.display = "none";
+  }
+  function arrastarLadoVoo(ev, vooId, lado) {
+    const linhaOrigem = ev.target.closest ? ev.target.closest("tr[data-voo-id]") : null;
+    if (!linhaOrigem) return;
+    ev.preventDefault();
+    const classeArrastando = `arrastando-${lado}`;
+    linhaOrigem.classList.add(classeArrastando);
+    UI.malhaArrastando = true;
+    mostrarFantasma(linhaOrigem, lado, ev.clientX, ev.clientY);
+    let alvo2 = null;
+    function marcarAlvo(linha2) {
+      if (linha2 === alvo2) return;
+      if (alvo2) alvo2.classList.remove("solta-aqui");
+      alvo2 = linha2;
+      if (alvo2) alvo2.classList.add("solta-aqui");
+    }
+    function mover(e) {
+      moverFantasma(e.clientX, e.clientY);
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const linha2 = (el == null ? void 0 : el.closest) ? el.closest("tr[data-voo-id]") : null;
+      marcarAlvo(linha2 && linha2 !== linhaOrigem ? linha2 : null);
+    }
+    async function soltar() {
+      document.removeEventListener("pointermove", mover);
+      document.removeEventListener("pointerup", soltar);
+      document.removeEventListener("pointercancel", soltar);
+      linhaOrigem.classList.remove(classeArrastando);
+      esconderFantasma();
+      const linhaAlvo = alvo2;
+      marcarAlvo(null);
+      UI.malhaArrastando = false;
+      if (!linhaAlvo) {
+        if (UI.renderPendente) {
+          UI.renderPendente = false;
+          bus.render();
+        }
+        return;
+      }
+      const outroId = Number(linhaAlvo.dataset.vooId);
+      const { error } = await trocarVoos(vooId, outroId, lado);
+      if (error) await erro(error);
+      UI.linhaEditando = null;
+      UI.renderPendente = false;
+      await bus.recarregar();
+      forcarDesenho();
+    }
+    document.addEventListener("pointermove", mover);
+    document.addEventListener("pointerup", soltar);
+    document.addEventListener("pointercancel", soltar);
+  }
+  function abrirAjudaMalha() {
+    abrirModal(`<h3>Como mexer na malha</h3>
+    <ul style="padding-left:18px;line-height:1.7">
+      <li><b>Cheg. / Arr. / STA. / REG</b> \u2014 arraste pela al\xE7a ${ico("arrastar", 14)}
+        at\xE9 OUTRA linha para trocar os dois voos de chegada inteiros.
+        V\xE3o junto o <b>BOX</b>, a <b>Esteira</b> e o Descarga OK: pertencem
+        \xE0 aeronave que pousou, n\xE3o \xE0 linha da tabela.</li>
+      <li><b>SAIDA. / TO / STD</b> \u2014 mesma ideia: arraste pela al\xE7a para
+        trocar s\xF3 o voo de sa\xEDda entre duas linhas.</li>
+      <li><b>BOX</b> \u2014 digite direto. Se o box j\xE1 estiver em uso, o
+        sistema pergunta se \xE9 para trocar com quem est\xE1 l\xE1.</li>
+      <li><b>Esteira</b> \u2014 digite direto, sem troca nenhuma.</li>
+      <li>Hor\xE1rio de sa\xEDda em <span style="color:var(--red)">laranja/vermelho</span>
+        = menos de 30 min entre o pouso (STA) e a decolagem (STD).</li>
+      <li>A malha aqui \xE9 sempre a <b>de hoje</b> \u2014 d\xE1 pra filtrar por
+        janela de hor\xE1rio, mas n\xE3o d\xE1 pra ver ontem nem amanh\xE3.</li>
+      <li>Atribuir <b>OC</b> a um box mora dentro de "Editar" \u2014 quem s\xF3
+        quer ver quem est\xE1 no box acompanha isso pelo Painel Operacional.</li>
+    </ul>
+    <button class="primary" onclick="fecharModal()">Entendi</button>`);
+  }
   function forcarDesenho() {
     var _a, _b;
     (_b = (_a = document.activeElement) == null ? void 0 : _a.blur) == null ? void 0 : _b.call(_a);
@@ -3270,14 +3409,11 @@
     bus.renderSeguro();
   }
   function aplicarLocal(id, campos) {
-    for (const lista of [D.voos, UI.voosVista]) {
-      if (!lista) continue;
-      const v = lista.find((x) => x.id === id);
-      if (v) Object.assign(v, campos);
-    }
+    const v = D.voos.find((x) => x.id === id);
+    if (v) Object.assign(v, campos);
   }
   async function apagarVoo(id) {
-    const v = (UI.voosVista || D.voos).find((x) => x.id === id) || {};
+    const v = D.voos.find((x) => x.id === id) || {};
     const usado = D.viagens.some((g) => g.voo_origem_id === id) || D.destinos.some((d) => d.voo_destino_id === id || d.origem_voo_id === id);
     if (usado) {
       await aviso(`O voo ${esc(v.numero || v.voo_chegada || "?")} j\xE1 tem viagens ou bags registradas.
@@ -3293,8 +3429,7 @@ Apagar deixaria esse hist\xF3rico \xF3rf\xE3o. Se ele n\xE3o vai mais operar, li
       return;
     }
     UI.linhaEditando = null;
-    if (UI.voosVista) await mudarVista();
-    else await bus.recarregar();
+    await bus.recarregar();
   }
   async function adicionarVoo() {
     const num = await perguntar("N\xFAmero do voo de sa\xEDda (deixe vazio se for s\xF3 chegada)", "", "Adicionar voo");
@@ -3305,7 +3440,7 @@ Apagar deixaria esse hist\xF3rico \xF3rf\xE3o. Se ele n\xE3o vai mais operar, li
       await aviso("Informe ao menos um dos dois n\xFAmeros.");
       return;
     }
-    const dia = UI.malhaData || UI.vDe || hoje();
+    const dia = UI.malhaData || hoje();
     const { error } = await criarVoo({
       data: dia,
       numero: num.trim() || cheg.trim(),
@@ -3315,11 +3450,10 @@ Apagar deixaria esse hist\xF3rico \xF3rf\xE3o. Se ele n\xE3o vai mais operar, li
       await erro(error);
       return;
     }
-    if (UI.voosVista) await mudarVista();
-    else await bus.recarregar();
+    await bus.recarregar();
   }
   async function destravarLado(vooId, lado) {
-    const v = (UI.voosVista || D.voos).find((x) => x.id === vooId) || {};
+    const v = D.voos.find((x) => x.id === vooId) || {};
     const ok = await confirmar(`Destravar o lado ${lado} do voo ${esc(v.numero || v.voo_chegada || "?")}?
 
 A pr\xF3xima reimporta\xE7\xE3o da malha vai poder sobrescrever estes campos.`);
@@ -3336,7 +3470,7 @@ A pr\xF3xima reimporta\xE7\xE3o da malha vai poder sobrescrever estes campos.`);
   async function posicionarOcTela(vooId, ocId) {
     try {
       await posicionarOc(vooId, ocId || null);
-      const v = (UI.voosVista || D.voos).find((x) => x.id === vooId);
+      const v = D.voos.find((x) => x.id === vooId);
       if (v) v.oc_posicionado_id = ocId || null;
     } catch (e) {
       await erro(e);
@@ -3352,7 +3486,6 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     if (log) log.textContent = "Limpando...";
     const { error } = await apagarMalhaDoDia(dia);
     await bus.recarregar();
-    if (UI.voosVista) await mudarVista();
     const log2 = $("mlog");
     if (log2) log2.textContent = error ? "Erro ao limpar: " + error.message : `Malha de ${dia} limpa. Agora importe o arquivo correto.`;
   }
@@ -3444,7 +3577,6 @@ Voos j\xE1 usados em viagens ficam preservados para n\xE3o perder o hist\xF3rico
     }
     UI.malhaArquivo = null;
     await bus.recarregar();
-    if (UI.voosVista) await mudarVista();
     const log2 = $("mlog");
     const madrugada = rowsFinal.filter((r) => r.data === diaAmanha).length;
     const ignorados = ((_a = data == null ? void 0 : data.ignorados) == null ? void 0 : _a.length) || 0;
@@ -10012,7 +10144,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
   function barraOperador() {
     const vg = viagemAtiva();
     const n = vg ? 0 : marcadosOp();
-    return `<nav class="op-barra">
+    return `<nav class="op-barra" id="op-barra">
     <button class="op-barra-relogio${UI.janelaAberta ? " on" : ""}"
       onclick="toggleJanelaBarra()" aria-label="Filtrar por horario">${ico("relogio", 20)}</button>
     <button class="op-barra-mais${vg ? " ghost" : ""}" onclick="abrirNovaFolha()"
@@ -10022,7 +10154,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
   }
   function barraJanela() {
     const de = UI.opDe || "\u2014", ate = UI.opAte || "\u2014";
-    return `<nav class="op-barra">
+    return `<nav class="op-barra" id="op-barra">
     <button class="op-barra-relogio${UI.janelaAberta ? " on" : ""}"
       onclick="toggleJanelaBarra()" aria-label="Filtrar por horario">${ico("relogio", 20)}</button>
     <span class="note janela-resumo">Sa\xEDdas de ${esc(de)} at\xE9 ${esc(ate)}</span>
@@ -13906,6 +14038,31 @@ ${e.message || e}` : e);
         return "";
     }
   }
+  var ultimoHeaderHtml = null;
+  var ultimoNavHtml = null;
+  function aplicarHeader(htmlNovo) {
+    if (ultimoHeaderHtml === htmlNovo) return;
+    document.getElementById("cabecalho").innerHTML = htmlNovo;
+    ultimoHeaderHtml = htmlNovo;
+  }
+  function montarCasca() {
+    if (document.getElementById("cabecalho")) return;
+    app().innerHTML = `<header class="app" id="cabecalho"></header><main id="main"></main>`;
+    ultimoHeaderHtml = null;
+    ultimoNavHtml = null;
+  }
+  function aplicarNav(navHtml) {
+    const atual = document.getElementById("op-barra");
+    if (!navHtml) {
+      if (atual) atual.remove();
+      ultimoNavHtml = null;
+      return;
+    }
+    if (ultimoNavHtml === navHtml) return;
+    if (atual) atual.outerHTML = navHtml;
+    else document.getElementById("cabecalho").insertAdjacentHTML("afterend", navHtml);
+    ultimoNavHtml = navHtml;
+  }
   function render3() {
     if (!S.me) return;
     const abas = abasDoUsuario();
@@ -13913,16 +14070,15 @@ ${e.message || e}` : e);
     const naOperador = UI.tab === "levar";
     const naTriagemTcx = UI.tab === "triagem" && UI.tri.setor === "TCX";
     const voltarRolagem = guardarRolagem(app());
-    app().innerHTML = `
-    <header class="app">
+    montarCasca();
+    aplicarHeader(`
       ${botaoAbrirMenu()}
       <h1>AIROPS-Modulo_Rampa</h1>
       ${UI.filaOffline.length ? `<span class="fila-offline">Fila offline: ${UI.filaOffline.length} pendente${UI.filaOffline.length === 1 ? "" : "s"}</span>` : ""}
       <div class="who"><b>${esc(S.me.nome)}</b><span>${esc(S.me.perfil)} \xB7 v${esc(window.RAMPA_BUILD || "dev")}</span></div>
-      <button class="small ghost" style="width:auto" onclick="sair()">Sair</button>
-    </header>
-    ${naOperador ? barraOperador() : naTriagemTcx ? barraJanela() : ""}
-    <main id="main"${UI.tab === "patio" ? ` class="largo"` : ""}></main>`;
+      <button class="small ghost" style="width:auto" onclick="sair()">Sair</button>`);
+    aplicarNav(naOperador ? barraOperador() : naTriagemTcx ? barraJanela() : "");
+    document.getElementById("main").classList.toggle("largo", UI.tab === "patio");
     let html, quebrou = false;
     try {
       html = conteudo(UI.tab);
@@ -13974,6 +14130,10 @@ ${e.message || e}` : e);
   function renderSeguro() {
     var _a;
     if ((_a = UI.patio) == null ? void 0 : _a.arrastando) {
+      UI.renderPendente = true;
+      return;
+    }
+    if (UI.malhaArrastando) {
       UI.renderPendente = true;
       return;
     }
@@ -15322,13 +15482,13 @@ Sair mesmo assim?`
     fecharModal,
     // malha (CCO)
     mudarVoo,
-    mudarVista,
-    andarVista,
     ordenarMalha,
     importarMalha,
     limparMalha,
     posicionarOcTela,
-    confirmarTroca,
+    confirmarTrocaBox,
+    arrastarLadoVoo,
+    abrirAjudaMalha,
     apagarVoo,
     adicionarVoo,
     verLogMalha,
