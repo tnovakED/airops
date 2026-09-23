@@ -1507,9 +1507,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 23/09/2026, 14:29:05
+     Gerado em: 23/09/2026, 15:38:32
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="23/09 14:29";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="23/09 15:38";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4722,16 +4722,21 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     });
     return candidatos.length === 1 ? candidatos[0].id : null;
   }
+  function entregaBateComConexao(d, pi, vc) {
+    if (d.status !== "entregue") return false;
+    if (!chegouNoVoo(d)) return false;
+    if (mesmoId(d.ponto_india_id, pi.id)) return true;
+    if (!vc || !mesmoId(d.voo_destino_id, pi.voo_id)) return false;
+    const vg = D.viagens.find((x) => mesmoId(x.id, d.viagem_id));
+    return mesmoId(d.origem_voo_id || vg && vg.voo_origem_id, vc.id);
+  }
+  function entregasDaConexao(pi) {
+    const vc = vooChegadaConexao(pi.voo_chegada_numero);
+    return D.destinos.filter((d) => entregaBateComConexao(d, pi, vc)).length;
+  }
   function situacaoConexao(pi) {
     const vc = vooChegadaConexao(pi.voo_chegada_numero);
-    const auto = D.destinos.some((d) => {
-      if (d.status !== "entregue") return false;
-      if (!chegouNoVoo(d)) return false;
-      if (mesmoId(d.ponto_india_id, pi.id)) return true;
-      if (!vc || !mesmoId(d.voo_destino_id, pi.voo_id)) return false;
-      const vg = D.viagens.find((x) => mesmoId(x.id, d.viagem_id));
-      return mesmoId(d.origem_voo_id || vg && vg.voo_origem_id, vc.id);
-    });
+    const auto = D.destinos.some((d) => entregaBateComConexao(d, pi, vc));
     const { p, r } = prd(pi);
     const parcial = r > 0 && r < p;
     const manual = pi.status === "entregue" && !parcial;
@@ -5797,7 +5802,11 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const trazendo = indo.map(
         (id) => `<span class="india-trazendo" title="${esc(nomeDe(id))} est\xE1 trazendo">${ico("carreta", 19)}</span>`
       ).join("");
-      const marca = (sit.entregue ? `<span class="india-entregue" title="Conex\xE3o entregue">${ico("mala-confirmada", 19)}</span>` : "") + trazendo;
+      const nEntregas = entregasDaConexao(pi);
+      const marca = Array.from(
+        { length: nEntregas },
+        () => `<span class="india-entregue" title="${nEntregas} entrega${nEntregas === 1 ? "" : "s"} registrada${nEntregas === 1 ? "" : "s"}">${ico("mala-confirmada", 19)}</span>`
+      ).join("") + trazendo;
       const lbl = vooRotulo(
         comoChegada(pi.origem, pi.voo_chegada_numero),
         "chegada",
@@ -12195,10 +12204,17 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
   function origemDaPronta(p) {
     if (ehProntaDaBase(p)) return { pontoIndiaId: null, vooOrigemId: p.voo_destino_id };
     const pontoIndiaId = p.ponto_india_id != null ? Number(p.ponto_india_id) : null;
-    if (!pontoIndiaId) return { pontoIndiaId: null, vooOrigemId: null };
-    const pi = D.indias.find((x) => Number(x.id) === pontoIndiaId);
-    const vc = pi ? vooChegadaConexao(pi.voo_chegada_numero) : null;
-    return { pontoIndiaId, vooOrigemId: vc ? vc.id : null };
+    if (pontoIndiaId) {
+      const pi = D.indias.find((x) => Number(x.id) === pontoIndiaId);
+      const vc = pi ? vooChegadaConexao(pi.voo_chegada_numero) : null;
+      return { pontoIndiaId, vooOrigemId: vc ? vc.id : null };
+    }
+    const pontoDeltaId = p.ponto_delta_id != null ? Number(p.ponto_delta_id) : null;
+    if (pontoDeltaId) {
+      const pd = D.deltas.find((x) => Number(x.id) === pontoDeltaId);
+      return { pontoIndiaId: null, vooOrigemId: pd ? pd.voo_id : null };
+    }
+    return { pontoIndiaId: null, vooOrigemId: null };
   }
   async function pegarProntas(ps, viaPorId, esteira) {
     if (!ps.length) return;
