@@ -1214,7 +1214,13 @@
   .india-acordeao + .india-acordeao {
     margin-top: 4px;
   }
-  .india-entregue{color:#1f1f1f}
+  .india-entregue{color:#1f1f1f; display:inline-flex; align-items:center; gap:2px}
+  /* Numero de entregas/VIAGENS (nao de bags -- isso e a coluna OP) ao
+     lado da mala preta, so quando ha 2+ (Tiago, 23/09/2026: reverte o
+     icone repetido, "vai ver que deixaram bag por causa do icone e vai
+     contar" -- um numero cinza claro basta pra avisar sem virar conta). */
+  .india-entregas-n{font-style:normal; font-size:12px; font-weight:700;
+    color:var(--muted); font-variant-numeric:tabular-nums}
   .india-trazendo{color:var(--green); margin-left:2px}
   .india-coletado{color:var(--blue)}
   button.india-cancelar{color:var(--red)}
@@ -1225,22 +1231,24 @@
   .prd{display:flex; gap:8px; align-items:flex-end}
   .prd-col{text-align:center; line-height:1.15}
   .prd-letra{font-size:11px; font-weight:700}
+  /* OP (23/09/2026): so leitura, nunca soma no P/R/D -- o "/" no valor
+     (ver prdTag em telaPontos.js) e so visual, sem repetir o total que
+     ja esta do lado na coluna P. Cor neutra de proposito: nao e nem
+     acerto nem erro, e so ciencia do que foi digitado. */
+  .prd-op{color:var(--muted)}
   .prd-p{color:var(--green)}
   .prd-r{color:var(--blue)}
   .prd-d.falta{color:var(--red)}
   .prd-d.sobra{color:var(--amber)}
   .prd-d.zero{color:var(--muted)}
-  .prd-ajuste{font-size:10px; color:var(--amber)}
   .prd-legenda{margin:4px 0 10px}
-  /* Diferenca entre o que o lider CONTOU e o que o arquivo previa
-     (sql/atualizacao_46.sql). Aparece ao vivo enquanto ele digita: e o
-     que mostra na hora que "3" num voo de 5 previstas quer dizer -2, em
-     vez de deixar o engano ser descoberto do outro lado do patio.
-     Some quando a conta bate -- linha sem selo = contado e confere. */
-  .delta-dif{flex:none; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums;
-    padding:1px 4px; border-radius:6px; white-space:nowrap}
-  .delta-dif.falta{color:#fff; background:var(--red)}
-  .delta-dif.sobra{color:#fff; background:var(--orange)}
+  /* Quantas o lider CONTOU no Delta, de quantas o arquivo previa --
+     "15/25", ou "?/25" antes de contar (Tiago, 23/09/2026: deixou de
+     ser diferenca contra o previsto, virou so um bilhete informativo
+     pro operador saber quantas esta levando NESTA leva). Cor neutra:
+     nao e mais alerta de erro. */
+  .delta-contado{flex:none; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums;
+    color:var(--muted); white-space:nowrap}
   /* marcar = tocar na linha (sem quadradinho), fundo de selecionado igual a
      folha da viagem nova; o padding lateral e o mesmo marcada ou nao, pra
      linha nao pular de lugar ao marcar */
@@ -1507,9 +1515,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 23/09/2026, 15:38:32
+     Gerado em: 23/09/2026, 21:43:44
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="23/09 15:38";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="23/09 21:43";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2395,6 +2403,7 @@
       const ja = achados.find((a) => a.id === v.id);
       if (ja) {
         ja._bag += pd.bag_qtd || 0;
+        ja._contado = ja._contado == null || pd.bag_qtd_contada == null ? null : ja._contado + pd.bag_qtd_contada;
         ja._pdIds.push(pd.id);
         if (ja._carretaId == null) ja._carretaId = (_b = pd.carreta_id) != null ? _b : null;
         ja._naoConecta = ja._naoConecta && naoConectaDelta(pd);
@@ -2402,6 +2411,7 @@
         achados.push({
           ...v,
           _bag: pd.bag_qtd || 0,
+          _contado: pd.bag_qtd_contada,
           _pdIds: [pd.id],
           _carretaId: (_c = pd.carreta_id) != null ? _c : null,
           _baldeAuto: balde,
@@ -4639,17 +4649,6 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       { p_id: id, p_qtd: qtd != null ? qtd : null, p_completar: !!completar }
     );
   }
-  async function creditarEntregaIndiaDeltaDb(pontoIndiaId, qtd, pontoDeltaId, bagQtdContadaVista) {
-    return sb.rpc(
-      "creditar_entrega_india_delta",
-      {
-        p_ponto_india_id: pontoIndiaId,
-        p_qtd: qtd != null ? qtd : null,
-        p_ponto_delta_id: pontoDeltaId != null ? pontoDeltaId : null,
-        p_bag_qtd_contada_vista: bagQtdContadaVista != null ? bagQtdContadaVista : null
-      }
-    );
-  }
   async function marcarIndiaEntregueDb(id, qtd, previsto) {
     const soma = Number.isFinite(qtd) && qtd > 0 ? qtd : null;
     const { data: novoR, error } = await creditarBagIndiaDb(id, soma, false);
@@ -4713,15 +4712,6 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     no_local: (b) => `${b.local}`,
     na_carreta: (b) => `carreta da ${b.local}`
   };
-  function resolverConexaoIndia(vooDestinoId, vooOrigemId) {
-    if (vooDestinoId == null || vooOrigemId == null) return null;
-    const candidatos = D.indias.filter((pi) => {
-      if (!mesmoId(pi.voo_id, vooDestinoId)) return false;
-      const vc = vooChegadaConexao(pi.voo_chegada_numero);
-      return !!vc && mesmoId(vc.id, vooOrigemId);
-    });
-    return candidatos.length === 1 ? candidatos[0].id : null;
-  }
   function entregaBateComConexao(d, pi, vc) {
     if (d.status !== "entregue") return false;
     if (!chegouNoVoo(d)) return false;
@@ -4733,6 +4723,15 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   function entregasDaConexao(pi) {
     const vc = vooChegadaConexao(pi.voo_chegada_numero);
     return D.destinos.filter((d) => entregaBateComConexao(d, pi, vc)).length;
+  }
+  function opDaConexao(pi) {
+    const vc = vooChegadaConexao(pi.voo_chegada_numero);
+    let soma = null;
+    for (const d of D.destinos) {
+      if (!entregaBateComConexao(d, pi, vc)) continue;
+      if (d.qtd_entregue != null) soma = (soma || 0) + d.qtd_entregue;
+    }
+    return soma;
   }
   function situacaoConexao(pi) {
     const vc = vooChegadaConexao(pi.voo_chegada_numero);
@@ -4746,10 +4745,9 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     return D.prontas.find((p) => mesmoId(p.ponto_india_id, pi.id) && (p.status === "pronta" || p.status === "ciente" || p.status === "coletada"));
   }
   function prd(pi) {
-    const ajuste = deltaManualParaIndia(pi);
-    const p = (pi.bag_qtd || 0) + ajuste;
+    const p = pi.bag_qtd || 0;
     const r = pi.qtd_recebida || 0;
-    return { p, r, d: r - p, ajuste };
+    return { p, r, d: r - p };
   }
   function coluna(classe, letra, valor, titulo, extra) {
     return `<div class="prd-col ${classe}" title="${titulo}">
@@ -4759,13 +4757,14 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   </div>`;
   }
   function prdTag(pi) {
-    const { p, r, d, ajuste } = prd(pi);
+    const { p, r, d } = prd(pi);
     const dClasse = d < 0 ? "falta" : d > 0 ? "sobra" : "zero";
     const dTxt = d > 0 ? "+" + d : String(d);
-    const pTitulo = ajuste ? `Previsto (importado) ${pi.bag_qtd || 0} ${ajuste > 0 ? "+" : ""}${ajuste} do Delta (l\xEDder)` : "Previsto (importado)";
-    const pExtra = ajuste ? `<div class="note prd-ajuste">${ajuste > 0 ? "+" : ""}${ajuste} l\xEDder</div>` : "";
+    const op = opDaConexao(pi);
+    const colOp = op != null ? coluna("prd-op", "OP", `${op}/`, "O que foi digitado nas entregas (l\xEDder no Delta ou operador ao entregar) \u2014 s\xF3 ci\xEAncia, n\xE3o soma no P/R/D.") : "";
     return `<div class="prd">
-    ${coluna("prd-p", "P", p, pTitulo, pExtra)}
+    ${colOp}
+    ${coluna("prd-p", "P", p, "Previsto (importado)")}
     ${coluna("prd-r", "R", r, "Real (recebido)")}
     ${coluna(`prd-d ${dClasse}`, "D", dTxt, "Diferen\xE7a (real \u2212 previsto)")}
   </div>`;
@@ -4988,9 +4987,6 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       titulo: "Porta a porta \u2014 box a poucos passos, d\xE1 pra levar na m\xE3o ou de carreta."
     }
   };
-  function deltaManualParaIndia(pi) {
-    return deltasDaLinhaIndia(pi).reduce((s, pd) => pd.bag_qtd_contada == null ? s : s + (pd.bag_qtd_contada - (pd.bag_qtd || 0)), 0);
-  }
   function baldesFixosDelta(carretasDoVoo) {
     return BALDES_AUTO_DELTA.map((b) => {
       const real = carretasDoVoo.find((c) => ehDoBalde(c, b));
@@ -5065,17 +5061,17 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     return D.deltas.filter((x) => mesmoId(x.voo_id, pd.voo_id) && x.voo_saida_numero === pd.voo_saida_numero).length > 1;
   }
   function linhaDeltaConexao(vooId, v, pd, editavel) {
-    var _a;
+    var _a, _b;
     const { tipo, vSaida } = classificarConexaoDelta(v, pd);
     const selo = SELO_DELTA[tipo];
     const seloStatus = SELO_STATUS_DELTA[statusConexaoDelta(pd)];
     const marcado = editavel && ((_a = UI.deltaSelecionados) == null ? void 0 : _a.vooId) === vooId && UI.deltaSelecionados.ids.includes(pd.id);
     const salvo = pd.bag_qtd_contada != null ? String(pd.bag_qtd_contada) : "";
-    const dif = pd.bag_qtd_contada != null ? pd.bag_qtd_contada - (pd.bag_qtd || 0) : null;
-    const seloDif = dif ? `<span class="delta-dif ${dif < 0 ? "falta" : "sobra"}">${dif > 0 ? "+" : ""}${dif}</span>` : "";
+    const contadoTotal = `${(_b = pd.bag_qtd_contada) != null ? _b : "?"}/${pd.bag_qtd || 0}`;
+    const badgeContado = `<span class="delta-contado" title="Quantas o l\xEDder contou no Delta, de quantas o arquivo previa.">${contadoTotal}</span>`;
     const manual = editavel ? `<span class="delta-manual-grupo" onclick="event.stopPropagation()"><input id="bagManual${pd.id}" class="delta-manual" type="number" inputmode="numeric" min="0" placeholder="contei" aria-label="Total de bags que voc\xEA contou" title="Quantas voc\xEA CONTOU no total (n\xE3o \xE9 a diferen\xE7a). Em branco = n\xE3o contei, vale o previsto."
         value="${esc(salvo)}" data-salvo="${esc(salvo)}" data-prev="${pd.bag_qtd || 0}" oninput="this.nextElementSibling.disabled=(this.value===this.dataset.salvo);aoContarDelta(this)">
-       <button class="small ok delta-ok" disabled onclick="confirmarBagQtdManual(${pd.id},${vooId})" aria-label="Confirmar quantidade" title="Confirmar">${ico("aceite", 34)}</button>${seloDif}</span>` : dif ? `<span class="delta-dif ${dif < 0 ? "falta" : "sobra"}" title="O l\xEDder contou ${pd.bag_qtd_contada} \u2014 o arquivo previa ${pd.bag_qtd || 0}">${dif > 0 ? "+" : ""}${dif}</span>` : "";
+       <button class="small ok delta-ok" disabled onclick="confirmarBagQtdManual(${pd.id},${vooId})" aria-label="Confirmar quantidade" title="Confirmar">${ico("aceite", 34)}</button>${badgeContado}</span>` : badgeContado;
     const siga = pdEhSiga(v, pd);
     const duasPernas = !siga && ehDuasPernasDelta(pd);
     const classeDuas = siga ? " siga" : duasPernas ? " duas-pernas" : "";
@@ -5243,20 +5239,16 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     var _a;
     const grupo = el == null ? void 0 : el.parentElement;
     if (!(grupo == null ? void 0 : grupo.querySelector)) return;
-    let selo = grupo.querySelector(".delta-dif");
-    const prev = parseInt(((_a = el.dataset) == null ? void 0 : _a.prev) || "0", 10) || 0;
+    let selo = grupo.querySelector(".delta-contado");
+    const total = parseInt(((_a = el.dataset) == null ? void 0 : _a.prev) || "0", 10) || 0;
     const txt2 = String(el.value || "").trim();
-    const dif = txt2 === "" ? 0 : (parseInt(txt2, 10) || 0) - prev;
-    if (!dif) {
-      if (selo) selo.remove();
-      return;
-    }
+    const contado = txt2 === "" ? "?" : parseInt(txt2, 10) || 0;
     if (!selo) {
       selo = document.createElement("span");
+      selo.className = "delta-contado";
       grupo.appendChild(selo);
     }
-    selo.className = `delta-dif ${dif < 0 ? "falta" : "sobra"}`;
-    selo.textContent = `${dif > 0 ? "+" : ""}${dif}`;
+    selo.textContent = `${contado}/${total}`;
   }
   async function confirmarBagQtdManual(pontoDeltaId, vooId) {
     const campo = $(`bagManual${pontoDeltaId}`);
@@ -5803,10 +5795,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
         (id) => `<span class="india-trazendo" title="${esc(nomeDe(id))} est\xE1 trazendo">${ico("carreta", 19)}</span>`
       ).join("");
       const nEntregas = entregasDaConexao(pi);
-      const marca = Array.from(
-        { length: nEntregas },
-        () => `<span class="india-entregue" title="${nEntregas} entrega${nEntregas === 1 ? "" : "s"} registrada${nEntregas === 1 ? "" : "s"}">${ico("mala-confirmada", 19)}</span>`
-      ).join("") + trazendo;
+      const marca = nEntregas ? `<span class="india-entregue" title="${nEntregas} entrega${nEntregas === 1 ? "" : "s"} registrada${nEntregas === 1 ? "" : "s"}">${ico("mala-confirmada", 19)}${nEntregas > 1 ? `<i class="india-entregas-n">${nEntregas}</i>` : ""}</span>${trazendo}` : trazendo;
       const lbl = vooRotulo(
         comoChegada(pi.origem, pi.voo_chegada_numero),
         "chegada",
@@ -5967,17 +5956,6 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     }
     await bus.recarregar();
     abrirPontoIndiaOC(pi.voo_id);
-  }
-  async function creditarEntregaIndia(pontoIndiaId, qtd, pdInfo) {
-    var _a, _b;
-    if (qtd == null || pontoIndiaId == null) return;
-    const { error } = await creditarEntregaIndiaDeltaDb(
-      pontoIndiaId,
-      qtd,
-      (_a = pdInfo == null ? void 0 : pdInfo.pontoDeltaId) != null ? _a : null,
-      (_b = pdInfo == null ? void 0 : pdInfo.vista) != null ? _b : null
-    );
-    if (error) await erro(error);
   }
 
   // src/ui/screens/telaOperador.js
@@ -11105,17 +11083,22 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const conex = candidatosConexao(vo.id);
     if (!conex) return null;
     const c = conex.find((x) => mesmoId(x.id, d.voo_destino_id));
-    return (c == null ? void 0 : c._bag) || null;
+    if (!(c == null ? void 0 : c._bag)) return null;
+    return { total: c._bag, contado: c._contado };
   }
   function bagsDoCartao(ds, vg) {
-    let total = null;
+    let total = null, contado = null, semContagem = false;
     for (const d of ds) {
       const n = bagsDaPerna(d, vg);
-      if (n != null) total = (total || 0) + n;
+      if (!n) continue;
+      total = (total || 0) + n.total;
+      if (n.contado == null) semContagem = true;
+      else contado = (contado || 0) + n.contado;
     }
-    return total;
+    return total == null ? null : { total, contado: semContagem ? null : contado };
   }
   function cartaoVooDestino(item, vg) {
+    var _a;
     const ds = item.grupo || [item.solo];
     const primeiro = ds[0];
     const chave = item.grupo ? `v${primeiro.voo_destino_id}` : `d${primeiro.id}`;
@@ -11133,7 +11116,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
             <span class="destino-viagem">${rotuloVoo}</span>
             ${temColeta ? `<span class="chip st-aceita">Coleta no caminho</span>` : ""}
           </span>
-          ${bags != null ? `<span class="destino-bags viagem-bags">${bags}${ico("pacote", 16)}</span>` : ""}
+          ${bags ? `<span class="destino-bags viagem-bags">${(_a = bags.contado) != null ? _a : "?"}/${bags.total}${ico("pacote", 16)}</span>` : ""}
           <button class="ok" style="width:auto" onclick="event.stopPropagation();${onclickCheck}" aria-label="Entreguei">${ico("aceite", 18)}</button>
         </div>
         <div class="acordeon-corpo">
@@ -11253,7 +11236,7 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
     for (const { id, qtd } of qtds) {
       const d = D.destinos.find((x) => x.id === id);
       if (!await gravarEntrega(() => entregarDestino(id, vgId, qtd))) return;
-      await depoisDaEntrega(d, vg, qtd);
+      await depoisDaEntrega(d, vg);
     }
     UI.modalVivo = { tipo: "viagem" };
     tirarFoco();
@@ -11381,7 +11364,7 @@ Destino: ${esc(inf.num)}`);
     const d = D.destinos.find((x) => x.id === destId);
     const vg = D.viagens.find((x) => x.id === vgId) || {};
     if (!await gravarEntrega(() => entregarDestino(destId, vgId, qtd))) return;
-    await depoisDaEntrega(d, vg, qtd, sug ? { pontoDeltaId: sug.pontoDeltaId, vista: sug.sugestao } : null);
+    await depoisDaEntrega(d, vg);
     UI.modalVivo = { tipo: "viagem" };
     tirarFoco();
     bus.recarregar();
@@ -11391,7 +11374,7 @@ Destino: ${esc(inf.num)}`);
     UI.modalVivo = { tipo: "viagem" };
     bus.render();
   }
-  async function depoisDaEntrega(d, vg, qtd, pdInfo) {
+  async function depoisDaEntrega(d, vg) {
     const via = d && d.entrega_via || "PP";
     const origemVoo = d ? d.origem_voo_id || vg.voo_origem_id || null : null;
     if (d && d.voo_destino_id) {
@@ -11405,19 +11388,14 @@ Destino: ${esc(inf.num)}`);
       }
     }
     const idDireto = d && d.ponto_india_id != null ? d.ponto_india_id : null;
-    if (idDireto != null) {
-      if (chegouNoVoo(d)) {
-        await creditarEntregaIndia(idDireto, qtd, pdInfo);
-        await marcarProntaEntregueDb(idDireto);
-      } else if (via === "ESTEIRA") {
-        await marcarProntaEntregueDb(idDireto);
-      } else {
-        await marcarProntaEntregueDb(idDireto);
-        await sinalizarProntaDb(via, d.voo_destino_id, null, idDireto);
-      }
-    } else if (d && d.voo_destino_id != null && chegouNoVoo(d)) {
-      const pontoIndiaId = resolverConexaoIndia(d.voo_destino_id, origemVoo);
-      if (pontoIndiaId != null) await creditarEntregaIndia(pontoIndiaId, qtd, pdInfo);
+    if (idDireto == null) return;
+    if (chegouNoVoo(d)) {
+      await marcarProntaEntregueDb(idDireto);
+    } else if (via === "ESTEIRA") {
+      await marcarProntaEntregueDb(idDireto);
+    } else {
+      await marcarProntaEntregueDb(idDireto);
+      await sinalizarProntaDb(via, d.voo_destino_id, null, idDireto);
     }
   }
   function pernasDaTriagem(vgId, via) {
@@ -11435,7 +11413,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     );
     if (!ok) return;
     if (!await gravarEntrega(() => entregarDestinos(ds.map((d) => d.id), vgId))) return;
-    for (const d of ds) await depoisDaEntrega(d, vg, null);
+    for (const d of ds) await depoisDaEntrega(d, vg);
     bus.recarregar();
   }
   async function cancelarViagem(id) {
