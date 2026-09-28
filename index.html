@@ -467,11 +467,16 @@
      dois avisos separados. */
   .base-tlc-chips{display:flex; align-items:center}
   /* Um bloco por voo na TLC (28/09/2026): voo+chips em cima, botoes na
-     linha de baixo, encostados a direita (onde ja ficavam). O traco entre
-     voos passa do .list-line pro bloco inteiro. */
-  .base-tlc-voo{padding:10px 0; border-bottom:1px solid var(--line)}
-  .base-tlc-voo:last-child{border-bottom:none}
-  .base-tlc-topo{border:none; padding:0}
+     linha de baixo, encostados a direita (onde ja ficavam). Cada voo em
+     "formato de botao" (Tiago: so o traco entre eles ficava confuso) --
+     mesmo fundo, borda e canto do button do app, com respiro entre um e
+     outro, pra ler cada voo como uma coisa so. */
+  .base-tlc-voo{background:var(--surface2); border:1px solid var(--amber-dim); border-radius:12px;
+    padding:10px 12px; margin-bottom:8px}
+  .base-tlc-voo:last-child{margin-bottom:0}
+  /* .list-line.base-tlc-topo, nao so a classe: .list-line vem depois no
+     arquivo e devolvia o traco de baixo, que cortava a caixa do voo ao meio */
+  .list-line.base-tlc-topo{border:none; padding:0}
   .base-tlc-botoes{display:flex; align-items:center; justify-content:flex-end; gap:6px; margin-top:6px}
   /* Campo "Buscar voo" (TLC, TCX, Meus voos do lider) */
   .busca-voo{width:100%; margin-bottom:8px}
@@ -1571,9 +1576,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/09/2026, 17:38:35
+     Gerado em: 28/09/2026, 17:42:16
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/09 17:38";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/09 17:42";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
