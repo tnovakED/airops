@@ -135,6 +135,10 @@
     font-size:24px; font-weight:400; line-height:1; white-space:nowrap}
   .voo-chegada{color:var(--text)}
   .voo-saida{color:var(--amber)}
+  /* Rotulo de voo DENTRO de botao azul (ex.: botao Indice em Meus voos):
+     o --amber do .voo-saida e a mesma cor do fundo e o texto sumia
+     (Tiago, 28/09/2026). Branco, como todo texto de button.primary. */
+  button.primary .voo{color:#fff}
   .voo-setor{color:var(--muted)}
   .voo-apt{font-size:.82em; letter-spacing:.06em; opacity:.75}
   /* 15/09/2026 (pedido do Tiago): sem hifen VISIVEL. Aeroporto e numero
@@ -303,6 +307,13 @@
   .card-urgentes .ico{transform-origin:50% 15%; animation:sinoBalanca 1s cubic-bezier(.455,.03,.515,.955) infinite}
   @media (prefers-reduced-motion: reduce){ .card-urgentes .ico{animation:none} }
 
+  /* Sino do pedido de TLC na linha do voo (28/09/2026) -- mesmo balanco
+     do sino de urgencia acima, so que em ambar (nao vermelho): aqui e
+     aviso de pedido (Orange Cap/lider), nao urgencia de horario. So o
+     icone, sem texto do lado -- ver title do elemento pra quem pediu. */
+  .pedido-tlc-sino{display:inline-flex; color:var(--amber); transform-origin:50% 15%; animation:sinoBalanca 1s cubic-bezier(.455,.03,.515,.955) infinite}
+  @media (prefers-reduced-motion: reduce){ .pedido-tlc-sino{animation:none} }
+
   /* Os cartoes deslizam (translateY, aplicado via JS em
      arrastarCartaoAlerta) para abrir espaco conforme o arrastado passa
      por cima — .arrastando tira a transicao do proprio cartao segurado,
@@ -450,6 +461,27 @@
      toque na skill tela-de-patio. */
   button.chip-botao::after{content:""; position:absolute; left:0; right:0;
     top:50%; transform:translateY(-50%); height:40px}
+  /* Par de chips da bag despachada na base (28/09/2026): carretas ja
+     enviadas + pendente da proxima, colados um no outro (sem o gap:10px
+     que .list-line da entre filhos) -- leem como uma unidade so, nao
+     dois avisos separados. */
+  .base-tlc-chips{display:flex; align-items:center}
+  /* Campo "Buscar voo" (TLC, TCX, Meus voos do lider) */
+  .busca-voo{width:100%; margin-bottom:8px}
+  /* Caixa de escolha do voo em "Meus voos" do lider */
+  .combo-voo{width:100%; margin-bottom:8px}
+  /* Linha do voo em Meus voos: botao (Assumir/Soltar) a esquerda, voo
+     encostado a direita (28/09/2026) */
+  .oc-voo-linha{border:none; padding:0}
+  .oc-voo-linha.clicavel{cursor:pointer}
+  .oc-voo-rotulo{display:flex; justify-content:flex-end}
+  /* "+ quantidade" e "Carreta pronta": quadradinhos 36x34 (Tiago,
+     28/09/2026). button.base-tlc-acao, nao so a classe: button.small
+     (min-height:42px) tem mais peso e esticaria a altura. */
+  button.base-tlc-acao{width:36px; height:34px; min-height:34px; padding:0; flex:none;
+    display:inline-flex; align-items:center; justify-content:center}
+  button.base-tlc-acao .ico{width:30px; height:30px; margin-right:0}
+  button.base-tlc-zerada{width:auto}
 
   /* ---------- cabeca da carreta na folha (16/09/2026) ----------
      O lider monta a carreta no Ponto Delta e ela aparece aqui agrupando
@@ -1159,10 +1191,27 @@
     .carga-botao.a-caminho .ico{animation:cargaAnda 1.1s ease-in-out infinite alternate}
   }
   @keyframes cargaAnda{from{transform:translateX(-3px)} to{transform:translateX(5px)}}
+  /* Aviso "TLC ZERADA" do lado do botao LOCAIS, quando a TLC responde
+     que nao ha bags pro voo (zerarLocalTlc, telaTriagem.js, 28/09/2026). */
+  .tlc-zerada-aviso{text-transform:uppercase}
+  /* "CARGA NO BOX" ao lado do botao CARGA, depois da entrega (28/09/2026) */
+  .carga-no-box-aviso{text-transform:uppercase; color:var(--green)}
+  /* Trator verde andando ao lado do LOCAIS: bag saiu da TLC pro voo
+     (28/09/2026). Mesma animacao do CARGA a caminho, so com movimento
+     permitido pela pessoa (consultado ao vivo pelo navegador). */
+  .tlc-a-caminho{display:inline-flex; align-items:center; color:var(--green); flex:none}
+  .tlc-a-caminho .ico{margin-right:0}
+  @media (prefers-reduced-motion: no-preference){
+    .tlc-a-caminho .ico{animation:cargaAnda 1.1s ease-in-out infinite alternate}
+  }
 
-  /* Secao CARGA dentro do card BOX do operador */
-  .carga-secao{margin-top:8px; padding-top:6px; border-top:1px dashed var(--line)}
-  .carga-titulo{margin:0 0 4px; font-weight:700; letter-spacing:.06em; color:var(--amber)}
+  /* Lista da aba CARGA do card BOX do operador (sozinha na aba desde
+     28/09/2026 -- sem tracejado nem titulo, a aba ja separa e ja nomeia) */
+  .carga-secao{margin:0}
+  /* Icone de carga na linha do voo (aba CARGA e viagem CARGA em andamento):
+     separa, de relance, levar carga de levar bag (28/09/2026). */
+  .carga-icone{display:inline-flex; align-items:center; color:var(--amber); flex:none}
+  .carga-icone .ico{margin-right:0}
   .carga-hora{display:inline-flex; align-items:center; gap:3px; margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums}
   /* conexao numa linha so: nada desce pra linha de baixo */
   .balde-delta .pt-linha{flex-wrap:nowrap; gap:4px; padding:6px 0}
@@ -1515,9 +1564,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 23/09/2026, 21:43:44
+     Gerado em: 28/09/2026, 16:07:05
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="23/09 21:43";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/09 16:07";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1591,8 +1640,10 @@
         // onde estao as bags de cada par chegada->saida
         carretasDelta: [],
         // carretas que o lider montou no Ponto Delta (por voo de chegada)
-        posicoes: []
+        posicoes: [],
         // onde cada pessoa esta agora (so chega para quem tem patio_gps)
+        bagsDespachadas: []
+        // total do dia de bag despachada na base, por voo de saida (TLC)
       };
       S = {
         me: null,
@@ -2201,7 +2252,7 @@
     const f = Math.max(0, prev - real);
     return f > 0 ? f : null;
   }
-  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto, BALDE_NAO_CONECTA, BALDE_BASE_LOCAL, NOME_BASE_ANTIGO, ehNomeDaBase, NOME_CARGA, ehProntaDeCarga, ehProntaDaBase, abertaDaConexao;
+  var naoConectaDelta, BALDES_AUTO_DELTA, ehDoBalde, nomeBaldeAuto, BALDE_NAO_CONECTA, BALDE_BASE_LOCAL, NOME_BASE_ANTIGO, ehNomeDaBase, NOME_CARGA, ehProntaDeCarga, ehProntaDaBase, NOME_DESPACHO_BASE, ehProntaDespachoBase, abertaDaConexao;
   var init_conexoes = __esm({
     "src/utils/conexoes.js"() {
       init_store();
@@ -2224,6 +2275,8 @@
       NOME_CARGA = "CARGA";
       ehProntaDeCarga = (p) => (p == null ? void 0 : p.setor) === "BOX" && p.carreta_nome === NOME_CARGA && p.ponto_delta_id == null;
       ehProntaDaBase = (p) => ehNomeDaBase(p == null ? void 0 : p.carreta_nome) && p.ponto_delta_id == null;
+      NOME_DESPACHO_BASE = "Despacho da base";
+      ehProntaDespachoBase = (p) => (p == null ? void 0 : p.carreta_nome) === NOME_DESPACHO_BASE;
       abertaDaConexao = (p, piId, setor) => mesmoId(p.ponto_india_id, piId) && p.setor === setor && (p.status === "pronta" || p.status === "ciente");
     }
   });
@@ -2572,6 +2625,8 @@
       t.push("ponto_delta");
     if (pode("oc_pontos") || pode("levar"))
       t.push("carretas_delta");
+    if (pode("triagem_sinalizar") || pode("oc_pontos"))
+      t.push("bags_despachadas");
     return t;
   }
   function normalizarIds(row) {
@@ -2629,7 +2684,7 @@
       return;
     }
     const row = normalizarIds(p.new);
-    if ((tabela === "voos" || tabela === "ponto_india" || tabela === "ponto_delta" || tabela === "carretas_delta") && row.data !== hoje()) return;
+    if ((tabela === "voos" || tabela === "ponto_india" || tabela === "ponto_delta" || tabela === "carretas_delta" || tabela === "bags_despachadas") && row.data !== hoje()) return;
     if (tabela === "viagens_destinos" && !D.viagens.some((v) => mesmoId(v.id, row.viagem_id)) && pode("levar") && !pode("viagens_cco")) {
       if (row.operador_id === S.me.id || p.eventType === "INSERT") recarregarComFolga();
       return;
@@ -2675,7 +2730,8 @@
         ponto_delta: "deltas",
         bags_local: "bagsLocal",
         carretas_delta: "carretasDelta",
-        posicoes: "posicoes"
+        posicoes: "posicoes",
+        bags_despachadas: "bagsDespachadas"
       };
       recargaMarcada = null;
       ultimoLotePr = null;
@@ -2782,7 +2838,11 @@
     minhas_viagens: "minhas",
     oc_voos: "meusvoos",
     oc_chegando: "chegando",
-    oc_pontos: "india",
+    // oc_pontos nao abre aba propria mais (28/09/2026): Delta/Indice agora
+    // se acessa de dentro de "Meus voos" (assumir o voo abre o accordion).
+    // A ferramenta continua existindo e concedida -- ela trava RLS de
+    // prontas/ponto_india e os botoes CARGA/PP fora daqui, so parou de
+    // abrir item de menu.
     pontos_import: "pontosimport",
     triagem_sinalizar: "triagem",
     admin_acessos: "acessos"
@@ -2791,14 +2851,15 @@
   var ABA_TITULO = {
     inicio: "In\xEDcio",
     voos: "Malha",
-    india: "Consultar pontos",
     pontosimport: "Subir Pontos",
     viagens: "Viagens",
     patio: "Painel Operacional",
     sol: "Solicita\xE7\xF5es",
     levar: "Levar",
     minhas: "Minhas viagens",
-    meusvoos: "Assumir voos",
+    // era "Assumir voos" (28/09/2026) -- agora tambem e por onde se chega em
+    // Delta/Indice de cada voo assumido, entao "Meus voos" descreve melhor.
+    meusvoos: "Meus voos",
     chegando: "Viagens Bags",
     fila: "Fila",
     triagem: "Servi\xE7o solicitado",
@@ -2808,7 +2869,7 @@
     cco: ["voos", "pontosimport", "viagens", "sol"],
     coordenador: ["voos", "pontosimport", "viagens", "sol"],
     operador: ["levar", "minhas"],
-    oc: ["meusvoos", "chegando", "india"],
+    oc: ["meusvoos", "chegando"],
     equipamentos: ["fila"],
     triagem: ["triagem"],
     auxiliar: ["pontosimport"]
@@ -2846,7 +2907,11 @@
     "mala-confirmada": "0 -960 960 960",
     lapis: "0 -960 960 960",
     cadeadoAberto: "0 -960 960 960",
-    cadeadoFechado: "0 -960 960 960"
+    cadeadoFechado: "0 -960 960 960",
+    addBag: "0 -960 560.00002 799.99997",
+    carretaOk: "0 -960 840 659.33002",
+    caixaCarga: "0 -960 960 960",
+    sinoSolicitado: "0 -960 960 960"
   };
   var P = {
     "mala-check": `<path d="m696-150 141.33-142-28.66-28.67L696-207.33 638-266l-28.67 29.33L696-150Zm-337.33-46.67v-406h-57.34v406h57.34ZM481.33-130h-180q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-406q0-27 19.83-46.83t46.83-19.83h267.34v-144h-16q-27 0-46.84-19.84Q486-853 486-880h149.33v392.67q-17.33 6-34.16 14.66-16.84 8.67-32.5 20.67v-150.67H425.33v406h37.34q1.66 18 6.33 34.34Q473.67-146 481.33-130Zm380.84-245.5q57.16 57.17 57.16 138.83 0 81.67-57.16 138.84Q805-40.67 723.33-40.67q-81.66 0-138.83-57.16-57.17-57.17-57.17-138.84 0-81.66 57.17-138.83 57.17-57.17 138.83-57.17 81.67 0 138.84 57.17ZM392-400Zm-33.33 203.33v-406 406Zm66.66 0v-406 406Z"/>`,
@@ -2937,8 +3002,25 @@
     // material symbols: edit (Apache 2.0) — botao "Editar" da malha, so-icone (telaVoos.js, 22/09/2026)
     cadeadoAberto: `<path d="M226.67-636h380v-90.67q0-52.77-36.92-89.72-36.93-36.94-89.67-36.94-52.75 0-89.75 36.94-37 36.95-37 89.72h-66.66q0-80.33 56.57-136.83Q399.81-920 480.07-920q80.26 0 136.76 56.55 56.5 56.55 56.5 136.78V-636h60q27.5 0 47.09 19.58Q800-596.83 800-569.33v422.66q0 27.5-19.58 47.09Q760.83-80 733.33-80H226.67q-27.5 0-47.09-19.58Q160-119.17 160-146.67v-422.66q0-27.5 19.58-47.09Q199.17-636 226.67-636Zm0 489.33h506.66v-422.66H226.67v422.66Zm308.5-155.85Q558-325.04 558-356.67q0-31-22.95-55.16Q512.11-436 479.89-436t-55.06 24.17Q402-387.67 402-356.33q0 31.33 22.95 53.83 22.94 22.5 55.16 22.5t55.06-22.52Zm-308.5 155.85v-422.66 422.66Z"/>`,
     // material symbols: lock_open (Apache 2.0) — Destravar chegada/saida da malha, ANTES de destravar (telaVoos.js, 22/09/2026)
-    cadeadoFechado: `<path d="M226.67-80q-27.5 0-47.09-19.58Q160-119.17 160-146.67v-422.66q0-27.5 19.58-47.09Q199.17-636 226.67-636h60v-90.67q0-80.23 56.57-136.78T480.07-920q80.26 0 136.76 56.55 56.5 56.55 56.5 136.78V-636h60q27.5 0 47.09 19.58Q800-596.83 800-569.33v422.66q0 27.5-19.58 47.09Q760.83-80 733.33-80H226.67Zm0-66.67h506.66v-422.66H226.67v422.66Zm308.5-155.85Q558-325.04 558-356.67q0-31-22.95-55.16Q512.11-436 479.89-436t-55.06 24.17Q402-387.67 402-356.33q0 31.33 22.95 53.83 22.94 22.5 55.16 22.5t55.06-22.52ZM353.33-636h253.34v-90.67q0-52.77-36.92-89.72-36.93-36.94-89.67-36.94-52.75 0-89.75 36.94-37 36.95-37 89.72V-636ZM226.67-146.67v-422.66 422.66Z"/>`
+    cadeadoFechado: `<path d="M226.67-80q-27.5 0-47.09-19.58Q160-119.17 160-146.67v-422.66q0-27.5 19.58-47.09Q199.17-636 226.67-636h60v-90.67q0-80.23 56.57-136.78T480.07-920q80.26 0 136.76 56.55 56.5 56.55 56.5 136.78V-636h60q27.5 0 47.09 19.58Q800-596.83 800-569.33v422.66q0 27.5-19.58 47.09Q760.83-80 733.33-80H226.67Zm0-66.67h506.66v-422.66H226.67v422.66Zm308.5-155.85Q558-325.04 558-356.67q0-31-22.95-55.16Q512.11-436 479.89-436t-55.06 24.17Q402-387.67 402-356.33q0 31.33 22.95 53.83 22.94 22.5 55.16 22.5t55.06-22.52ZM353.33-636h253.34v-90.67q0-52.77-36.92-89.72-36.93-36.94-89.67-36.94-52.75 0-89.75 36.94-37 36.95-37 89.72V-636ZM226.67-146.67v-422.66 422.66Z"/>`,
     // material symbols: lock (Apache 2.0) — Destravar chegada/saida da malha, DEPOIS de destravado (telaVoos.js, 22/09/2026)
+    // icones/add_BAG.svg (mala + sinal de mais) -- botao "+ quantidade" da bag
+    // despachada na base (TLC), so-icone (Tiago, 28/09/2026). Style
+    // fill:#1f1f1f do grupo do sinal de mais removido de proposito: sem
+    // isso o sinal ficava preto fixo em vez de herdar currentColor da mala.
+    addBag: `<path d="m 66.670017,-200 c -18.33333,0 -34.03,-6.52667 -47.09,-19.58 C 6.526687,-232.64 1.6952078e-5,-248.33667 1.6952078e-5,-266.67 v -466.66 c 0,-18.33333 6.526670047922,-34.03 19.580000047922,-47.09 13.06,-13.05333 28.75667,-19.58 47.09,-19.58 h 96.660003 v -93.33 c 0,-18.33333 6.53,-34.03 19.59,-47.09 13.05333,-13.05333 28.74667,-19.58 47.08,-19.58 h 100 c 18.33333,0 34.02667,6.52667 47.08,19.58 13.06,13.06 19.59,28.75667 19.59,47.09 V -800 h 96.66 c 18.33333,0 34.03,6.52667 47.09,19.58 13.05333,13.06 19.58,28.75667 19.58,47.09 v 466.66 c 0,18.33333 -6.52667,34.03 -19.58,47.09 -13.06,13.05333 -28.75667,19.58 -47.09,19.58 0,11.33333 -3.83333,20.83333 -11.5,28.5 -7.66667,7.66667 -17.16667,11.5 -28.5,11.5 -11.33333,0 -20.83333,-3.83333 -28.5,-11.5 -7.66667,-7.66667 -11.5,-17.16667 -11.5,-28.5 h -266.66 c 0,11.33333 -3.83333,20.83333 -11.5,28.5 -7.66667,7.66667 -17.16667,11.5 -28.5,11.5 -11.333333,0 -20.833333,-3.83333 -28.500003,-11.5 -7.66667,-7.66667 -11.5,-17.16667 -11.5,-28.5 z m 0,-66.67 H 493.33002 v -466.66 l 6.45374,471.42765 z m 0.0423,1.64213 426.487573,1.66582 V -733.30631 H 70.043957 Z M 230.00002,-800 h 100 v -93.33 h -100 z"/><g transform="translate(-38.920223,-334.42945)"><path d="m 284.11785,-56.716503 h 66.66 V -139.3865 h 82.67 v -66.67 h -82.67 v -82.66 h -66.66 v 82.66 h -82.67 v 66.67 h 82.67 z"/></g>`,
+    // icones/carreta_OK.svg (carreta + selo de check) -- botao "Carreta
+    // pronta" da bag despachada na base (TLC), so-icone (Tiago,
+    // 28/09/2026). Mesmo motivo do addBag: style fixo removido do grupo
+    // do selo pra herdar currentColor.
+    carretaOk: `<path d="m 702.67,-300.66998 -47.34,-47.33 56.67,-56.67 H 390.67 c -7.11333,25.33333 -21.33667,45.66667 -42.67,61 -21.33333,15.33333 -44.89,23 -70.67,23 -25.77333,0 -49.27333,-7.66667 -70.5,-23 -21.22,-15.33333 -35.49667,-35.66667 -42.83,-61 h -44 c -34.66667,0 -63.33333,-11.33333 -86,-34 -22.666667,-22.66667 -34,-51.33333 -34,-86 v -237.33 -131.33 -66.67 h 520 c 18,0 33.61,6.61 46.83,19.83 13.22667,13.22667 19.84,28.84 19.84,46.84 v 422 h 124.66 l -56,-56 47.34,-48 137.33,137.33 z m -388.17,-101.5 c 9.88667,-9.88667 14.83,-22.27333 14.83,-37.16 0,-14.89333 -4.94333,-27.28333 -14.83,-37.17 -9.88667,-9.88667 -22.27667,-14.83 -37.17,-14.83 -14.88667,0 -27.27333,4.94333 -37.16,14.83 -9.89333,9.88667 -14.84,22.27667 -14.84,37.17 0,14.88667 4.94667,27.27333 14.84,37.16 9.88667,9.89333 22.27333,14.84 37.16,14.84 14.89333,0 27.28333,-4.94667 37.17,-14.84 z m -150.5,-69.16 c 7.33333,-25.33333 21.61,-46.11333 42.83,-62.34 21.22667,-16.22 44.72667,-24.33 70.5,-24.33 25.78,0 49.33667,8.11 70.67,24.33 21.33333,16.22667 35.55667,37.00667 42.67,62.34 H 520 V -897.93121 H 66.67 v 373.26123 c 0,15.78 4.94333,28.61333 14.83,38.5 9.88667,9.89333 22.72,14.84 38.5,14.84 z"/><g transform="matrix(1.0027059,0,0,1.0027059,-374.6594,-219.33845)"><path d="m 646.59017,-437.33696 106.20727,-106.96052 -21.0908,-21.0908 -85.11647,85.11646 -42.93485,-42.93485 -21.09081,21.84405 z m -81.97544,35.22164 c -28.37216,-28.4073 -42.55823,-62.76272 -42.55823,-103.06625 0,-40.30352 14.20366,-74.64136 42.61096,-103.01351 28.4073,-28.37216 62.76272,-42.55824 103.06625,-42.55824 40.30352,0 74.64136,14.20366 103.01351,42.61096 28.37216,28.40731 42.55824,62.76272 42.55824,103.06625 0,40.30353 -14.20366,74.64136 -42.61096,103.01352 -28.40731,28.37216 -62.76272,42.55823 -103.06625,42.55823 -40.30353,0 -74.64136,-14.20366 -103.01352,-42.61096 z"/></g>`,
+    // icones/carga.svg (Tiago, 28/09/2026) -- troca o icone antigo (trator
+    // "carreta") do botao CARGA do lider por este (caixa/pacote de carga).
+    caixaCarga: `<path d="M386.67-555.33 480-602l93.33 46.67v-218H386.67v218ZM280-280v-80h200v80H280Zm-93.33 160q-27 0-46.84-19.83Q120-159.67 120-186.67v-586.66q0-27 19.83-46.84Q159.67-840 186.67-840h586.66q27 0 46.84 19.83Q840-800.33 840-773.33v586.66q0 27-19.83 46.84Q800.33-120 773.33-120H186.67Zm0-653.33v586.66-586.66Zm0 586.66h586.66v-586.66H640v326l-160-80-160 80v-326H186.67v586.66Z"/>`,
+    // icones/notifications_active_...svg (Tiago, 28/09/2026) -- marca o
+    // horario de SOLICITADO na linha do accordion de carretas da base
+    // (distinto do sino balancando "pedido.tlc-sino", que e outro icone).
+    sinoSolicitado: `<path d="M106.67-564q0-93.33 41.5-171.17 41.5-77.83 111.16-129.5L299-811.33q-57.33 42.66-91.5 106.66T173.33-564h-66.66Zm680 0q0-76.67-34.17-140.67-34.17-64-91.5-106.66l39.67-53.34q69.66 51.67 111.16 129.5 41.5 77.84 41.5 171.17h-66.66ZM160-200v-66.67h80v-296q0-83.66 49.67-149.5Q339.33-778 420-796v-24q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v24q80.67 18 130.33 83.83Q720-646.33 720-562.67v296h80V-200H160Zm320-301.33ZM480-80q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM306.67-266.67h346.66v-296q0-72-50.66-122.66Q552-736 480-736t-122.67 50.67q-50.66 50.66-50.66 122.66v296Z"/>`
   };
   function ico(nome, tam) {
     const d = P[nome];
@@ -3805,6 +3887,14 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   function setorRotulo(setor, sub) {
     return `<span class="voo voo-setor"><span class="voo-apt">${esc(setor || VAZIO)}</span>` + (sub ? `<span class="voo-num">${esc(sub)}</span>` : "") + `</span>`;
   }
+  function chipsCarretas(qtds) {
+    const validos = (qtds || []).filter((q) => q != null);
+    if (!validos.length) return "";
+    const porCarreta = validos.map((q) => `${ico("carretaOk", 16)} ${q}`).join(" ");
+    if (validos.length === 1) return porCarreta;
+    const soma = validos.reduce((a, b) => a + (Number(b) || 0), 0);
+    return `${porCarreta} ${ico("pacote", 16)} ${soma}`;
+  }
 
   // src/ui/screens/telaViagensCCO.js
   init_regras();
@@ -3942,14 +4032,20 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   async function criarSolicitacao(dados) {
     return sb.from("solicitacoes").insert({ solicitante_id: S.me.id, ...dados });
   }
-  async function mudarStatusSolicitacao(id, status) {
-    const patch = { status };
+  async function mudarStatusSolicitacao(id, status, extra) {
+    const patch = { status, ...extra };
     if (status === "aceita") {
       patch.atendente_id = S.me.id;
       patch.aceita_em = (/* @__PURE__ */ new Date()).toISOString();
     }
     if (status === "concluida") patch.concluida_em = (/* @__PURE__ */ new Date()).toISOString();
     return sb.from("solicitacoes").update(patch).eq("id", id);
+  }
+  async function avisarTlcZeradaDb(vooId) {
+    return sb.rpc("avisar_tlc_zerada", { p_voo_id: vooId });
+  }
+  async function fecharPedidosTlcDoVoo(vooId) {
+    return sb.rpc("fechar_pedidos_tlc_do_voo", { p_voo_id: vooId });
   }
 
   // src/ui/screens/telaSolicitacoes.js
@@ -4295,6 +4391,20 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
         return;
       }
       throw e;
+    }
+  }
+  async function resetarBagContadaDelta(pontoDeltaId, visto) {
+    try {
+      const { error } = await sb.rpc(
+        "resetar_bag_contada_delta",
+        { p_ponto_delta_id: pontoDeltaId, p_visto: visto }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("resetar_bag_contada_delta", { pontoDeltaId, visto });
+        return;
+      }
     }
   }
   async function marcarNaoConectaDelta(pontoDeltaId, marcar) {
@@ -4917,27 +5027,18 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     </table></div>
     <div style="margin-top:12px"><button class="ghost" onclick="fecharModal()">Fechar</button></div>`);
   }
-  function telaPontosOC() {
-    const meus = D.voos.filter((v) => v.oc_id === S.me.id);
-    if (!meus.length) return `<div class="card note">Assuma seus voos na aba Escolher Voos para ver os Pontos deles.</div>`;
-    const comDados = meus.filter((v) => D.indias.some((pi) => pi.voo_id === v.id) || D.deltas.some((pd) => pd.voo_id === v.id)).sort((a, b) => minPlain(a.saida) - minPlain(b.saida));
-    if (!comDados.length) return `<div class="card note">Nenhum Ponto importado ainda para os seus voos.</div>`;
-    return comDados.map(cartaoPontosOC).join("");
-  }
-  function cartaoPontosOC(v) {
+  function blocoPontosDoVoo(v) {
     const deltaLbl = vooRotulo(v, "chegada", { box: false });
     const indiaLbl = vooRotulo(v, "saida", { box: false });
     const pend = D.indias.filter((pi) => pi.voo_id === v.id && !situacaoConexao(pi).entregue).length;
-    return `<div class="card">
-    <div class="list-line" style="border:none;padding:0 0 6px">
-      <b class="grow">${vooRotulo(v, "saida", { tam: "g" })}</b>
-      ${pend ? `<span class="chip st-solicitada">${pend} pendente${pend === 1 ? "" : "s"}</span>` : ""}
-    </div>
+    return `
+    ${pend ? `<div class="list-line" style="border:none;padding:0 0 6px">
+      <span class="chip st-solicitada">${pend} pendente${pend === 1 ? "" : "s"}</span>
+    </div>` : ""}
     <div class="row" style="margin-top:8px">
       <div><label>Delta</label><button onclick="abrirPontoDelta(${v.id})">${deltaLbl}</button></div>
       <div><label>\xCDndia</label><button class="primary" onclick="abrirPontoIndiaOC(${v.id})">${indiaLbl}</button></div>
-    </div>
-  </div>`;
+    </div>`;
   }
   function classificarConexaoDelta(v, pd) {
     const vSaida = D.voos.find((x) => x.data === v.data && x.numero === pd.voo_saida_numero);
@@ -5069,7 +5170,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const salvo = pd.bag_qtd_contada != null ? String(pd.bag_qtd_contada) : "";
     const contadoTotal = `${(_b = pd.bag_qtd_contada) != null ? _b : "?"}/${pd.bag_qtd || 0}`;
     const badgeContado = `<span class="delta-contado" title="Quantas o l\xEDder contou no Delta, de quantas o arquivo previa.">${contadoTotal}</span>`;
-    const manual = editavel ? `<span class="delta-manual-grupo" onclick="event.stopPropagation()"><input id="bagManual${pd.id}" class="delta-manual" type="number" inputmode="numeric" min="0" placeholder="contei" aria-label="Total de bags que voc\xEA contou" title="Quantas voc\xEA CONTOU no total (n\xE3o \xE9 a diferen\xE7a). Em branco = n\xE3o contei, vale o previsto."
+    const manual = editavel ? `<span class="delta-manual-grupo" onclick="event.stopPropagation()"><input id="bagManual${pd.id}" class="delta-manual" type="number" inputmode="numeric" min="0" placeholder="${pd.bag_qtd || 0}" aria-label="Total de bags que voc\xEA contou" title="Quantas voc\xEA CONTOU no total (n\xE3o \xE9 a diferen\xE7a). Em branco = n\xE3o contei, vale o previsto."
         value="${esc(salvo)}" data-salvo="${esc(salvo)}" data-prev="${pd.bag_qtd || 0}" oninput="this.nextElementSibling.disabled=(this.value===this.dataset.salvo);aoContarDelta(this)">
        <button class="small ok delta-ok" disabled onclick="confirmarBagQtdManual(${pd.id},${vooId})" aria-label="Confirmar quantidade" title="Confirmar">${ico("aceite", 34)}</button>${badgeContado}</span>` : badgeContado;
     const siga = pdEhSiga(v, pd);
@@ -5750,10 +5851,38 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     if (!pode("oc_pontos")) return "";
     const { estado } = estadoCarga(vooId);
     if (estado === "aCaminho")
-      return `<button class="small ghost carga-botao a-caminho" disabled aria-label="Carga a caminho" title="Um operador est\xE1 levando a carga deste voo">${ico("carreta", 22)}CARGA \xB7 a caminho</button>`;
+      return `<button class="small ghost carga-botao a-caminho" disabled aria-label="Carga a caminho" title="Um operador est\xE1 levando a carga deste voo">${ico("caixaCarga", 22)}</button>`;
     if (estado === "chamada")
       return `<button class="small ghost carga-botao chamada" onclick="cancelarCarga(${vooId})" aria-label="Cancelar o chamado de carga" title="Aguardando um operador \u2014 toque para cancelar">${ico("ampulheta", 18)}CARGA \xB7 aguardando</button>`;
-    return `<button class="small ok carga-botao" onclick="chamarCarga(${vooId})" aria-label="Chamar a carga" title="Chamar um operador para levar a carga deste voo">${ico("carreta", 22)}CARGA</button>`;
+    const botao = `<button class="small ok carga-botao" onclick="chamarCarga(${vooId})" aria-label="Chamar a carga" title="Chamar um operador para levar a carga deste voo">${ico("caixaCarga", 22)}CARGA</button>`;
+    return cargaEntregue(vooId) ? `${botao}<b class="carga-no-box-aviso">CARGA NO BOX</b>` : botao;
+  }
+  function cargaEntregue(vooId) {
+    return D.viagens.some((vg) => vg.carga === "CARGA" && D.destinos.some((d) => mesmoId(d.viagem_id, vg.id) && mesmoId(d.voo_destino_id, vooId) && d.status === "entregue"));
+  }
+  function botaoTriagemLocal(vooId) {
+    var _a;
+    if (!pode("sol_abrir")) return "";
+    const botao = `<button class="small ok carga-botao" onclick="solicitarTLC(${vooId},'indice')" aria-label="Pedir para a triagem local" title="Avisar a Triagem Local que este voo precisa das bags">${ico("pacote", 34)}LOCAIS</button>`;
+    const ultimo2 = D.sols.filter((s) => s.tipo === "BAG_TLC" && mesmoId(s.voo_id, vooId)).sort((a, b) => (b.criada_em || "").localeCompare(a.criada_em || ""))[0];
+    const zerada = (_a = ultimo2 == null ? void 0 : ultimo2.descricao) == null ? void 0 : _a.includes("Zerada \xB7");
+    return `${botao}${tratorTlcDoVoo(vooId)}${zerada ? `<b class="tlc-zerada-aviso">TLC ZERADA</b>` : ""}`;
+  }
+  function bagTlcACaminho(vooId) {
+    return D.destinos.some((d) => mesmoId(d.voo_destino_id, vooId) && d.status === "a_caminho" && (d.origem_setor === "TLC" || !d.origem_setor && !d.origem_box && D.viagens.some((vg) => mesmoId(vg.id, d.viagem_id) && vg.origem === "TLC")));
+  }
+  function tratorTlcDoVoo(vooId) {
+    return bagTlcACaminho(vooId) ? `<span class="tlc-a-caminho" title="Bag da Triagem Local a caminho do voo">${ico("carreta", 22)}</span>` : "";
+  }
+  function bagsTlcDoVoo(vooId) {
+    var _a;
+    const enviadas = D.prontas.filter((p) => ehProntaDespachoBase(p) && mesmoId(p.voo_destino_id, vooId) && p.status !== "cancelada").reduce((a, p) => a + (Number(p.qtd) || 0), 0);
+    const montando = Number((_a = D.bagsDespachadas.find((x) => mesmoId(x.voo_id, vooId))) == null ? void 0 : _a.qtd) || 0;
+    return enviadas + montando;
+  }
+  function chipTlcDoVoo(vooId) {
+    const n = bagsTlcDoVoo(vooId);
+    return n ? `<span class="chip st-aceita tlc-bags-india" title="Bags na Triagem Local para este voo">TLC ${n}${ico("pacote", 16)}</span>` : "";
   }
   async function chamarCarga(vooId) {
     if (estadoCarga(vooId).estado !== "livre") return;
@@ -5849,11 +5978,13 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost india-substituir" onclick="abrirSubstituirPonto('india',${vooId})">Substituir</button>`;
     const bagDeOutro = pode("oc_pontos") ? `<button class="ghost india-rodape-botao" onclick="abrirBagDeOutroVoo(${vooId})">Bag de outro voo</button>` : "";
     const carga = botaoCarga(vooId);
+    const local = (botaoTriagemLocal(vooId) || tratorTlcDoVoo(vooId)) + chipTlcDoVoo(vooId);
     return `<div class="delta-popup india-popup"><div class="delta-cabeca">${substituir}
     <div class="list-line delta-topo">
       <h3 class="grow">\xCDndia ${vooRotulo(v, "saida")}${prefixoAeronave(v)}</h3>
     </div>
-    ${carga ? `<div class="delta-acoes">${carga}</div>` : ""}
+    ${carga ? `<div class="delta-acoes india-linha-carga">${carga}</div>` : ""}
+    ${local ? `<div class="delta-acoes india-linha-local">${local}</div>` : ""}
     </div>
     ${LEGENDA_PRD}${corpo}
     ${bagDeOutro}
@@ -11097,6 +11228,9 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     }
     return total == null ? null : { total, contado: semContagem ? null : contado };
   }
+  function carretasBaseDoCartao(ds) {
+    return ds.filter((d) => d.qtd_sugerida != null).map((d) => d.qtd_sugerida);
+  }
   function cartaoVooDestino(item, vg) {
     var _a;
     const ds = item.grupo || [item.solo];
@@ -11104,9 +11238,10 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const chave = item.grupo ? `v${primeiro.voo_destino_id}` : `d${primeiro.id}`;
     const aberto = !!(UI.viagemAberto && UI.viagemAberto[chave]);
     const origens = origensDoGrupo(ds, vg);
-    const temColeta = origens.length > 1 || origens.some((o) => o.waypoint);
+    const temColeta = ds.some((d) => d.coleta_caminho);
     const rotuloVoo = rotuloDestinoCompacto(primeiro, vg, item.grupo ? { aviao: true, aviaoApos: true } : void 0);
     const bags = bagsDoCartao(ds, vg);
+    const carretasBase = carretasBaseDoCartao(ds);
     const onclickCheck = item.grupo ? `abrirEntregaGrupo([${ds.map((d) => d.id).join(",")}],${vg.id})` : `entregar(${primeiro.id},${vg.id})`;
     return `
       <div class="card acordeon-destino${aberto ? " aberto" : ""}">
@@ -11114,9 +11249,11 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
           <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span class="acordeon-seta">${ico("seta", 14)}</span>
             <span class="destino-viagem">${rotuloVoo}</span>
+            ${vg.carga === "CARGA" ? `<span class="carga-icone" title="Levando a carga deste voo">${ico("caixaCarga", 20)}</span>` : ""}
             ${temColeta ? `<span class="chip st-aceita">Coleta no caminho</span>` : ""}
           </span>
           ${bags ? `<span class="destino-bags viagem-bags">${(_a = bags.contado) != null ? _a : "?"}/${bags.total}${ico("pacote", 16)}</span>` : ""}
+          ${carretasBase.length ? `<span class="destino-bags viagem-bags">${chipsCarretas(carretasBase)}</span>` : ""}
           <button class="ok" style="width:auto" onclick="event.stopPropagation();${onclickCheck}" aria-label="Entreguei">${ico("aceite", 18)}</button>
         </div>
         <div class="acordeon-corpo">
@@ -11133,14 +11270,23 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     UI.modalVivo = null;
     const vg = D.viagens.find((x) => x.id === vgId) || {};
     const vDestino = voo((D.destinos.find((x) => x.id === ids[0]) || {}).voo_destino_id) || {};
+    const sugestoes = {};
     const linhas = ids.map((id) => {
+      var _a;
       const d = D.destinos.find((x) => x.id === id);
+      const origemVoo = d ? d.origem_voo_id || vg.voo_origem_id || null : null;
+      const pd = d && d.voo_destino_id != null ? pontoDeltaDaEntrega(origemVoo, d.voo_destino_id) : null;
+      const sugestaoDelta = pd && pd.bag_qtd_contada != null ? pd.bag_qtd_contada : null;
+      const sugestaoBase = (_a = d == null ? void 0 : d.qtd_sugerida) != null ? _a : null;
+      const sugestao = sugestaoBase != null ? sugestaoBase : sugestaoDelta;
+      if (sugestao != null) sugestoes[id] = { pontoDeltaId: sugestaoBase == null ? pd.id : null, sugestao };
       return `<div class="list-line">
       ${origemRotuloHtml(d, vg, true)}
       <span class="grow"></span>
-      <input id="qtd-grupo-${id}" type="number" inputmode="numeric" min="0" placeholder="qtd" style="width:90px">
-    </div>`;
+      <input id="qtd-grupo-${id}" type="number" inputmode="numeric" min="0" placeholder="${sugestao != null ? sugestao : "qtd"}" style="width:90px">
+    </div>${sugestao != null ? `<p class="note" style="margin:0 0 6px">${sugestaoBase != null ? "Quantidade informada pelo check-in" : "Sugest\xE3o do l\xEDder no Ponto Delta"}: <b style="color:var(--text)">${sugestao} bag${sugestao === 1 ? "" : "s"}</b>.</p>` : ""}`;
     }).join("");
+    UI.entregaSugestaoGrupo = Object.keys(sugestoes).length ? sugestoes : null;
     abrirModal(`<h3 style="display:flex;align-items:center;gap:6px">Bags para o ${vooRotulo(vDestino, "saida", { aviao: true, aviaoApos: true })}</h3>${linhas}
     <div class="modal-acoes" style="margin-top:12px">
       <button onclick="cancelarPopoverViagem()">Cancelar</button>
@@ -11228,15 +11374,19 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
 ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
     if (!ok) return;
     const vg = D.viagens.find((x) => x.id === vgId) || {};
+    const sugestoes = UI.entregaSugestaoGrupo || {};
     const qtds = ids.map((id) => {
       const campo = $(`qtd-grupo-${id}`);
-      return { id, qtd: qtdDigitada(campo ? campo.value : "") };
+      const sug = sugestoes[id] || null;
+      return { id, qtd: qtdDigitada(campo ? campo.value : "", sug ? sug.sugestao : null), sug };
     });
+    UI.entregaSugestaoGrupo = null;
     fecharModal();
-    for (const { id, qtd } of qtds) {
+    for (const { id, qtd, sug } of qtds) {
       const d = D.destinos.find((x) => x.id === id);
       if (!await gravarEntrega(() => entregarDestino(id, vgId, qtd))) return;
       await depoisDaEntrega(d, vg);
+      zerarSugestaoUsada(sug);
     }
     UI.modalVivo = { tipo: "viagem" };
     tirarFoco();
@@ -11311,7 +11461,7 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
     bus.render();
   }
   async function confirmarColeta(vgId) {
-    const linhas = UI.pu.origem === "BOX" ? linhasDosGrupos(UI.pu, vgId, { origem_box: UI.pu.boxOrigem, origem_voo_id: UI.pu.vooOrigemId }) : UI.pu.sel.map((x) => typeof x === "number" ? { viagem_id: vgId, voo_destino_id: x, entrega_via: "VOO", origem_setor: UI.pu.origem } : { viagem_id: vgId, setor_destino: x, entrega_via: x === "ESTEIRA" ? "ESTEIRA" : x, origem_setor: UI.pu.origem });
+    const linhas = UI.pu.origem === "BOX" ? linhasDosGrupos(UI.pu, vgId, { origem_box: UI.pu.boxOrigem, origem_voo_id: UI.pu.vooOrigemId, coleta_caminho: true }) : UI.pu.sel.map((x) => typeof x === "number" ? { viagem_id: vgId, voo_destino_id: x, entrega_via: "VOO", origem_setor: UI.pu.origem, coleta_caminho: true } : { viagem_id: vgId, setor_destino: x, entrega_via: x === "ESTEIRA" ? "ESTEIRA" : x, origem_setor: UI.pu.origem, coleta_caminho: true });
     const { error } = await adicionarDestinos(linhas);
     if (error) {
       await erro(error);
@@ -11323,6 +11473,7 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
     bus.recarregar();
   }
   async function entregar(destId, vgId) {
+    var _a;
     const d = D.destinos.find((x) => x.id === destId);
     const vg = D.viagens.find((x) => x.id === vgId);
     const inf = d ? destinoInfo(d) : { num: "?" };
@@ -11337,14 +11488,16 @@ Destino: ${esc(inf.num)}`);
     }
     const origemVoo = d ? d.origem_voo_id || (vg == null ? void 0 : vg.voo_origem_id) || null : null;
     const pd = d && d.voo_destino_id != null ? pontoDeltaDaEntrega(origemVoo, d.voo_destino_id) : null;
-    const sugestao = pd && pd.bag_qtd_contada != null ? pd.bag_qtd_contada : null;
-    UI.entregaSugestao = sugestao != null ? { destId, pontoDeltaId: pd.id, sugestao } : null;
+    const sugestaoDelta = pd && pd.bag_qtd_contada != null ? pd.bag_qtd_contada : null;
+    const sugestaoBase = (_a = d == null ? void 0 : d.qtd_sugerida) != null ? _a : null;
+    const sugestao = sugestaoBase != null ? sugestaoBase : sugestaoDelta;
+    UI.entregaSugestao = sugestao != null ? { destId, pontoDeltaId: sugestaoBase == null ? pd.id : null, sugestao } : null;
     UI.modalVivo = null;
     abrirModal(`<h3>Quantas bags?</h3>
     <p class="note">Destino: <b style="color:var(--text)">${esc(inf.num)}</b></p>
     <label>Quantas bags voc\xEA est\xE1 entregando?</label>
     <input id="qtdEntrega" type="number" inputmode="numeric" min="0" placeholder="${sugestao != null ? sugestao : "quantidade"}">
-    ${sugestao != null ? `<p class="note">Sugest\xE3o do l\xEDder no Ponto Delta: <b style="color:var(--text)">${sugestao} bag${sugestao === 1 ? "" : "s"}</b>. Confirme para usar esse n\xFAmero, ou digite outro.</p>` : `<p class="note">N\xE3o sabe? Pode confirmar em branco \u2014 a entrega grava do mesmo jeito, s\xF3 sem o n\xFAmero.</p>`}
+    ${sugestao != null ? `<p class="note">${sugestaoBase != null ? "Quantidade informada pelo check-in" : "Sugest\xE3o do l\xEDder no Ponto Delta"}: <b style="color:var(--text)">${sugestao} bag${sugestao === 1 ? "" : "s"}</b>. Confirme para usar esse n\xFAmero, ou digite outro.</p>` : `<p class="note">N\xE3o sabe? Pode confirmar em branco \u2014 a entrega grava do mesmo jeito, s\xF3 sem o n\xFAmero.</p>`}
     <div class="modal-acoes">
       <button onclick="cancelarPopoverViagem()">Cancelar</button>
       <button class="primary" onclick="confirmarEntrega(${destId},${vgId})">Confirmar</button>
@@ -11354,6 +11507,10 @@ Destino: ${esc(inf.num)}`);
     const s = String(txt2 || "").trim();
     if (s === "") return sugestao == null ? null : sugestao;
     return Math.max(0, parseInt(s, 10) || 0);
+  }
+  function zerarSugestaoUsada(sug) {
+    if (!sug || sug.pontoDeltaId == null) return;
+    resetarBagContadaDelta(sug.pontoDeltaId, sug.sugestao);
   }
   async function confirmarEntrega(destId, vgId) {
     const campo = $("qtdEntrega");
@@ -11365,6 +11522,7 @@ Destino: ${esc(inf.num)}`);
     const vg = D.viagens.find((x) => x.id === vgId) || {};
     if (!await gravarEntrega(() => entregarDestino(destId, vgId, qtd))) return;
     await depoisDaEntrega(d, vg);
+    zerarSugestaoUsada(sug);
     UI.modalVivo = { tipo: "viagem" };
     tirarFoco();
     bus.recarregar();
@@ -11572,6 +11730,10 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     if (n == null) return "";
     const veic = veiculoParaQtd(n);
     return `<span class="pronta-qtd">${n} bag${n === 1 ? "" : "s"}${veic ? ` \xB7 ${esc(veic)}` : ""}</span>`;
+  }
+  function qtdCarretaBase(p) {
+    const chips = chipsCarretas([p == null ? void 0 : p.qtd]);
+    return chips ? `<span class="pronta-qtd">${chips}</span>` : "";
   }
   function carretasDoLugar(ps) {
     const porChave = /* @__PURE__ */ new Map();
@@ -11916,8 +12078,9 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     const minha = p.status === "ciente" && p.ciente_por === S.me.id;
     const cancelar = minha ? `<button class="alerta-acao ghost" onclick="cancelarSolicitacao(${p.id})" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
     const acao = minha ? `<button class="alerta-acao ok" onclick="pegarSolicitacao(${p.id})" aria-label="Pegar">${ico("mala-check", 20)}</button>` : `<button class="alerta-acao primary" onclick="aceitarSolicitacao(${p.id})" aria-label="Aceitar">${ico("thumb_up", 20)}</button>`;
+    const qtd = ehProntaDespachoBase(p) ? qtdCarretaBase(p) : qtdDaPronta(p);
     return `<div class="list-line alerta-linha">
-    <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${vooRotulo(v, "saida", { aviao: true })}${timerAlerta(v)}</span>
+    <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${vooRotulo(v, "saida", { aviao: true })}${qtd}${timerAlerta(v)}</span>
     ${cancelar}${acao}
   </div>`;
   }
@@ -11928,11 +12091,12 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       const v = voo(p.voo_destino_id) || {};
       return `<div class="list-line alerta-linha carga-linha">
       <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${vooRotulo(v, "saida", { aviao: true })}
+        <span class="carga-icone" title="Carga">${ico("caixaCarga", 20)}</span>
         <span class="carga-hora" title="Decolagem">${ico("decolando", 16)}${esc(v.saida || "\u2014")}</span></span>
       <button class="alerta-acao primary" onclick="levarCarga(${p.id})" aria-label="Levar a carga deste voo" title="Levar a carga deste voo">${ico("carreta", 20)}</button>
     </div>`;
     }).join("");
-    return `<div class="carga-secao"><p class="note carga-titulo">CARGA</p>${linhas}</div>`;
+    return `<div class="carga-secao">${linhas}</div>`;
   }
   async function levarCarga(id) {
     const p = D.prontas.find((x) => x.id === id);
@@ -12076,14 +12240,25 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       return { nome, subs, urg: subs.length ? subs[0].urg : Infinity };
     });
     const orfaos = porSecao.get(null);
-    const secoes = orfaos ? [...conhecidas, { nome: "OUTROS", subs: orfaos, urg: orfaos[0].urg }] : conhecidas;
+    const secoes = orfaos ? [...conhecidas, { nome: "OUTROS", subs: orfaos, urg: orfaos[0].urg }] : [...conhecidas];
+    const carga = g.carga || [];
+    if (carga.length)
+      secoes.push({
+        nome: "CARGA",
+        subs: [],
+        carga,
+        urg: Math.min(...carga.map(urgenciaDaPronta))
+      });
     if (secoes.length <= 1) return { abas: "", corpo: g.sub.map(linhas).join("") };
     secoes.sort((a, b) => a.urg - b.urg);
     const ativa = secoes.some((s) => s.nome === UI.alertaSecao) ? UI.alertaSecao : null;
     const abas = `<div class="deg-linha">${secoes.map((sec) => {
-      const urgente = sec.subs.length > 0 && corTimer(sec.urg - agoraMin()) === "timer-vermelho";
+      var _a;
+      const temPedido = sec.subs.length > 0 || !!((_a = sec.carga) == null ? void 0 : _a.length);
+      const urgente = temPedido && corTimer(sec.urg - agoraMin()) === "timer-vermelho";
       return degrau(sec.nome, ativa === sec.nome, `escolherSecaoBox('${sec.nome}')`, urgente ? "aba-urgente" : null);
     }).join("")}</div>`;
+    if (ativa === "CARGA") return { abas, corpo: secaoCarga(carga) };
     const visiveis = ativa ? secoes.filter((s) => s.nome === ativa) : secoes;
     const subVisivel = visiveis.flatMap((s) => s.subs);
     const corpo = subVisivel.length ? subVisivel.map(linhas).join("") : `<p class="note">Nada pendente aqui agora.</p>`;
@@ -12102,7 +12277,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
           aria-label="${esc(g.tipo)} \u2014 arraste para reordenar">${esc(g.tipo)}</span>
       </span>
     </div>
-    <div class="alerta-lista">${corpo}${g.tipo === "BOX" ? secaoCarga(g.carga || []) : ""}</div>
+    <div class="alerta-lista">${corpo}</div>
   </div>`;
   }
   function corpoDoAlerta() {
@@ -12235,7 +12410,13 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
         // viagem nasceu num BOX e essa perna foi pega da triagem no
         // meio do caminho. Bug relatado pelo Tiago (14/09/2026).
         origem_setor: p.setor === "TCX" || p.setor === "TLC" ? p.setor : null,
-        ponto_india_id: o.pontoIndiaId
+        ponto_india_id: o.pontoIndiaId,
+        // Bag despachada na base (TLC): a quantidade ja veio contada do
+        // check-in, sem India/Delta pra sugerir nada na entrega -- grava
+        // ela AQUI, na propria perna, pra sobreviver ate o operador
+        // entregar (mesmo raciocinio da sugestao do lider no Delta, so
+        // que fixo por nao ter de onde reler depois, ver entregar()).
+        qtd_sugerida: ehProntaDespachoBase(p) ? p.qtd : null
       };
     });
     for (const p of daBase) {
@@ -12271,6 +12452,10 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
         }
       }
     }
+    for (const vooId of new Set(ps.filter(ehProntaDespachoBase).map((p) => p.voo_destino_id))) {
+      const { error: errSol } = await fecharPedidosTlcDoVoo(vooId);
+      if (errSol) console.warn("solicitacoes:", errSol.message || errSol);
+    }
     if (r.error) await erro(r.error);
   }
 
@@ -12279,95 +12464,46 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
   init_dom();
   init_modal();
   init_horas();
-  init_bus();
-  function telaOC() {
-    const vs = voosSaindo(UI.ocDe, UI.ocAte);
-    return `
-    ${seletorHoras(UI.ocDe, UI.ocAte, "mudarOcDe", "mudarOcAte")}
-    <div class="board-title"><h2>Voos de hoje</h2><span class="flip">${vs.length}</span></div>
-    ${vs.length ? vs.map((v) => `
-      <div class="card"><div class="list-line" style="border:none;padding:0">
-        <span class="grow">${vooRotulo(v, "saida", { hora: true })}</span>
-        ${v.oc_id === S.me.id ? `<button class="small" onclick="soltarVoo(${v.id})">Soltar</button>` : v.oc_id ? `<span class="note">${esc(nomeDe(v.oc_id))}</span>` : `<button class="small ok" onclick="assumirVoo(${v.id})">Assumir</button>`}
-      </div></div>`).join("") : `<div class="card note">Nenhum voo neste intervalo. Limpe os campos De/At\xE9 para ver a malha do dia inteira.</div>`}`;
-  }
-  function mudarOcDe(v) {
-    UI.ocDe = normHora(v);
-    guardarJanela(CHAVE_OC_DE, UI.ocDe);
-    bus.render();
-  }
-  function mudarOcAte(v) {
-    UI.ocAte = normHora(v);
-    guardarJanela(CHAVE_OC_ATE, UI.ocAte);
-    bus.render();
-  }
-  async function assumirVoo2(id) {
-    try {
-      await assumirVoo(id);
-    } catch (e) {
-      await erro(e);
-    }
-  }
-  async function soltarVoo2(id) {
-    try {
-      await soltarVoo(id);
-    } catch (e) {
-      await erro(e);
-    }
-  }
-  function telaChegandoOC() {
-    const meus = D.voos.filter((v) => v.oc_id === S.me.id).sort((a, b) => minPlain(a.saida) - minPlain(b.saida));
-    if (!meus.length) return `<div class="card note">
-    Assuma seus voos na aba <b>Assumir voos</b> para acompanhar as bags deles.</div>`;
-    return meus.map((v) => {
-      const aberto = UI.ocVooAberto === v.id;
-      const ds = D.destinos.filter((d) => d.voo_destino_id === v.id);
-      const aCaminho = ds.filter((d) => d.status === "a_caminho").length;
-      const rotulo2 = vooRotulo(v, "saida", { box: false });
-      return `<div class="card" style="${aberto ? "border-color:var(--amber)" : ""}">
-      <div class="list-line" style="border:none;padding:0;cursor:pointer"
-           onclick="UI.ocVooAberto=${aberto ? "null" : v.id};render()">
-        <span class="voo-g">${rotulo2}</span>
-        <span class="note grow" style="padding-left:10px">box ${esc(v.box || "?")}${v.saida ? " \xB7 " + esc(v.saida) : ""}</span>
-        ${aCaminho ? `<span class="chip st-a_caminho">${aCaminho} a caminho</span>` : `<span class="note">${ds.length ? ds.length + " entregue" + (ds.length === 1 ? "" : "s") : "nada ainda"}</span>`}
-      </div>
-      ${aberto ? corpoVoo(v, ds) : ""}
-    </div>`;
-    }).join("");
-  }
-  function corpoVoo(v, ds) {
-    const linhas = ds.length ? ds.map((d) => {
-      const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
-      const box = d.origem_box || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
-      const vOrig = voo(d.origem_voo_id || vg.voo_origem_id);
-      const origem = box ? `${vOrig ? vooRotulo(vOrig, "chegada", { box: false }) + " \xB7 " : ""}BOX ${esc(box)}` : esc(vg.origem || "?");
-      return `<div class="list-line">
-          <span class="mono grow">${origem} \xB7 ${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}</span>
-          <span class="chip st-${d.status}">${ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
-        </div>`;
-    }).join("") : `<p class="note" style="margin:8px 0">Nada saiu para este voo ainda.</p>`;
-    const pedido = D.sols.find((s) => s.tipo === "BAG_TLC" && s.voo_id === v.id && ["solicitada", "aceita", "a_caminho"].includes(s.status));
-    return `${linhas}
-    <div style="margin-top:10px">
-      ${pedido ? `<span class="chip st-${pedido.status}">TLC avisada ${hora(pedido.criada_em)}</span>` : `<button class="primary" onclick="solicitarTLC(${v.id})">Solicitar TLC</button>`}
-    </div>`;
-  }
-  async function solicitarTLC(vooId) {
-    const v = voo(vooId) || {};
-    const ok = await confirmar(`Pedir as bags da TLC para o voo ${esc(v.destino || "?")}-${esc(v.numero)}?`);
-    if (!ok) return;
-    const { error } = await criarSolicitacao({
-      tipo: "BAG_TLC",
-      voo_id: vooId,
-      descricao: `${v.destino || "?"}-${v.numero} \xB7 box ${v.box || "?"}`
-    });
-    if (error) await erro(error);
-  }
 
   // src/ui/screens/telaTriagem.js
   init_store();
   init_dom();
   init_horas();
+
+  // src/data/bagsDespachadas.js
+  init_supabase();
+  init_offline_sync();
+  async function somarBagsDespachadasDb(dia, vooId, qtd) {
+    try {
+      const res = await sb.rpc(
+        "somar_bags_despachadas",
+        { p_data: dia, p_voo_id: vooId, p_qtd: qtd }
+      );
+      if ((res == null ? void 0 : res.error) && erroDeRede(res.error)) throw res.error;
+      return res;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("somar_bags_despachadas", { dia, vooId, qtd });
+        return { error: null, fila: true };
+      }
+      throw e;
+    }
+  }
+  async function avisarBagsDespachadasDb(dia, vooId) {
+    try {
+      const res = await sb.rpc("avisar_bags_despachadas", { p_data: dia, p_voo_id: vooId });
+      if ((res == null ? void 0 : res.error) && erroDeRede(res.error)) throw res.error;
+      return res;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("avisar_bags_despachadas", { dia, vooId });
+        return { error: null, fila: true };
+      }
+      throw e;
+    }
+  }
+
+  // src/ui/screens/telaTriagem.js
   init_conexoes();
   init_modal();
   init_bus();
@@ -12388,7 +12524,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     const origemTxt = UI.tri.setor === "BOX" ? `BOX ${esc(UI.tri.box)}` : ROTULO[UI.tri.setor];
     const cands = candidatosDestino([]);
     const minhas = D.prontas.filter((p) => p.setor === UI.tri.setor && (UI.tri.setor !== "BOX" || p.box === UI.tri.box));
-    const tipoPedido = UI.tri.setor === "TLC" ? "BAG_TLC" : UI.tri.setor === "TCX" ? "BAG_TCX" : null;
+    const tipoPedido = UI.tri.setor === "TCX" ? "BAG_TCX" : null;
     const pedidos = tipoPedido ? D.sols.filter((s) => s.tipo === tipoPedido && s.status === "solicitada") : [];
     const alerta = pedidos.length ? `
     <div class="card" style="border-color:var(--orange)">
@@ -12406,9 +12542,10 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     ${alerta}
     <div class="board-title"><h2>${origemTxt}</h2>
       <button class="small ghost" style="width:auto" onclick="UI.tri.setor=null;UI.tri.box=null;render()">trocar</button></div>
-    ${UI.tri.setor === "TCX" ? blocoCardsTcx() : blocoCarreta()}
-    ${UI.tri.setor === "TCX" ? "" : `<p class="note">Toque no voo para avisar que as bags dele est\xE3o prontas para coleta.</p>
-    ${gradeDestinos(cands, [], [], "sinalizarPronta")}`}
+    ${UI.tri.setor === "TCX" ? blocoCardsTcx() : UI.tri.setor === "TLC" ? blocoBaseTlc() + blocoCarreta() : blocoCarreta()}
+    ${UI.tri.setor === "BOX" ? `<p class="note">Toque no voo para avisar que as bags dele est\xE3o prontas para coleta.</p>
+    ${gradeDestinos(cands, [], [], "sinalizarPronta")}` : ""}
+    ${UI.tri.setor === "TLC" ? "" : `
     <div class="board-title"><h2>Sinalizadas hoje</h2><span class="flip">${minhas.length}</span></div>
     ${minhas.length ? minhas.map((p) => {
       const v = voo(p.voo_destino_id) || {};
@@ -12419,7 +12556,7 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
         <span class="chip st-${p.status === "pronta" ? "solicitada" : p.status === "ciente" ? "aceita" : p.status === "coletada" ? "entregue" : "cancelada"}">${p.status === "pronta" ? "Aguardando" : p.status === "ciente" ? esc(nomeDe(p.ciente_por)) + " vai buscar" : p.status === "coletada" ? "Coletada " + hora(p.coletada_em) : "Cancelada"}</span>
         ${p.status === "pronta" && p.criada_por === S.me.id ? `<button class="small ghost" style="width:auto" onclick="cancelarPronta(${p.id})">${ico("x", 16)}</button>` : ""}
       </div></div>`;
-    }).join("") : `<div class="card note">Nada sinalizado ainda.</div>`}`;
+    }).join("") : `<div class="card note">Nada sinalizado ainda.</div>`}`}`;
   }
   function paradasAqui() {
     return D.bagsLocal.filter((b) => b.local === UI.tri.setor && b.status === "no_local");
@@ -12476,6 +12613,145 @@ Os operadores recebem UM aviso para vir buscar a carreta inteira.`);
       return;
     }
     UI.tri.carreta = [];
+    bus.recarregar();
+  }
+  function totalBaseTlc(vooId) {
+    const b = D.bagsDespachadas.find((x) => mesmoId(x.voo_id, vooId));
+    return (b == null ? void 0 : b.qtd) || 0;
+  }
+  function carretasBaseDoVoo(vooId) {
+    return D.prontas.filter((p) => ehProntaDespachoBase(p) && mesmoId(p.voo_destino_id, vooId) && p.status !== "cancelada").sort((a, b) => (a.criada_em || "").localeCompare(b.criada_em || "") || a.id - b.id);
+  }
+  function alternarCarretasBaseTlc(vooId) {
+    UI.tri.baseAberto = UI.tri.baseAberto || {};
+    UI.tri.baseAberto[vooId] = !UI.tri.baseAberto[vooId];
+    bus.render();
+  }
+  function linhaCarretaBaseTlc(p) {
+    const qtd = Number(p.qtd) || 0;
+    const classe = p.status === "pronta" ? "st-solicitada" : p.status === "ciente" ? "st-aceita" : "st-entregue";
+    const texto = p.status === "pronta" ? "Aguardando" : p.status === "ciente" ? `${esc(nomeDe(p.ciente_por))} vai buscar` : `Coletada ${hora(p.coletada_em)}`;
+    const nomeColeta = p.status === "coletada" ? ` <span class="note">${esc(nomeDe(p.ciente_por))}</span>` : "";
+    return `<div class="list-line">
+    <span class="grow">${qtd} bag${qtd === 1 ? "" : "s"}</span>
+    <span class="note" title="Solicitado">${ico("sinoSolicitado", 14)} ${hora(p.criada_em)}</span>
+    <span class="chip ${classe}">${texto}</span>${nomeColeta}
+  </div>`;
+  }
+  function timerBaseTlc(v) {
+    const alvo2 = minutosDe(v.saida);
+    if (alvo2 == null) return "";
+    const restam = alvo2 - agoraMin();
+    if (restam <= 0) return ` ${ico("decolando", 18)}`;
+    return ` <span class="op-timer ${corTimer(restam)}">${restam}min</span>`;
+  }
+  function vooBateBusca(v, busca) {
+    if (!busca) return true;
+    return String(v.numero || "").toLowerCase().includes(busca.trim().toLowerCase());
+  }
+  function pedidoTlcDoVoo(vooId) {
+    return D.sols.find((s) => s.tipo === "BAG_TLC" && mesmoId(s.voo_id, vooId) && s.status === "solicitada");
+  }
+  function cardsBaseTlc() {
+    return candidatosDestinoJanela([]).filter((v) => vooBateBusca(v, UI.tri.baseBusca));
+  }
+  function blocoBaseTlc() {
+    const cards = cardsBaseTlc();
+    return `<div class="card">
+    <div class="list-line" style="border:none;padding:0 0 8px">
+      <b class="grow">Bags despachadas na base</b>
+    </div>
+    <input id="baseTlcBusca" type="text" inputmode="numeric" placeholder="Buscar voo (ex.: 18)"
+      value="${esc(UI.tri.baseBusca || "")}" oninput="buscarBaseTlc(this.value)" class="busca-voo">
+    ${cards.length ? cards.map((v) => {
+      var _a, _b;
+      const total = totalBaseTlc(v.id);
+      const carretas = carretasBaseDoVoo(v.id);
+      const n = carretas.length;
+      const aberto = !!((_a = UI.tri.baseAberto) == null ? void 0 : _a[v.id]);
+      const soma = carretas.reduce((a, p) => a + (Number(p.qtd) || 0), 0);
+      const pedido = pedidoTlcDoVoo(v.id);
+      const doIndice = (_b = pedido == null ? void 0 : pedido.descricao) == null ? void 0 : _b.startsWith("\xCDndice");
+      const tituloPedido = pedido ? `${doIndice ? "L\xEDder" : "Orange Cap"} est\xE1 pedindo estas bags` : "";
+      return `<div class="list-line">
+          <span class="grow">${vooRotulo(v, "saida")}${timerBaseTlc(v)}${pedido ? ` <span class="pedido-tlc-sino" title="${esc(tituloPedido)}">${ico("notificacao", 16)}</span>` : ""}</span>
+          <span class="base-tlc-chips">
+            ${n ? `<button class="chip st-a_caminho chip-botao" title="Ver carretas sinalizadas" onclick="alternarCarretasBaseTlc(${v.id})">${ico("carretaOk", 16)}${n}</button>` : ""}
+            <span class="chip st-aceita">${total}${ico("pacote", 16)}</span>
+          </span>
+          <button class="small ghost base-tlc-zerada" onclick="zerarLocalTlc(${v.id})">TLC ZERADA</button>
+          <button class="small ghost base-tlc-acao" onclick="abrirAddBaseTlc(${v.id})" aria-label="Adicionar quantidade">${ico("addBag", 30)}</button>
+          <button class="small primary base-tlc-acao" ${total ? "" : "disabled"} onclick="avisarBaseTlc(${v.id})" aria-label="Carreta pronta">${ico("carretaOk", 30)}</button>
+        </div>${n && aberto ? `<div class="alerta-carretas">
+          ${carretas.map(linhaCarretaBaseTlc).join("")}
+          <div class="list-line" style="border:none">
+            <b class="grow">Total j\xE1 montado</b><b>${soma} bag${soma === 1 ? "" : "s"}</b>
+          </div>
+        </div>` : ""}`;
+    }).join("") : `<div class="note">Nenhum voo de sa\xEDda na janela${UI.tri.baseBusca ? " com esse n\xFAmero" : ""}.</div>`}
+  </div>`;
+  }
+  function buscarBaseTlc(txt2) {
+    UI.tri.baseBusca = txt2;
+    redesenharMantendoFoco("baseTlcBusca");
+  }
+  function buscarTcx(txt2) {
+    UI.tri.tcxBusca = txt2;
+    redesenharMantendoFoco("tcxBusca");
+  }
+  function redesenharMantendoFoco(id) {
+    var _a, _b;
+    const pos = (_a = $(id)) == null ? void 0 : _a.selectionStart;
+    bus.render();
+    const novo = $(id);
+    if (novo) {
+      novo.focus();
+      if (pos != null) (_b = novo.setSelectionRange) == null ? void 0 : _b.call(novo, pos, pos);
+    }
+  }
+  function abrirAddBaseTlc(vooId) {
+    UI.modalVivo = null;
+    abrirModal(`<h3>Quantas bags o check-in despachou?</h3>
+    <input id="qtdBaseTlc" type="number" inputmode="numeric" min="1" placeholder="quantidade">
+    <div class="modal-acoes">
+      <button onclick="fecharModal()">Cancelar</button>
+      <button class="primary" onclick="confirmarAddBaseTlc(${vooId})">Adicionar</button>
+    </div>`);
+  }
+  async function confirmarAddBaseTlc(vooId) {
+    const campo = $("qtdBaseTlc");
+    const qtd = parseInt((campo == null ? void 0 : campo.value) || "", 10);
+    if (!qtd || qtd <= 0) {
+      await erro("Digite uma quantidade v\xE1lida.");
+      return;
+    }
+    fecharModal();
+    const { error } = await somarBagsDespachadasDb(hoje(), vooId, qtd);
+    if (error) {
+      await erro(error);
+      return;
+    }
+    bus.recarregar();
+  }
+  async function avisarBaseTlc(vooId) {
+    const ok = await confirmar("Avisar os operadores que a carreta est\xE1 pronta para buscar?");
+    if (!ok) return;
+    const { error } = await avisarBagsDespachadasDb(hoje(), vooId);
+    if (error) {
+      await erro(error);
+      return;
+    }
+    bus.recarregar();
+  }
+  async function zerarLocalTlc(vooId) {
+    const v = voo(vooId) || {};
+    const ok = await confirmar(`Avisar o l\xEDder que n\xE3o h\xE1 mais bags na Triagem Local para o voo ${esc(v.destino || "?")}-${esc(v.numero || "?")}?`);
+    if (!ok) return;
+    const { error } = await avisarTlcZeradaDb(vooId);
+    if (error) {
+      await erro(error);
+      return;
+    }
     bus.recarregar();
   }
   function escolherBoxPronta(b) {
@@ -12561,9 +12837,13 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     };
   }
   function blocoCardsTcx() {
-    const cards = cardsTcx();
-    if (!cards.length) return `<div class="card note">Nenhum voo com Ponto \xCDndia importado sai dentro da janela. Ajuste o hor\xE1rio no rel\xF3gio ou importe o \xCDndia do voo.</div>`;
-    return cards.map((c) => {
+    const todos = cardsTcx();
+    const busca = `<input id="tcxBusca" type="text" inputmode="numeric" placeholder="Buscar voo (ex.: 18)"
+    value="${esc(UI.tri.tcxBusca || "")}" oninput="buscarTcx(this.value)" class="busca-voo">`;
+    if (!todos.length) return `<div class="card note">Nenhum voo com Ponto \xCDndia importado sai dentro da janela. Ajuste o hor\xE1rio no rel\xF3gio ou importe o \xCDndia do voo.</div>`;
+    const cards = todos.filter((c) => vooBateBusca(c.v, UI.tri.tcxBusca));
+    if (!cards.length) return `${busca}<div class="card note">Nenhum voo com esse n\xFAmero na janela.</div>`;
+    return busca + cards.map((c) => {
       const r = resumoCard(c.linhas);
       const chips = [
         r.enviadas ? `<span class="chip st-aceita" title="J\xE1 avisado aos operadores. Ainda d\xE1 para editar enquanto ningu\xE9m pegou.">enviada \xB7 ${r.enviadas} linha${r.enviadas === 1 ? "" : "s"}${r.bagsEnv ? ` \xB7 ${r.bagsEnv} bag${r.bagsEnv === 1 ? "" : "s"}` : ""}</span>` : "",
@@ -12789,6 +13069,124 @@ ${e.message || e}` : e);
     if (fila) await aviso("Sem sinal agora: o aviso ficou na fila e sai sozinho quando a rede voltar. N\xE3o precisa avisar de novo.");
     else if (plano.bloqueadas.length) await aviso("Um operador j\xE1 aceitou essa carreta: a linha que voc\xEA tirou n\xE3o saiu. Combine com ele.");
     else if (falhasLocal.length) await aviso(`Os operadores foram avisados, mas o \xCDndia do l\xEDder pode n\xE3o mostrar "carreta da TCX" (falha ao gravar o local): ${falhasLocal[0]}`);
+  }
+
+  // src/ui/screens/telaOC.js
+  init_bus();
+  function telaOC() {
+    const vs = voosSaindo(UI.ocDe, UI.ocAte).filter((v) => vooBateBusca(v, UI.ocBusca));
+    const escolhido = D.voos.find((v) => mesmoId(v.id, UI.ocEscolhido)) || null;
+    const meus = D.voos.filter((v) => v.oc_id === S.me.id && !mesmoId(v.id, escolhido == null ? void 0 : escolhido.id)).sort((a, b) => minPlain(a.saida) - minPlain(b.saida));
+    const opcao = (v) => {
+      const dono = v.oc_id === S.me.id ? " \xB7 seu" : v.oc_id ? ` \xB7 ${nomeDe(v.oc_id)}` : "";
+      return `<option value="${v.id}"${mesmoId(v.id, escolhido == null ? void 0 : escolhido.id) ? " selected" : ""}>${esc(`${v.destino || "?"}-${v.numero || "?"}${v.saida ? ` \xB7 ${v.saida}` : ""}${dono}`)}</option>`;
+    };
+    return `
+    ${seletorHoras(UI.ocDe, UI.ocAte, "mudarOcDe", "mudarOcAte")}
+    <input id="ocBusca" type="text" inputmode="numeric" placeholder="Buscar voo (ex.: 18)"
+      value="${esc(UI.ocBusca || "")}" oninput="buscarOc(this.value)" class="busca-voo">
+    ${vs.length ? `<select id="ocVoo" class="combo-voo" onchange="escolherVooOc(this.value)">
+          <option value="">Escolha o voo (${vs.length})</option>${vs.map(opcao).join("")}</select>` : `<div class="card note">Nenhum voo neste intervalo${UI.ocBusca ? " com esse n\xFAmero" : ""}. Limpe os campos De/At\xE9 para ver a malha do dia inteira.</div>`}
+    ${escolhido ? cartaoVooOc(escolhido) : ""}
+    ${meus.length ? `<div class="board-title"><h2>Assumidos por voc\xEA</h2><span class="flip">${meus.length}</span></div>
+      ${meus.map(cartaoVooOc).join("")}` : ""}`;
+  }
+  function cartaoVooOc(v) {
+    var _a;
+    const meu = v.oc_id === S.me.id;
+    const aberto = meu && !!((_a = UI.ocAberto) == null ? void 0 : _a[v.id]);
+    return `<div class="card"><div class="list-line oc-voo-linha${meu ? " clicavel" : ""}"
+      ${meu ? `onclick="alternarPontosOc(${v.id})"` : ""}>
+    ${meu ? `<button class="small" onclick="event.stopPropagation();soltarVoo(${v.id})">Soltar</button>` : v.oc_id ? `<span class="note">${esc(nomeDe(v.oc_id))}</span>` : `<button class="small ok" onclick="assumirVoo(${v.id})">Assumir</button>`}
+    <span class="grow oc-voo-rotulo">${vooRotulo(v, "saida", { hora: true })}</span>
+  </div>${aberto ? blocoPontosDoVoo(v) : ""}</div>`;
+  }
+  function escolherVooOc(id) {
+    UI.ocEscolhido = id ? Number(id) : null;
+    bus.render();
+  }
+  function buscarOc(txt2) {
+    UI.ocBusca = txt2;
+    redesenharMantendoFoco("ocBusca");
+  }
+  function alternarPontosOc(vooId) {
+    UI.ocAberto = UI.ocAberto || {};
+    UI.ocAberto[vooId] = !UI.ocAberto[vooId];
+    bus.render();
+  }
+  function mudarOcDe(v) {
+    UI.ocDe = normHora(v);
+    guardarJanela(CHAVE_OC_DE, UI.ocDe);
+    bus.render();
+  }
+  function mudarOcAte(v) {
+    UI.ocAte = normHora(v);
+    guardarJanela(CHAVE_OC_ATE, UI.ocAte);
+    bus.render();
+  }
+  async function assumirVoo2(id) {
+    try {
+      await assumirVoo(id);
+      UI.ocAberto = UI.ocAberto || {};
+      UI.ocAberto[id] = true;
+    } catch (e) {
+      await erro(e);
+    }
+  }
+  async function soltarVoo2(id) {
+    try {
+      await soltarVoo(id);
+    } catch (e) {
+      await erro(e);
+    }
+  }
+  function telaChegandoOC() {
+    const meus = D.voos.filter((v) => v.oc_id === S.me.id).sort((a, b) => minPlain(a.saida) - minPlain(b.saida));
+    if (!meus.length) return `<div class="card note">
+    Assuma seus voos na aba <b>Meus voos</b> para acompanhar as bags deles.</div>`;
+    return meus.map((v) => {
+      const aberto = UI.ocVooAberto === v.id;
+      const ds = D.destinos.filter((d) => d.voo_destino_id === v.id);
+      const aCaminho = ds.filter((d) => d.status === "a_caminho").length;
+      const rotulo2 = vooRotulo(v, "saida", { box: false });
+      return `<div class="card" style="${aberto ? "border-color:var(--amber)" : ""}">
+      <div class="list-line" style="border:none;padding:0;cursor:pointer"
+           onclick="UI.ocVooAberto=${aberto ? "null" : v.id};render()">
+        <span class="voo-g">${rotulo2}</span>
+        <span class="note grow" style="padding-left:10px">box ${esc(v.box || "?")}${v.saida ? " \xB7 " + esc(v.saida) : ""}</span>
+        ${aCaminho ? `<span class="chip st-a_caminho">${aCaminho} a caminho</span>` : `<span class="note">${ds.length ? ds.length + " entregue" + (ds.length === 1 ? "" : "s") : "nada ainda"}</span>`}
+      </div>
+      ${aberto ? corpoVoo(v, ds) : ""}
+    </div>`;
+    }).join("");
+  }
+  function corpoVoo(v, ds) {
+    const linhas = ds.length ? ds.map((d) => {
+      const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
+      const box = d.origem_box || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
+      const vOrig = voo(d.origem_voo_id || vg.voo_origem_id);
+      const origem = box ? `${vOrig ? vooRotulo(vOrig, "chegada", { box: false }) + " \xB7 " : ""}BOX ${esc(box)}` : esc(vg.origem || "?");
+      return `<div class="list-line">
+          <span class="mono grow">${origem} \xB7 ${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}</span>
+          <span class="chip st-${d.status}">${ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
+        </div>`;
+    }).join("") : `<p class="note" style="margin:8px 0">Nada saiu para este voo ainda.</p>`;
+    const pedido = D.sols.find((s) => s.tipo === "BAG_TLC" && s.voo_id === v.id && ["solicitada", "aceita", "a_caminho"].includes(s.status));
+    return `${linhas}
+    <div style="margin-top:10px">
+      ${pedido ? `<span class="chip st-${pedido.status}">TLC avisada ${hora(pedido.criada_em)}</span>` : `<button class="primary" onclick="solicitarTLC(${v.id})">Solicitar TLC</button>`}
+    </div>`;
+  }
+  async function solicitarTLC(vooId, origem) {
+    const v = voo(vooId) || {};
+    const ok = await confirmar(`Pedir as bags da TLC para o voo ${esc(v.destino || "?")}-${esc(v.numero)}?`);
+    if (!ok) return;
+    const { error } = await criarSolicitacao({
+      tipo: "BAG_TLC",
+      voo_id: vooId,
+      descricao: `${origem === "indice" ? "\xCDndice \xB7 " : ""}${v.destino || "?"}-${v.numero} \xB7 box ${v.box || "?"}`
+    });
+    if (error) await erro(error);
   }
 
   // src/ui/screens/telaPermissoes.js
@@ -14300,8 +14698,6 @@ ${e.message || e}` : e);
         return telaPermissoes();
       case "pontosimport":
         return telaPontosImport();
-      case "india":
-        return telaPontosOC();
       default:
         return "";
     }
@@ -14336,7 +14732,7 @@ ${e.message || e}` : e);
     const abas = abasDoUsuario();
     if (!abas.includes(UI.tab)) UI.tab = abas[0];
     const naOperador = UI.tab === "levar";
-    const naTriagemTcx = UI.tab === "triagem" && UI.tri.setor === "TCX";
+    const naTriagemComJanela = UI.tab === "triagem" && (UI.tri.setor === "TCX" || UI.tri.setor === "TLC");
     const voltarRolagem = guardarRolagem(app());
     montarCasca();
     aplicarHeader(`
@@ -14345,7 +14741,7 @@ ${e.message || e}` : e);
       ${UI.filaOffline.length ? `<span class="fila-offline">Fila offline: ${UI.filaOffline.length} pendente${UI.filaOffline.length === 1 ? "" : "s"}</span>` : ""}
       <div class="who"><b>${esc(S.me.nome)}</b><span>${esc(S.me.perfil)} \xB7 v${esc(window.RAMPA_BUILD || "dev")}</span></div>
       <button class="small ghost" style="width:auto" onclick="sair()">Sair</button>`);
-    aplicarNav(naOperador ? barraOperador() : naTriagemTcx ? barraJanela() : "");
+    aplicarNav(naOperador ? barraOperador() : naTriagemComJanela ? barraJanela() : "");
     document.getElementById("main").classList.toggle("largo", UI.tab === "patio");
     let html, quebrou = false;
     try {
@@ -14439,11 +14835,12 @@ ${e.message || e}` : e);
     const pegaDelta = pegaIndia || vejoTudo || pode("levar") || pode("triagem_sinalizar");
     const pegaCarretas = pode("oc_pontos") || pode("levar");
     const pegaPosicoes = pode("patio_gps");
+    const pegaBaseTlc = pode("triagem_sinalizar") || pode("oc_pontos");
     const posicaoDesde = new Date(Date.now() - PATIO_POSICAO_VALIDA_H * 3600 * 1e3).toISOString();
     let qv = sb.from("viagens").select("*").gte("saiu_em", ini2).order("saiu_em", { ascending: false });
     if (pode("levar") && !vejoTudo && !pode("oc_chegando")) qv = qv.eq("operador_id", S.me.id);
     const pegaLocal = pegaProntas;
-    const PASSOS = 11;
+    const PASSOS = 12;
     UI.carga.carregando = true;
     UI.carga.feitas = 0;
     UI.carga.total = PASSOS;
@@ -14460,7 +14857,7 @@ ${e.message || e}` : e);
       }
     );
     try {
-      const [v, g, s, u, pr, pi, pd, bl, cd, po] = await Promise.all([
+      const [v, g, s, u, pr, pi, pd, bl, cd, po, bd] = await Promise.all([
         marcar(sb.from("voos").select("*").eq("data", dia).order("chegada", { ascending: true, nullsFirst: false })),
         marcar(pegaViagens ? qv : Promise.resolve({ data: [] })),
         marcar(pegaSols ? sb.from("solicitacoes").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] })),
@@ -14470,7 +14867,8 @@ ${e.message || e}` : e);
         marcar(pegaDelta ? sb.from("ponto_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
         marcar(pegaLocal ? sb.from("bags_local").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
         marcar(pegaCarretas ? sb.from("carretas_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
-        marcar(pegaPosicoes ? sb.from("posicoes").select("*").gte("atualizada_em", posicaoDesde) : Promise.resolve({ data: [] }))
+        marcar(pegaPosicoes ? sb.from("posicoes").select("*").gte("atualizada_em", posicaoDesde) : Promise.resolve({ data: [] })),
+        marcar(pegaBaseTlc ? sb.from("bags_despachadas").select("*").eq("data", dia) : Promise.resolve({ data: [] }))
       ]);
       D.users = (u.data || []).map((x) => ({ ...x, nome: x.nome_de_guerra || x.nome }));
       D.voos = v.data || [];
@@ -14482,6 +14880,7 @@ ${e.message || e}` : e);
       D.bagsLocal = bl.data || [];
       D.carretasDelta = cd.data || [];
       D.posicoes = po.data || [];
+      D.bagsDespachadas = bd.data || [];
       const ids = D.viagens.map((x) => x.id);
       if (ids.length) {
         D.destinos = (await marcar(sb.from("viagens_destinos").select("*").in("viagem_id", ids))).data || [];
@@ -15266,6 +15665,21 @@ Sair mesmo assim?`
       arquivo: "screens/telaPontos.js",
       desc: 'Uma linha por alerta dentro do balde "BAGs p/ BASE": Alerta N, hora, estado, chamar de novo (+1) e cancelar. Alerta j\xE1 pego n\xE3o tem bot\xF5es.'
     },
+    // antes de .delta-acoes: as duas linhas do Indice tambem tem essa classe
+    {
+      nome: "linha-da-carga",
+      seletor: ".india-linha-carga",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Linha do bot\xE3o CARGA no topo do \xCDndice (com o aviso CARGA NO BOX)."
+    },
+    {
+      nome: "linha-da-bag-local",
+      seletor: ".india-linha-local",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Linha do bot\xE3o LOCAIS no topo do \xCDndice (trator da TLC, TLC ZERADA e o chip TLC N)."
+    },
     {
       nome: "acoes-do-delta",
       seletor: ".delta-acoes",
@@ -15443,6 +15857,20 @@ Sair mesmo assim?`
       desc: "C\xEDrculo escuro com um n\xFAmero branco (quantos marcados)."
     },
     {
+      nome: "icone-de-carga",
+      seletor: ".carga-icone",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Caixa de carga na linha do voo (aba CARGA e viagem de carga em andamento): diferencia levar carga de levar bag."
+    },
+    {
+      nome: "chip-tlc-no-indice",
+      seletor: ".tlc-bags-india",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Ao lado do LOCAIS no \xCDndice do l\xEDder: quantas bags a Triagem Local tem para o voo (enviadas + montando)."
+    },
+    {
       nome: "chip",
       seletor: ".chip",
       grupo: "base",
@@ -15469,6 +15897,21 @@ Sair mesmo assim?`
       grupo: "base",
       arquivo: "components/icones.js",
       desc: "Qualquer \xEDcone desenhado."
+    },
+    // antes dos botoes genericos: a especifica tem que casar primeiro
+    {
+      nome: "botao-quadrado-base",
+      seletor: "button.base-tlc-acao",
+      grupo: "triagem",
+      arquivo: "screens/telaTriagem.js",
+      desc: "Os dois quadradinhos 36x34 da linha do voo em Bags despachadas na base: + quantidade e Carreta pronta."
+    },
+    {
+      nome: "botao-tlc-zerada",
+      seletor: "button.base-tlc-zerada",
+      grupo: "triagem",
+      arquivo: "screens/telaTriagem.js",
+      desc: "Bot\xE3o TLC ZERADA da linha do voo: responde ao pedido dizendo que n\xE3o h\xE1 bags na Triagem Local."
     },
     {
       nome: "botao-principal",
@@ -15567,6 +16010,70 @@ Sair mesmo assim?`
       grupo: "base",
       arquivo: "(v\xE1rias telas)",
       desc: "Tabela (malha, CCO)."
+    },
+    // ---- bags despachadas na base (src/ui/screens/telaTriagem.js) ----
+    {
+      nome: "busca-de-voo",
+      seletor: ".busca-voo",
+      grupo: "triagem",
+      arquivo: "screens/telaTriagem.js, screens/telaOC.js",
+      desc: "Campo 'Buscar voo (ex.: 18)': filtra por peda\xE7o do n\xFAmero (TLC, TCX e Meus voos do l\xEDder)."
+    },
+    {
+      nome: "combo-de-voo",
+      seletor: ".combo-voo",
+      grupo: "triagem",
+      arquivo: "screens/telaOC.js",
+      desc: "Caixa de escolha do voo em Meus voos do l\xEDder: o voo escolhido vira o cart\xE3o com Assumir."
+    },
+    {
+      nome: "linha-do-voo-oc",
+      seletor: ".oc-voo-linha",
+      grupo: "triagem",
+      arquivo: "screens/telaOC.js",
+      desc: "Linha do voo em Meus voos: bot\xE3o Assumir/Soltar \xE0 esquerda, voo \xE0 direita."
+    },
+    {
+      nome: "rotulo-do-voo-oc",
+      seletor: ".oc-voo-rotulo",
+      grupo: "triagem",
+      arquivo: "screens/telaOC.js",
+      desc: "O YYY-XXXX[BOX] com hora, encostado \xE0 direita na linha do voo em Meus voos."
+    },
+    {
+      nome: "par-de-chips-base",
+      seletor: ".base-tlc-chips",
+      grupo: "triagem",
+      arquivo: "screens/telaTriagem.js",
+      desc: "O chip de carretas j\xE1 enviadas colado no chip do total pendente, sem espa\xE7o entre os dois."
+    },
+    {
+      nome: "sino-de-pedido",
+      seletor: ".pedido-tlc-sino",
+      grupo: "triagem",
+      arquivo: "screens/telaTriagem.js",
+      desc: "Sino \xE2mbar balan\xE7ando do lado do timer: algu\xE9m (Orange Cap ou l\xEDder) est\xE1 pedindo as bags deste voo."
+    },
+    {
+      nome: "trator-da-tlc",
+      seletor: ".tlc-a-caminho",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Trator verde andando ao lado do LOCAIS, no \xCDndice do l\xEDder: h\xE1 bag saindo da Triagem Local para o voo."
+    },
+    {
+      nome: "aviso-carga-no-box",
+      seletor: ".carga-no-box-aviso",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: "Texto verde em negrito ao lado do bot\xE3o CARGA, no \xCDndice do l\xEDder, quando a carga do voo j\xE1 foi entregue."
+    },
+    {
+      nome: "aviso-tlc-zerada",
+      seletor: ".tlc-zerada-aviso",
+      grupo: "triagem",
+      arquivo: "screens/telaPontos.js",
+      desc: "Texto em negrito e mai\xFAsculo ao lado do bot\xE3o LOCAIS, no \xCDndice do l\xEDder, quando a TLC respondeu que n\xE3o h\xE1 bags."
     }
   ];
   function pecaDe(el, casa2) {
@@ -15808,6 +16315,15 @@ Sair mesmo assim?`
     mover_conexao_carreta_delta: (p) => moverConexaoCarretaDelta(p.pontoDeltaId, p.carretaId),
     mover_conexoes_carreta_delta: (p) => moverConexoesCarretaDelta(p.pontoDeltaIds, p.carretaId),
     definir_bag_contada_delta: (p) => definirBagContadaDelta(p.pontoDeltaId, p.qtd),
+    resetar_bag_contada_delta: (p) => resetarBagContadaDelta(p.pontoDeltaId, p.visto),
+    somar_bags_despachadas: async (p) => {
+      const r = await somarBagsDespachadasDb(p.dia, p.vooId, p.qtd);
+      if (r == null ? void 0 : r.error) throw r.error;
+    },
+    avisar_bags_despachadas: async (p) => {
+      const r = await avisarBagsDespachadasDb(p.dia, p.vooId);
+      if (r == null ? void 0 : r.error) throw r.error;
+    },
     // Acao ANTIGA (o campo era diferenca, nao total). Continua aqui
     // porque pode haver uma dessas parada na fila do celular de alguem
     // que ficou sem rede antes da atualizacao_46 -- descartar perderia um
@@ -15930,6 +16446,9 @@ Sair mesmo assim?`
     solicitarTLC,
     mudarOcDe,
     mudarOcAte,
+    buscarOc,
+    alternarPontosOc,
+    escolherVooOc,
     // triagem
     sinalizarPronta,
     cancelarPronta,
@@ -15943,6 +16462,13 @@ Sair mesmo assim?`
     tcxDigitou,
     tcxMarcar,
     tcxCarretaPronta,
+    buscarBaseTlc,
+    buscarTcx,
+    abrirAddBaseTlc,
+    confirmarAddBaseTlc,
+    avisarBaseTlc,
+    alternarCarretasBaseTlc,
+    zerarLocalTlc,
     // pontos India / Delta
     importarPontos,
     abrirPontoDelta,
