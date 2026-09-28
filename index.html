@@ -466,6 +466,13 @@
      que .list-line da entre filhos) -- leem como uma unidade so, nao
      dois avisos separados. */
   .base-tlc-chips{display:flex; align-items:center}
+  /* Um bloco por voo na TLC (28/09/2026): voo+chips em cima, botoes na
+     linha de baixo, encostados a direita (onde ja ficavam). O traco entre
+     voos passa do .list-line pro bloco inteiro. */
+  .base-tlc-voo{padding:10px 0; border-bottom:1px solid var(--line)}
+  .base-tlc-voo:last-child{border-bottom:none}
+  .base-tlc-topo{border:none; padding:0}
+  .base-tlc-botoes{display:flex; align-items:center; justify-content:flex-end; gap:6px; margin-top:6px}
   /* Campo "Buscar voo" (TLC, TCX, Meus voos do lider) */
   .busca-voo{width:100%; margin-bottom:8px}
   /* Caixa de escolha do voo em "Meus voos" do lider */
@@ -1564,9 +1571,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/09/2026, 16:07:05
+     Gerado em: 28/09/2026, 17:38:35
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/09 16:07";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/09 17:38";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -12622,10 +12629,25 @@ Os operadores recebem UM aviso para vir buscar a carreta inteira.`);
   function carretasBaseDoVoo(vooId) {
     return D.prontas.filter((p) => ehProntaDespachoBase(p) && mesmoId(p.voo_destino_id, vooId) && p.status !== "cancelada").sort((a, b) => (a.criada_em || "").localeCompare(b.criada_em || "") || a.id - b.id);
   }
-  function alternarCarretasBaseTlc(vooId) {
-    UI.tri.baseAberto = UI.tri.baseAberto || {};
-    UI.tri.baseAberto[vooId] = !UI.tri.baseAberto[vooId];
-    bus.render();
+  function abrirCarretasBaseTlc(vooId) {
+    UI.modalVivo = { tipo: "carretasTlc", vooId };
+    abrirModal(conteudoCarretasBaseTlc(vooId));
+  }
+  function atualizarCarretasBaseTlc(vooId) {
+    abrirModal(conteudoCarretasBaseTlc(vooId));
+  }
+  function conteudoCarretasBaseTlc(vooId) {
+    const v = voo(vooId) || {};
+    const carretas = carretasBaseDoVoo(vooId);
+    const soma = carretas.reduce((a, p) => a + (Number(p.qtd) || 0), 0);
+    return `<h3>Carretas ${vooRotulo(v, "saida")}</h3>
+    <div class="alerta-carretas">
+      ${carretas.length ? carretas.map(linhaCarretaBaseTlc).join("") : `<p class="note">Nenhuma carreta sinalizada.</p>`}
+      <div class="list-line" style="border:none">
+        <b class="grow">Total j\xE1 montado</b><b>${soma} bag${soma === 1 ? "" : "s"}</b>
+      </div>
+    </div>
+    <div class="modal-acoes"><button onclick="fecharModal()">Fechar</button></div>`;
   }
   function linhaCarretaBaseTlc(p) {
     const qtd = Number(p.qtd) || 0;
@@ -12664,30 +12686,27 @@ Os operadores recebem UM aviso para vir buscar a carreta inteira.`);
     <input id="baseTlcBusca" type="text" inputmode="numeric" placeholder="Buscar voo (ex.: 18)"
       value="${esc(UI.tri.baseBusca || "")}" oninput="buscarBaseTlc(this.value)" class="busca-voo">
     ${cards.length ? cards.map((v) => {
-      var _a, _b;
+      var _a;
       const total = totalBaseTlc(v.id);
       const carretas = carretasBaseDoVoo(v.id);
       const n = carretas.length;
-      const aberto = !!((_a = UI.tri.baseAberto) == null ? void 0 : _a[v.id]);
-      const soma = carretas.reduce((a, p) => a + (Number(p.qtd) || 0), 0);
       const pedido = pedidoTlcDoVoo(v.id);
-      const doIndice = (_b = pedido == null ? void 0 : pedido.descricao) == null ? void 0 : _b.startsWith("\xCDndice");
+      const doIndice = (_a = pedido == null ? void 0 : pedido.descricao) == null ? void 0 : _a.startsWith("\xCDndice");
       const tituloPedido = pedido ? `${doIndice ? "L\xEDder" : "Orange Cap"} est\xE1 pedindo estas bags` : "";
-      return `<div class="list-line">
-          <span class="grow">${vooRotulo(v, "saida")}${timerBaseTlc(v)}${pedido ? ` <span class="pedido-tlc-sino" title="${esc(tituloPedido)}">${ico("notificacao", 16)}</span>` : ""}</span>
-          <span class="base-tlc-chips">
-            ${n ? `<button class="chip st-a_caminho chip-botao" title="Ver carretas sinalizadas" onclick="alternarCarretasBaseTlc(${v.id})">${ico("carretaOk", 16)}${n}</button>` : ""}
-            <span class="chip st-aceita">${total}${ico("pacote", 16)}</span>
-          </span>
-          <button class="small ghost base-tlc-zerada" onclick="zerarLocalTlc(${v.id})">TLC ZERADA</button>
-          <button class="small ghost base-tlc-acao" onclick="abrirAddBaseTlc(${v.id})" aria-label="Adicionar quantidade">${ico("addBag", 30)}</button>
-          <button class="small primary base-tlc-acao" ${total ? "" : "disabled"} onclick="avisarBaseTlc(${v.id})" aria-label="Carreta pronta">${ico("carretaOk", 30)}</button>
-        </div>${n && aberto ? `<div class="alerta-carretas">
-          ${carretas.map(linhaCarretaBaseTlc).join("")}
-          <div class="list-line" style="border:none">
-            <b class="grow">Total j\xE1 montado</b><b>${soma} bag${soma === 1 ? "" : "s"}</b>
+      return `<div class="base-tlc-voo">
+          <div class="list-line base-tlc-topo">
+            <span class="grow">${vooRotulo(v, "saida")}${timerBaseTlc(v)}${pedido ? ` <span class="pedido-tlc-sino" title="${esc(tituloPedido)}">${ico("notificacao", 16)}</span>` : ""}</span>
+            <span class="base-tlc-chips">
+              ${n ? `<button class="chip st-a_caminho chip-botao" title="Ver carretas sinalizadas" onclick="abrirCarretasBaseTlc(${v.id})">${ico("carretaOk", 16)}${n}</button>` : ""}
+              <span class="chip st-aceita">${total}${ico("pacote", 16)}</span>
+            </span>
           </div>
-        </div>` : ""}`;
+          <div class="base-tlc-botoes">
+            <button class="small ghost base-tlc-zerada" onclick="zerarLocalTlc(${v.id})">TLC ZERADA</button>
+            <button class="small ghost base-tlc-acao" onclick="abrirAddBaseTlc(${v.id})" aria-label="Adicionar quantidade">${ico("addBag", 30)}</button>
+            <button class="small primary base-tlc-acao" ${total ? "" : "disabled"} onclick="avisarBaseTlc(${v.id})" aria-label="Carreta pronta">${ico("carretaOk", 30)}</button>
+          </div>
+        </div>`;
     }).join("") : `<div class="note">Nenhum voo de sa\xEDda na janela${UI.tri.baseBusca ? " com esse n\xFAmero" : ""}.</div>`}
   </div>`;
   }
@@ -14766,6 +14785,7 @@ ${e.message || e}` : e);
     else if (m.tipo === "delta") atualizarPontoDelta(m.vooId);
     else if (m.tipo === "op") atualizarFolhaOperador();
     else if (m.tipo === "viagem") atualizarPainelViagem();
+    else if (m.tipo === "carretasTlc") atualizarCarretasBaseTlc(m.vooId);
   }
   var CHAVE_ABA = "rampa_aba";
   function abaGuardada() {
@@ -16041,6 +16061,27 @@ Sair mesmo assim?`
       desc: "O YYY-XXXX[BOX] com hora, encostado \xE0 direita na linha do voo em Meus voos."
     },
     {
+      nome: "bloco-do-voo-tlc",
+      seletor: ".base-tlc-voo",
+      grupo: "triagem",
+      arquivo: "screens/telaTriagem.js",
+      desc: "Um voo em Bags despachadas na base: voo e chips em cima, bot\xF5es embaixo."
+    },
+    {
+      nome: "topo-do-voo-tlc",
+      seletor: ".base-tlc-topo",
+      grupo: "triagem",
+      arquivo: "screens/telaTriagem.js",
+      desc: "Linha de cima do voo na TLC: YYY-XXXX, timer, sino e os chips."
+    },
+    {
+      nome: "botoes-do-voo-tlc",
+      seletor: ".base-tlc-botoes",
+      grupo: "triagem",
+      arquivo: "screens/telaTriagem.js",
+      desc: "Linha de baixo do voo na TLC: TLC ZERADA, + quantidade e Carreta pronta, \xE0 direita."
+    },
+    {
       nome: "par-de-chips-base",
       seletor: ".base-tlc-chips",
       grupo: "triagem",
@@ -16467,7 +16508,7 @@ Sair mesmo assim?`
     abrirAddBaseTlc,
     confirmarAddBaseTlc,
     avisarBaseTlc,
-    alternarCarretasBaseTlc,
+    abrirCarretasBaseTlc,
     zerarLocalTlc,
     // pontos India / Delta
     importarPontos,
