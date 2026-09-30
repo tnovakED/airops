@@ -1594,6 +1594,21 @@
      wrap porque no celular a linha tem 5 pedacos e nao cabe deitada --
      cortar com "..." aqui esconderia justamente a quantidade de bags,
      que e o numero que decide. */
+  /* D e I do detalhe do box (30/09/2026): abrem a lista do Delta do voo
+     que chegou e a do Indice do voo que sai. Aceso = aberto. 44px de
+     altura: e toque de quem marca varias seguidas enquanto a cia fala. */
+  /* Aceso segue o padrao do Painel (.patio button[aria-pressed="true"]:
+     azul com letra branca). ".patio .patio-ponto", nao so ".patio-ponto":
+     ".patio button" tem mais peso e ganhava na altura e na letra
+     (medido na vitrine). O "N nao conecta" e etiqueta vermelha com letra
+     branca: vermelho solto sobre o azul aceso nao se lia. */
+  .patio-pontos-bts{display:flex; gap:8px; margin-bottom:6px}
+  .patio .patio-ponto{flex:1 1 0; min-height:44px; display:inline-flex; align-items:center;
+    justify-content:center; gap:6px; font-size:15px}
+  .patio .patio-ponto b{font-size:20px}
+  .patio-ponto-nc{font-size:11px; font-weight:700; color:#fff; background:var(--red);
+    border-radius:6px; padding:2px 6px; letter-spacing:0}
+  .cx-sem-delta{white-space:normal; text-align:right; max-width:50%}
   .patio-conexoes{display:flex; flex-direction:column}
   .patio-conexao{padding:7px 0; border-bottom:1px solid var(--line)}
   .patio-conexao:last-child{border-bottom:0}
@@ -1646,9 +1661,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 30/09/2026, 18:16:09
+     Gerado em: 30/09/2026, 19:46:23
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 18:16";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 19:46";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -13625,6 +13640,26 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       return ((_a = a.sai) != null ? _a : 99999) - ((_b = b.sai) != null ? _b : 99999);
     });
   }
+  function recebeDoVoo(v) {
+    return D.indias.filter((pi) => mesmoId(pi.voo_id, v.id)).map((pi) => {
+      const pds = deltasDaLinhaIndia(pi);
+      const nc = pds.find((pd) => pd.nao_conecta_em);
+      return {
+        id: pi.id,
+        vc: pi.voo_chegada_numero || "",
+        org: pi.origem || "",
+        bags: pi.bag_qtd || 0,
+        rct: pi.rct || null,
+        cheg: minutosDe(pi.eta || pi.sta),
+        pdIds: pds.map((pd) => pd.id),
+        ncEm: minutosDoIso(nc == null ? void 0 : nc.nao_conecta_em),
+        ncPor: (nc == null ? void 0 : nc.nao_conecta_por) ? nomeDe(nc.nao_conecta_por) : null
+      };
+    }).sort((a, b) => {
+      var _a, _b;
+      return ((_a = a.cheg) != null ? _a : 99999) - ((_b = b.cheg) != null ? _b : 99999);
+    });
+  }
   function infoVoo(v, n) {
     const ind = D.indias.filter((i) => mesmoId(i.voo_id, v.id));
     const P3 = ind.reduce((s, i) => s + (i.bag_qtd || 0), 0);
@@ -13658,7 +13693,9 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       // Quando o arquivo do Delta foi lido (sql/atualizacao_45.sql).
       // Nulo = nunca subiu. Nao e a mesma coisa que `conexoes` vazio:
       // voo lido que nao conecta com ninguem tambem vem com lista vazia.
-      deltaEm: v.delta_importado_em || null
+      deltaEm: v.delta_importado_em || null,
+      recebe: recebeDoVoo(v),
+      indiaEm: v.india_importado_em || null
     };
   }
   var PESO_ESTADO = { solo: 0, descarga: 0, pernoite: 1, chegando: 2 };
@@ -14409,18 +14446,35 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       fonte("voos.pouso")
     );
   }
+  function pontosDoBox(c, v, k) {
+    const P3 = UI.patio.pontos;
+    const aberto = P3 && P3.box === k ? P3.qual : null;
+    const cx = v.conexoes || [], rc = v.recebe || [];
+    const conta = (lista) => lista.filter((x) => x.ncEm != null).length;
+    const bt = (q, lista, titulo) => {
+      const nc = conta(lista);
+      return `<button class="patio-bt patio-ponto" aria-pressed="${aberto === q}" title="${titulo}"
+      onclick="patioPontos('${esc(k)}','${q}')"><b>${q}</b> <span>${lista.length}</span>${nc ? ` <span class="patio-ponto-nc">${nc} n\xE3o conecta</span>` : ""}</button>`;
+    };
+    const corpo = aberto === "D" ? conexoesDoBox(c, v) : aberto === "I" ? recebeDoBox(c, v) : "";
+    return `<div class="patio-linha lista"><span class="rot">Pontos${fonte("ponto_delta \xB7 ponto_india")}</span>
+    <div class="patio-pontos-bts">${bt("D", cx, "Delta do voo que chegou: pra onde ele conecta")}${bt("I", rc, "\xCDndice do voo que sai: de quem ele recebe bag")}</div>
+    ${corpo}</div>`;
+  }
+  function botaoNaoConecta(ids, nc) {
+    return `<button class="patio-bt${nc ? " desfaz" : ""}" onclick="marcarNaoConectaVarios([${ids.join(",")}],${nc ? "false" : "true"})">${nc ? "desfazer" : "marcar"}</button>`;
+  }
+  var carimboNc = (x) => x.ncEm != null ? `<span class="cx-carimbo"><span class="patio-t ruim">N\xC3O CONECTA</span> <small>${x.ncPor ? `por ${esc(x.ncPor)}` : ""} ${hhmm(x.ncEm)}</small></span>` : "";
   function conexoesDoBox(c, v) {
     const cx = v.conexoes || [];
     const podeDecidir = pode("conexao_decidir") && !c.demo;
     if (!cx.length) {
       const lido2 = v.deltaEm != null;
-      return `<div class="patio-linha lista"><span class="rot">Conex\xF5es${fonte("ponto_delta")}</span>
-      <p class="patio-aviso compacto">${lido2 ? "Ponto Delta lido: este voo n\xE3o conecta com nenhum outro \u2014 n\xE3o h\xE1 o que marcar." : "O Ponto Delta deste voo ainda n\xE3o foi importado \u2014 sem ele n\xE3o h\xE1 conex\xF5es para marcar."}</p></div>`;
+      return `<p class="patio-aviso compacto">${lido2 ? "Ponto Delta lido: este voo n\xE3o conecta com nenhum outro \u2014 n\xE3o h\xE1 o que marcar." : "O Ponto Delta deste voo ainda n\xE3o foi importado \u2014 sem ele n\xE3o h\xE1 conex\xF5es para marcar."}</p>`;
     }
     const itens = cx.map((x) => {
       const nc = x.ncEm != null;
-      const quem = nc && x.ncPor ? `por ${esc(x.ncPor)}` : "";
-      const bt = !podeDecidir ? "" : `<button class="patio-bt${nc ? " desfaz" : ""}" onclick="marcarNaoConecta(${x.id},${nc ? "false" : "true"})">${nc ? "desfazer" : "marcar"}</button>`;
+      const bt = !podeDecidir ? "" : botaoNaoConecta([x.id], nc);
       return `<div class="patio-conexao${nc ? " nc" : ""}">
       <div class="cx-topo">
         <span class="quem">${esc(`${x.dst || "\u2014"}-${x.vs}`)}</span>
@@ -14430,12 +14484,36 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       <div class="cx-baixo">
         <span class="note">RCT ${esc(x.rct || "\u2014")}</span>
         <span class="note">sai ${x.sai != null ? hhmm(x.sai) : "\u2014"}</span>
-        ${nc ? `<span class="cx-carimbo"><span class="patio-t ruim">N\xC3O CONECTA</span> <small>${quem} ${hhmm(x.ncEm)}</small></span>` : ""}
+        ${carimboNc(x)}
       </div>
     </div>`;
     }).join("");
-    return `<div class="patio-linha lista"><span class="rot">Conex\xF5es${fonte("ponto_delta")}</span>
-    <div class="patio-conexoes">${itens}</div></div>`;
+    return `<div class="patio-conexoes">${itens}</div>`;
+  }
+  function recebeDoBox(c, v) {
+    const rc = v.recebe || [];
+    const podeDecidir = pode("conexao_decidir") && !c.demo;
+    if (!rc.length) {
+      const lido2 = v.indiaEm != null;
+      return `<p class="patio-aviso compacto">${lido2 ? "Ponto \xCDndice lido: este voo n\xE3o recebe conex\xE3o de nenhum outro \u2014 n\xE3o h\xE1 o que marcar." : "O Ponto \xCDndice deste voo ainda n\xE3o foi importado \u2014 sem ele n\xE3o h\xE1 conex\xF5es para marcar."}</p>`;
+    }
+    const itens = rc.map((x) => {
+      const nc = x.ncEm != null;
+      const bt = !podeDecidir ? "" : x.pdIds.length ? botaoNaoConecta(x.pdIds, nc) : `<span class="note cx-sem-delta" title="A marca\xE7\xE3o mora no Delta do voo que chegou">sem o Delta do ${esc(`${x.org || "\u2014"}-${x.vc}`)}</span>`;
+      return `<div class="patio-conexao${nc ? " nc" : ""}">
+      <div class="cx-topo">
+        <span class="quem">${esc(`${x.org || "\u2014"}-${x.vc}`)}</span>
+        <span class="num">${x.bags} ${x.bags === 1 ? "bag" : "bags"}</span>
+        <span class="grow"></span>${bt}
+      </div>
+      <div class="cx-baixo">
+        <span class="note">RCT ${esc(x.rct || "\u2014")}</span>
+        <span class="note">chega ${x.cheg != null ? hhmm(x.cheg) : "\u2014"}</span>
+        ${carimboNc(x)}
+      </div>
+    </div>`;
+    }).join("");
+    return `<div class="patio-conexoes">${itens}</div>`;
   }
   function detalheBox(c, k) {
     var _a, _b;
@@ -14453,7 +14531,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     h.push(linha("OC no box", v.oc ? esc(v.oc) : `<span class="ruim">ningu\xE9m posicionado</span>`, fonte("voos.oc_posicionado_id")));
     if (e === "solo" || e === "descarga")
       h.push(linha("Descarga OK", v.descEm != null ? `<span class="patio-t ok">\u2713 ${hhmm(v.descEm)}</span>${v.descPor ? ` por ${esc(v.descPor)}` : ""}` : `<span class="ruim">n\xE3o marcada</span>${((_a = v.pouso) != null ? _a : v.cheg) != null ? ` <small>\xB7 pousou h\xE1 ${mins(n - ((_b = v.pouso) != null ? _b : v.cheg))} min</small>` : ""}`, fonte("voos.descarga_ok_em")));
-    h.push(conexoesDoBox(c, v));
+    h.push(pontosDoBox(c, v, k));
     if (v.P) h.push(linha("Bags da sa\xEDda", `P <b>${v.P}</b> \xB7 R <b>${v.R}</b> \xB7 ${v.falta ? `<span class="ruim">faltam ${v.falta}</span>` : `<span class="patio-t ok">completo</span>`}`, fonte("ponto_india")));
     if (v.onde.length) h.push(linha("Onde est\xE1 o que falta", esc(v.onde.join(", ")), fonte("bags_local \xB7 viagens")));
     h.push(vindoESaindo(c, k));
@@ -14733,6 +14811,23 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       await lancarPousoDb(vooId, String(hora2 || "").trim());
     } catch (e) {
       await erro(e);
+      return;
+    }
+    await bus.recarregar();
+    redesenharPatio(true);
+  }
+  function patioPontos(box, qual) {
+    const P3 = UI.patio.pontos;
+    UI.patio.pontos = P3 && P3.box === box && P3.qual === qual ? null : { box, qual };
+    redesenharPatio(true);
+  }
+  async function marcarNaoConectaVarios(ids, marcar) {
+    try {
+      for (const id of ids) await marcarNaoConectaDelta(id, marcar);
+    } catch (e) {
+      await erro(e);
+      await bus.recarregar();
+      redesenharPatio(true);
       return;
     }
     await bus.recarregar();
@@ -16000,6 +16095,21 @@ Sair mesmo assim?`
       arquivo: "screens/telaPatio.js",
       desc: "Uma linha do cart\xE3o do box: r\xF3tulo curto \xE0 esquerda, o valor \xE0 direita."
     },
+    // Antes de .patio-bt e de button: sao os botoes D e I do detalhe do box.
+    {
+      nome: "etiqueta-nao-conecta-do-botao",
+      seletor: ".patio-ponto-nc",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: 'Etiqueta vermelha dentro do bot\xE3o D ou I: quantas conex\xF5es est\xE3o marcadas "n\xE3o conecta".'
+    },
+    {
+      nome: "botao-d-ou-i-do-box",
+      seletor: ".patio-ponto",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "Bot\xF5es D (Delta do voo que chegou) e I (\xCDndice do voo que sai) no detalhe do box. Abrem e fecham a lista; aceso = aberto."
+    },
     {
       nome: "conexao-do-painel",
       seletor: ".patio-conexao",
@@ -16802,6 +16912,8 @@ Sair mesmo assim?`
     patioDemo,
     patioFontes,
     marcarNaoConecta,
+    marcarNaoConectaVarios,
+    patioPontos,
     lancarPouso
   });
   boot();
