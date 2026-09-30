@@ -1017,6 +1017,10 @@
      viewport pra fechar. */
   .passo-escolha{display:flex; flex-direction:column; gap:6px; min-width:170px}
   .passo-escolha button{min-height:44px; font-size:14px; padding:6px 10px}
+  /* Prefixo + timer de pouso embaixo do voo, no botao de escolher o voo
+     do box (30/09/2026). Linha propria, menor que o voo; pode quebrar em
+     duas em vez de alargar o botao e espremer o titulo do passo. */
+  .passo-pouso{display:block; margin-top:3px; font-size:13px; font-weight:600}
 
   /* ---------- trilha com rotulo por etapa ----------
      Uma linha por pergunta ja respondida, com TODOS os botoes daquela
@@ -1593,9 +1597,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 30/09/2026, 15:00:49
+     Gerado em: 30/09/2026, 15:55:33
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 15:00";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 15:55";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -10713,8 +10717,8 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       const patio = desempatarBoxes(voosChegando());
       const noBox = st.boxOrigem ? patio.filter((v) => String(v.box) === String(st.boxOrigem)) : [];
       const um = noBox.length === 1 ? noBox[0] : null;
-      const acao = um ? `<button class="primary passo-canto" onclick="${confirmarVoo}(${um.id})">Confirmar<br>${vooRotulo(um, "chegada", { box: false })}</button>` : noBox.length > 1 ? `<div class="passo-canto passo-escolha">
-           ${noBox.map((v) => `<button class="primary" onclick="${confirmarVoo}(${v.id})">${vooRotulo(v, "chegada", { box: false })}</button>`).join("")}
+      const acao = um ? `<button class="primary passo-canto" onclick="${confirmarVoo}(${um.id})">Confirmar<br>${vooRotulo(um, "chegada", { box: false })}${linhaPouso(um)}</button>` : noBox.length > 1 ? `<div class="passo-canto passo-escolha">
+           ${noBox.map((v) => `<button class="primary" onclick="${confirmarVoo}(${v.id})">${vooRotulo(v, "chegada", { box: false })}${linhaPouso(v)}</button>`).join("")}
          </div>` : "";
       const nota = !st.boxOrigem ? "Toque no box onde voc\xEA est\xE1." : noBox.length === 0 ? "Nenhum voo da malha neste box." : noBox.length > 1 ? `Mais de um voo no box ${esc(st.boxOrigem)} \u2014 qual \xE9?` : "";
       const daSecao = pre === "op" && UI.opSecao ? patio.filter((v) => (secaoDoBox(v.box) || "OUTROS") === UI.opSecao) : patio;
@@ -10736,6 +10740,19 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       "Toque em todos os destinos que voc\xEA est\xE1 levando.",
       botaoSaindo(st.sel.length, acaoConfirmar)
     ) + listaDestinos(candidatos, st.sel, togDestSel);
+  }
+  function linhaPouso(v) {
+    const real = minutosDe(v.pouso);
+    const alvo2 = real != null ? real : minutosDe(v.chegada);
+    let t = "";
+    if (alvo2 != null) {
+      let d = alvo2 - agoraMin();
+      if (d > 720) d -= 1440;
+      else if (d < -720) d += 1440;
+      t = d > 0 ? `pousa em ${d}min` : real != null ? `pousou h\xE1 ${-d}min` : `previsto h\xE1 ${-d}min`;
+    }
+    const partes = [v.prefixo ? esc(v.prefixo) : "", t].filter(Boolean);
+    return partes.length ? `<span class="passo-pouso">${partes.join(" \xB7 ")}</span>` : "";
   }
   var quantosDestinos = (n) => n === 1 ? "o destino j\xE1 marcado" : `os ${n} destinos j\xE1 marcados`;
   async function abrirFolhaOp(origem) {
@@ -15317,6 +15334,13 @@ Sair mesmo assim?`
       grupo: "alerta",
       arquivo: "screens/telaOperador.js",
       desc: "Faixa de cor em volta de uma carreta no olho do card BOX \u2014 a mesma cor que o l\xEDder v\xEA no Ponto Delta."
+    },
+    {
+      nome: "pouso-no-botao-do-voo",
+      seletor: ".passo-pouso",
+      grupo: "voo",
+      arquivo: "screens/telaOperador.js",
+      desc: 'Linha pequena embaixo do voo no bot\xE3o de escolher o voo do box: prefixo da aeronave e "pousou h\xE1 12min" / "pousa em 25min".'
     },
     {
       nome: "traco-do-caminho",
