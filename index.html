@@ -823,6 +823,14 @@
     max-width:440px; width:100%; max-height:80vh; overflow-y:auto;
     transform:translateY(8px) scale(.98); opacity:0; transition:transform .16s ease, opacity .16s ease}
   .modal-bg.show .modal-box{transform:translateY(0) scale(1); opacity:1}
+  /* Delta e Indice do lider (abrirModal {largo:true}, 30/09/2026): margem
+     lateral menor nas duas caixas -- eram 16+16px de cada lado, 64px dos
+     360 so em borda, e a linha da conexao (nowrap, 6 pecas) estourava.
+     overflow-x:hidden: o overflow-y:auto do .modal-box liga a rolagem de
+     lado junto, e um arrasto torto do dedo deslocava a tela inteira
+     (print do Tiago: "ELTA" e "LOCAR VOOS EM" cortados na esquerda). */
+  .modal-bg.largo{padding-left:6px; padding-right:6px}
+  .modal-bg.largo .modal-box{padding-left:8px; padding-right:8px; overflow-x:hidden}
   .modal-box h3{color:var(--amber); margin-bottom:10px}
   @media (prefers-reduced-motion: reduce){
     .modal-bg, .modal-box{transition:none}
@@ -1141,6 +1149,28 @@
   .delta-cabeca{position:sticky; top:-16px; z-index:2; background:var(--surface);
     margin:-16px -16px 8px; padding:4px 16px 0; border-bottom:1px solid var(--line)}
   .delta-cabeca .barra-mover-delta{position:static; border-bottom:none; margin-bottom:0; padding:4px 0 6px}
+  /* Na janela larga (.modal-bg.largo, 30/09/2026) o .modal-box tem 8px de
+     lado, nao 16: o margin negativo acompanha, senao o cabecalho passava
+     8px da borda e ligava a rolagem de lado. */
+  .modal-bg.largo .delta-cabeca{margin-left:-8px; margin-right:-8px; padding-left:8px; padding-right:8px}
+  /* Espacos da linha da conexao apertados SO no Delta/Indice do lider
+     (30/09/2026): medido a 360px, a linha com PP pedia 30px a mais do que
+     havia e a sigla do aeroporto sumia inteira. Nenhum botao encolhe --
+     sai do espaco entre as pecas e das bordas internas. */
+  .delta-popup .balde-cor{padding-left:3px}
+  .delta-popup .delta-conexao{padding-left:2px; padding-right:2px}
+  .delta-popup .balde-delta .pt-linha{gap:2px}
+  .delta-popup .balde-delta .pt-linha .voo{gap:3px}
+  .delta-popup .balde-delta .pt-linha .voo-sep + .voo-num{margin-left:-3px}
+  .delta-popup .delta-manual-grupo{gap:2px}
+  .delta-popup .chip-pp{padding:1px 4px}
+  .delta-popup .chip-pp .ico{width:12px; height:12px}
+  .delta-popup .delta-contado{font-size:11px}
+  /* 17px no Delta/Indice do lider: com 18 a sigla do aeroporto ainda
+     cortava na linha com PP. O campo de quantidade NAO encolheu -- a 36px
+     o "12" virava "1:" (medido). */
+  .delta-popup .balde-delta .pt-linha .voo{font-size:17px}
+  .delta-popup .balde-delta .pt-linha .voo-box{padding:0 .15em}
   .delta-popup .delta-topo{border:none; padding:0; gap:6px}
   /* A palavra "Delta" vira etiqueta pequena (17/09/2026). Medido a 360px:
      com ela no corpo do h3 (18.7px) o cabecalho pedia ~288px e so havia
@@ -1258,9 +1288,17 @@
   .carga-icone .ico{margin-right:0}
   .carga-hora{display:inline-flex; align-items:center; gap:3px; margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums}
   /* conexao numa linha so: nada desce pra linha de baixo */
-  .balde-delta .pt-linha{flex-wrap:nowrap; gap:4px; padding:6px 0}
-  .balde-delta .pt-linha .voo{font-size:20px}
+  .balde-delta .pt-linha{flex-wrap:nowrap; gap:3px; padding:6px 0}
+  /* 18px (era 20) e o UNICO que pode encolher (30/09/2026): se ainda
+     faltar espaco, a sigla do aeroporto corta com "..." -- numero, box e
+     os botoes ficam sempre inteiros e dentro da tela. Antes o que sobrava
+     empurrava o megafone pra fora da borda. */
+  .balde-delta .pt-linha .voo{font-size:18px; flex:0 1 auto; min-width:0}
+  .balde-delta .pt-linha .voo-apt{min-width:0; overflow:hidden; text-overflow:ellipsis}
   .balde-delta .chip{font-size:11px; padding:1px 6px; letter-spacing:0; flex:none}
+  /* "PP" + icone no lugar de "PP PRONTA"/"PP LEVADA" (30/09/2026) */
+  .chip-pp{display:inline-flex; align-items:center; gap:2px}
+  .chip-pp .ico{margin-right:0}
   .delta-status{display:inline-flex; flex:none}
   .delta-status.solicitado{color:var(--blue)}
   .delta-status.pega{color:var(--green)}
@@ -1608,9 +1646,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 30/09/2026, 16:14:51
+     Gerado em: 30/09/2026, 18:16:09
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 16:14";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 18:16";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1978,6 +2016,8 @@
       else m.classList.remove("folha");
       if (o.lado) m.classList.add("lado");
       else m.classList.remove("lado");
+      if (o.largo) m.classList.add("largo");
+      else m.classList.remove("largo");
     }
     if (m._timerFechar) {
       clearTimeout(m._timerFechar);
@@ -4432,12 +4472,14 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   var estadoPp = (pd) => (pd == null ? void 0 : pd.pp_levada_em) ? "levada" : (pd == null ? void 0 : pd.pp_pronta_em) ? "pronta" : null;
   var SELO_PP = {
     pronta: {
-      texto: "PP PRONTA",
+      texto: `PP${ico("check", 14)}`,
+      rotulo: "PP pronta",
       classe: "st-aceita",
       titulo: "Avisado: a bag est\xE1 separada no box, esperando algu\xE9m buscar."
     },
     levada: {
-      texto: "PP LEVADA",
+      texto: `PP${ico("mala-confirmada", 14)}`,
+      rotulo: "PP levada",
       classe: "st-entregue",
       titulo: "Avisado: algu\xE9m j\xE1 levou a bag."
     }
@@ -4447,12 +4489,13 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const e = estadoPp(pd);
     const s = e ? SELO_PP[e] : {
       texto: "PP",
+      rotulo: "PP",
       classe: "st-solicitada",
       titulo: "Porta a porta \u2014 toque para avisar o l\xEDder que vai receber."
     };
     if (!pode("oc_pontos"))
-      return `<span class="chip ${s.classe}" title="${esc(s.titulo)}">${s.texto}</span>`;
-    return `<button class="chip ${s.classe} chip-botao" title="${esc(s.titulo)}"
+      return `<span class="chip chip-pp ${s.classe}" title="${esc(s.titulo)}" aria-label="${esc(s.rotulo)}">${s.texto}</span>`;
+    return `<button class="chip chip-pp ${s.classe} chip-botao" title="${esc(s.titulo)}" aria-label="${esc(s.rotulo)}"
     onclick="event.stopPropagation();abrirAvisoPpDelta(${vooId},${pd.id})">${s.texto}</button>`;
   }
   var SELO_DELTA = {
@@ -5188,7 +5231,7 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
     <div style="margin-top:12px">
       <button class="ghost" onclick="abrirPontoDelta(${vooId})">Atualizar</button>
       <button class="ghost" onclick="fecharModal()">Fechar</button>
-    </div></div>`);
+    </div></div>`, { largo: true });
   }
   function abrirPontoDelta(vooId) {
     var _a;
@@ -5371,11 +5414,11 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   }
   function abrirPontoIndiaOC(vooId) {
     UI.modalVivo = { tipo: "india", vooId };
-    abrirModal(conteudoPontoIndiaOC(vooId));
+    abrirModal(conteudoPontoIndiaOC(vooId), { largo: true });
   }
   function atualizarPontoIndia(vooId) {
     if (digitandoNoIndia()) return;
-    abrirModal(conteudoPontoIndiaOC(vooId));
+    abrirModal(conteudoPontoIndiaOC(vooId), { largo: true });
   }
   function digitandoNoIndia() {
     const foco = typeof document !== "undefined" ? document.activeElement : null;
@@ -15337,6 +15380,13 @@ Sair mesmo assim?`
       grupo: "alerta",
       arquivo: "screens/telaOperador.js",
       desc: "Faixa de cor em volta de uma carreta no olho do card BOX \u2014 a mesma cor que o l\xEDder v\xEA no Ponto Delta."
+    },
+    {
+      nome: "chip-pp-do-delta",
+      seletor: ".chip-pp",
+      grupo: "delta",
+      arquivo: "screens/telaPontos.js",
+      desc: 'Chip PP na linha da conex\xE3o do Delta: "PP" sozinho, "PP \u2713" (pronta no box) ou "PP" + mala (j\xE1 levada). Tocar abre o aviso de PP.'
     },
     {
       nome: "nome-da-via-no-titulo",
