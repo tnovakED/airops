@@ -192,6 +192,17 @@
      de chegada), o voo dela (ambar, cor de saida) e o destino da
      perna. A cor e o que separa as tres. */
   .voo-larga{color:var(--green)}
+  /* traco entre o box e o voo, com um ponto andando box -> voo (Tiago,
+     30/09/2026): le o caminho da bag. Curto (22px) de proposito -- mais
+     comprido, a linha do cartao quebra em 360px. Sem animacao para quem
+     pediu menos movimento: o ponto fica parado no meio. */
+  .caminho-linha{flex:0 0 22px; width:22px; height:8px; position:relative; overflow:hidden;
+    background:linear-gradient(var(--text),var(--text)) center/100% 2px no-repeat}
+  .caminho-linha::after{content:""; position:absolute; top:1px; left:0; width:6px; height:6px;
+    border-radius:50%; background:#fff; box-shadow:0 0 0 1px var(--text);
+    animation:caminho-anda 1.4s linear infinite}
+  @keyframes caminho-anda{from{transform:translateX(-6px)} to{transform:translateX(22px)}}
+  @media (prefers-reduced-motion: reduce){ .caminho-linha::after{animation:none; left:8px} }
   /* perna ja entregue dentro do cartao da triagem: so o check. A hora
      nao aparece nesta tela — ela fica gravada, para a gestao. */
   .ok-verde{flex:0 0 auto; color:var(--green); display:inline-flex}
@@ -1175,6 +1186,12 @@
   /* carreta = accordion. A faixa de cor vem da matiz (--matiz) de cada uma */
   .balde-cor{border-left:3px solid hsl(var(--matiz) 55% 45%); background:hsl(var(--matiz) 55% 45% / .1);
     border-radius:0 8px 8px 0; padding-left:6px}
+  /* A mesma faixa no card BOX do operador (30/09/2026): a carreta que o
+     lider montou no Delta chega com a cor que ele ve. Classe propria, e
+     nao .balde-cor, porque .balde-cor esconde .balde-corpo quando fechado
+     e gira a seta -- o card ja faz isso do jeito dele. */
+  .carreta-cor{border-left:3px solid hsl(var(--matiz) 55% 45%); background:hsl(var(--matiz) 55% 45% / .1);
+    border-radius:0 8px 8px 0; padding-left:6px; margin-top:6px}
   .balde-cabeca{border:none; padding:4px 0; gap:6px}
   .balde-alterna{flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; cursor:pointer}
   .balde-cor .acordeon-seta{transition:transform .16s ease}
@@ -1576,9 +1593,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 28/09/2026, 17:42:16
+     Gerado em: 30/09/2026, 15:00:49
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="28/09 17:42";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 15:00";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4528,7 +4545,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     return sb.from("prontas").update({ qtd }).eq("id", id);
   }
   async function cientePronta(id) {
-    return sb.from("prontas").update({ status: "ciente", ciente_por: S.me.id, ciente_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", id).eq("status", "pronta");
+    return sb.from("prontas").update({ status: "ciente", ciente_por: S.me.id, ciente_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", id).eq("status", "pronta").select("id");
   }
   async function baixarProntasDb(ids) {
     return sb.from("prontas").update({ status: "coletada", coletada_em: (/* @__PURE__ */ new Date()).toISOString() }).in("id", ids);
@@ -10442,7 +10459,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
         return degrau(rot2, st.origem === x, `${abrirOrigem}('${x}')`);
       }).join("")));
     }
-    if (st.origem === "BOX" && st.vooOrigemId) {
+    if (st.origem === "BOX" && st.vooOrigemId && st.carga !== "EQUIPAMENTO") {
       const g = grupos(st);
       let bt = VIAS.map((x) => {
         const q = g[x.id].length;
@@ -10610,9 +10627,14 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const retomar = n ? `<p class="note" style="margin-top:10px">Saindo de <b style="color:var(--text)">${esc(UI.op.origem)}</b> \xB7 ${n} destino${n === 1 ? "" : "s"} marcado${n === 1 ? "" : "s"} \u2014 toque em + para continuar.</p>` : "";
     return (ativa ? painelReduzido(ativa) : "") + retomar + alertas;
   }
-  function escolherCarga(v) {
-    if (UI.op.carga !== v)
+  async function escolherCarga(v) {
+    if (UI.op.carga !== v) {
+      if (marcadosOp() && !await confirmar(
+        "Todos os voos selecionados v\xE3o ser desmarcados.",
+        `Trocar para ${esc((CARGAS.find(([k]) => k === v) || [v, v])[1])}?`
+      )) return;
       UI.op = { carga: v, origem: v === "CARGA" ? "CARGA" : null, boxOrigem: null, vooOrigemId: null, sel: [] };
+    }
     UI.modalVivo = { tipo: "op" };
     bus.render();
   }
@@ -10704,6 +10726,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       );
     }
     if (st.origem === "BOX") {
+      if (st.carga === "EQUIPAMENTO") return telaBoxesEquip(st, pre, acaoConfirmar);
       if (st.via) return telaVoosDaVia(st, pre, acaoConfirmar);
       return telaVias(st, "QUAIS DESTINOS?", pre, acaoConfirmar);
     }
@@ -10856,6 +10879,23 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       return i < 0 ? BALDES_AUTO_DELTA.length : i;
     };
     return [...porChave.values()].sort((a, b) => ordemAuto(a) - ordemAuto(b));
+  }
+  function telaBoxesEquip(st, pre, acaoConfirmar) {
+    const g = grupos(st);
+    const cands = candidatosDestinoJanela([st.vooOrigemId]);
+    return passoCab(
+      "PARA QUAL BOX?",
+      "Boxes dos voos que saem na sua janela.",
+      botaoSaindo(g.PP.length, acaoConfirmar)
+    ) + listaDestinos(cands, g.PP, `${pre}TogEquip`);
+  }
+  function opTogEquip(id) {
+    alternar(grupos(UI.op).PP, id);
+    bus.render();
+  }
+  function puTogEquip(id) {
+    alternar(grupos(UI.pu).PP, id);
+    bus.render();
   }
   function telaVoosDaVia(st, pre, acaoConfirmar) {
     const via = st.via;
@@ -11086,7 +11126,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       return;
     }
     await registrarLocais(linhas, UI.op.vooOrigemId, "a_caminho");
-    await marcarPegasNoDelta(linhas, UI.op.vooOrigemId);
+    if (UI.op.carga !== "EQUIPAMENTO") await marcarPegasNoDelta(linhas, UI.op.vooOrigemId);
     UI.op = { origem: null, sel: [] };
     fecharModal();
     UI.modalVivo = { tipo: "viagem" };
@@ -11316,7 +11356,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       const bx = d.origem_box || vg.box_origem;
       return `<div class="list-line" style="padding:6px 0">
       <span class="grow" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-        ${bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(bx)}</span></span>` : ""}
+        ${bx ? `<span class="voo voo-chegada"><span class="voo-box"><span class="voo-corner esq pousando">${ico("pousando", 14)}</span>${esc(bx)}</span></span><span class="caminho-linha" aria-hidden="true"></span>` : ""}
         ${vooRotulo(d.voo_destino_id ? voo(d.voo_destino_id) || {} : {}, "saida", { box: false })}
         <span class="voo voo-larga"><span class="voo-box">${esc(siglaMonte(via))}</span></span>
       </span>
@@ -11381,9 +11421,8 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     }
   }
   async function confirmarEntregaGrupo(ids, vgId) {
-    const ok = await confirmar(`TEM CERTEZA da ENTREGA?
-
-${ids.length} bag${ids.length === 1 ? "" : "s"}`);
+    const d0 = D.destinos.find((x) => x.id === ids[0]);
+    const ok = await confirmar(`TEM CERTEZA da ENTREGA de ${ids.length} bag${ids.length === 1 ? "" : "s"}${d0 ? ` para ${destinoConfirma(d0)}` : ""}?`);
     if (!ok) return;
     const vg = D.viagens.find((x) => x.id === vgId) || {};
     const sugestoes = UI.entregaSugestaoGrupo || {};
@@ -11480,18 +11519,33 @@ ${ids.length} bag${ids.length === 1 ? "" : "s"}`);
       return;
     }
     await registrarLocais(linhas, UI.pu.vooOrigemId, "a_caminho");
-    await marcarPegasNoDelta(linhas, UI.pu.vooOrigemId);
+    if (UI.pu.carga !== "EQUIPAMENTO") await marcarPegasNoDelta(linhas, UI.pu.vooOrigemId);
     UI.pu = null;
     bus.recarregar();
+  }
+  function vooConfirma(v, lado, box) {
+    const cid = lado === "chegada" ? v.origem : v.destino;
+    const num = lado === "chegada" ? v.voo_chegada || v.numero : v.numero;
+    return `${esc(cid ? `${cid}-` : "")}${esc(num || "?")}${box ? ` [${esc(box)}]` : ""}`;
+  }
+  function destinoConfirma(d) {
+    if (d.setor_destino) return esc(destinoInfo(d).sub || d.setor_destino);
+    const v = voo(d.voo_destino_id) || {};
+    return chegouNoVoo(d) ? `<b>${vooConfirma(v, "saida", v.box)}</b>` : `<b>${vooConfirma(v, "saida")}</b> na ${esc(d.entrega_via)}`;
+  }
+  function fraseEntrega(d, vg) {
+    if (!d) return "TEM CERTEZA da ENTREGA?";
+    const vo = voo(d.origem_voo_id || (vg == null ? void 0 : vg.voo_origem_id));
+    const box = d.origem_box || (vg == null ? void 0 : vg.box_origem);
+    const de = vo ? ` do voo <span style="font-size:.8em">${vooConfirma(vo, "chegada", box)}</span>` : "";
+    return `TEM CERTEZA da ENTREGA${de} para ${destinoConfirma(d)}?`;
   }
   async function entregar(destId, vgId) {
     var _a;
     const d = D.destinos.find((x) => x.id === destId);
     const vg = D.viagens.find((x) => x.id === vgId);
     const inf = d ? destinoInfo(d) : { num: "?" };
-    const ok = await confirmar(`TEM CERTEZA da ENTREGA?
-
-Destino: ${esc(inf.num)}`);
+    const ok = await confirmar(fraseEntrega(d, vg));
     if (!ok) return;
     if (vg && (vg.carga === "EQUIPAMENTO" || vg.carga === "CARGA")) {
       if (!await gravarEntrega(() => entregarDestino(destId, vgId, null))) return;
@@ -11577,9 +11631,7 @@ Destino: ${esc(inf.num)}`);
     if (!ds.length) return;
     const vg = D.viagens.find((x) => x.id === vgId) || {};
     const ok = await confirmar(
-      `TEM CERTEZA da ENTREGA?
-
-${resumoMonte(ds)} na ${esc(textoMonte(via))}`
+      `TEM CERTEZA da ENTREGA de ${resumoMonte(ds)} na ${esc(textoMonte(via))}?`
     );
     if (!ok) return;
     if (!await gravarEntrega(() => entregarDestinos(ds.map((d) => d.id), vgId))) return;
@@ -11592,19 +11644,42 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     await cancelarViagemDb(id);
   }
   function telaMinhasViagens() {
-    const minhas = D.viagens.filter((v) => v.operador_id === S.me.id);
+    const minhas = D.viagens.filter((v) => v.operador_id === S.me.id).sort((a, b) => String(b.saiu_em || "").localeCompare(String(a.saiu_em || "")));
     if (!minhas.length) return `<div class="card note">Voc\xEA ainda n\xE3o fez viagens hoje.</div>`;
     return minhas.map((vg) => {
       const ds = destinosDe(vg.id);
+      const vo = voo(vg.voo_origem_id);
+      const deOnde = vg.origem === "BOX" || vg.origem === "BPP" ? `BOX ${esc(vg.box_origem || "?")}${vo ? ` \xB7 ${vooConfirma(vo, "chegada")}` : ""}` : esc(ROTULO[vg.origem] || vg.origem || "?");
+      const eq = EQUIPS.find(([k]) => k === vg.equipamento);
+      const oQue = vg.carga === "EQUIPAMENTO" ? eq ? `${vg.equip_qtd > 1 ? `${vg.equip_qtd} ` : ""}${eq[1]}${vg.equip_qtd > 1 ? "s" : ""}` : "Equipamento" : esc(vg.carga || "BAG");
+      const durou = vg.saiu_em && vg.concluida_em ? Math.round((new Date(vg.concluida_em) - new Date(vg.saiu_em)) / 6e4) : null;
+      const fechou = vg.concluida_em ? ` \u2192 fechou ${hora(vg.concluida_em)}${durou != null ? ` (${durou} min)` : ""}` : "";
+      const perna = (d) => {
+        const bx = d.origem_box || vg.box_origem;
+        const de = bx ? `[${esc(bx)}] ` : d.origem_setor ? `[${esc(d.origem_setor)}] ` : "";
+        let para;
+        if (d.setor_destino === "ESTEIRA") {
+          const vc = voo(d.origem_voo_id || vg.voo_origem_id);
+          para = `${vc ? vooConfirma(vc, "chegada") : "Locais"} \u2192 ${esc(destinoInfo(d).sub)}`;
+        } else if (d.setor_destino) {
+          para = esc(ROTULO[d.setor_destino] || d.setor_destino);
+        } else {
+          const v = voo(d.voo_destino_id) || {};
+          para = `<b>${vooConfirma(v, "saida")}</b> \u2192 ${chegouNoVoo(d) ? `box ${esc(v.box || "?")}` : esc(d.entrega_via)}`;
+        }
+        const qtd = d.qtd_entregue ? ` \xB7 ${d.qtd_entregue} bag${d.qtd_entregue === 1 ? "" : "s"}` : "";
+        const quando = d.status === "entregue" && d.entregue_em ? `<span class="note">${hora(d.entregue_em)}</span>` : `<span class="chip st-${d.status}">${ROTULO[d.status] || d.status}</span>`;
+        return `<div class="list-line" style="padding:4px 0">
+        <span class="grow">${de}${para}${qtd}</span>${quando}
+      </div>`;
+      };
       return `<div class="card">
       <div class="list-line" style="border:none;padding:0">
-        <b class="grow">${vg.origem === "BOX" || vg.origem === "BPP" ? "BOX " + esc(vg.box_origem || "?") : ROTULO[vg.origem]} \xB7 ${hora(vg.saiu_em)}</b>
+        <b class="grow">${oQue} \xB7 ${deOnde}</b>
         <span class="chip st-${vg.status}">${ROTULO[vg.status]}</span>
       </div>
-      <div class="note">${ds.map((d) => {
-        const inf = destinoInfo(d);
-        return `${esc(inf.num)} (${ROTULO[d.status]})`;
-      }).join(" \xB7 ")}</div>
+      <div class="note">saiu ${hora(vg.saiu_em)}${fechou}</div>
+      ${ds.map(perna).join("")}
     </div>`;
     }).join("");
   }
@@ -12178,26 +12253,86 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
       }
       const aberta = a && a.lugar === s.lugar && a.chave === c.chave;
       const sel = aberta ? a.sel : [];
-      if (!aberta)
-        return `<div class="pt-linha carreta-alerta" onclick="abrirCarretaAlerta('${esc(s.lugar)}','${esc(c.chave)}')">
+      const abrir = `abrirCarretaAlerta('${esc(s.lugar)}','${esc(c.chave)}',[${c.ps.map((p) => p.id).join(",")}])`;
+      const cabeca = `<div class="pt-linha carreta-alerta${aberta ? " aberta" : ""}" onclick="${abrir}">
         <span class="acordeon-seta">${ico("seta", 14)}</span>
         <span class="grow">${esc(c.nome)} \xB7 ${c.ps.length} voo${c.ps.length === 1 ? "" : "s"}</span>
       </div>`;
-      const escolhidos = sel.length ? sel : c.ps.map((p) => p.id);
-      const rotulo2 = sel.length && sel.length < c.ps.length ? `PEGAR ${sel.length} DE ${c.ps.length}` : c.ps.length === 1 ? "PEGAR" : `PEGAR OS ${c.ps.length}`;
-      return `<div class="pt-linha carreta-alerta aberta" onclick="abrirCarretaAlerta('${esc(s.lugar)}','${esc(c.chave)}')">
-        <span class="acordeon-seta">${ico("seta", 14)}</span>
-        <span class="grow">${esc(c.nome)} \xB7 ${c.ps.length} voo${c.ps.length === 1 ? "" : "s"}</span>
-      </div>
-      ${c.ps.map((p) => linhaVoo3(p, sel)).join("")}
+      let corpo = "";
+      if (aberta) {
+        const escolhidos = sel.length ? sel : c.ps.map((p) => p.id);
+        const rotulo2 = sel.length && sel.length < c.ps.length ? `PEGAR ${sel.length} DE ${c.ps.length}` : c.ps.length === 1 ? "PEGAR" : `PEGAR OS ${c.ps.length}`;
+        corpo = `${c.ps.map((p) => linhaVoo3(p, sel)).join("")}
       <button class="primary alerta-pegar" onclick="pegarDoAlerta('${tipo}',${boxArg},[${c.ps.map((p) => p.id).join(",")}],[${escolhidos.join(",")}])">${rotulo2}</button>`;
+      }
+      const matiz = matizDaCarretaAlerta(c.ps);
+      return matiz == null ? cabeca + corpo : `<div class="carreta-cor" style="--matiz:${matiz}">${cabeca}${corpo}</div>`;
     }).join("")}</div>`;
   }
-  function abrirCarretaAlerta(lugar, chave) {
+  function matizDaCarretaAlerta(ps) {
+    const p = ps[0];
+    if (!p) return null;
+    if (ehProntaDaBase(p)) return corBaldeDelta(BALDE_BASE_LOCAL.id);
+    const pd = p.ponto_delta_id != null ? D.deltas.find((x) => mesmoId(x.id, p.ponto_delta_id)) : null;
+    if ((pd == null ? void 0 : pd.carreta_id) != null && D.carretasDelta.some((c) => mesmoId(c.id, pd.carreta_id)))
+      return corBaldeDelta(`c${pd.carreta_id}`);
+    if (!p.carreta_nome) return null;
+    const vc = vooChegadaDaPronta(p, null);
+    const real = vc && D.carretasDelta.find((c) => mesmoId(c.voo_id, vc.id) && c.nome === p.carreta_nome);
+    if (real) return corBaldeDelta(`c${real.id}`);
+    const auto = BALDES_AUTO_DELTA.find((b) => b.nome === p.carreta_nome);
+    if (auto) return corBaldeDelta(auto.id);
+    if (p.carreta_nome === BALDE_NAO_CONECTA.nome) return corBaldeDelta(BALDE_NAO_CONECTA.id);
+    return null;
+  }
+  async function abrirCarretaAlerta(lugar, chave, ids) {
     const a = UI.alertaCarreta;
     const jaAberta = a && a.lugar === lugar && a.chave === chave;
-    UI.alertaCarreta = jaAberta ? null : { lugar, chave, sel: [] };
+    if (a) await soltarCarretaAlerta();
+    if (jaAberta) {
+      bus.render();
+      return;
+    }
+    const reservei = [];
+    for (const id of ids || []) {
+      const p = D.prontas.find((x) => x.id === id);
+      if ((p == null ? void 0 : p.status) !== "pronta") continue;
+      const { data, error } = await cientePronta(id);
+      if (error) {
+        await erro(error);
+        return;
+      }
+      if (Array.isArray(data) && !data.length) continue;
+      p.status = "ciente";
+      p.ciente_por = S.me.id;
+      reservei.push(id);
+    }
+    const meus = (ids || []).filter((id) => {
+      const p = D.prontas.find((x) => x.id === id);
+      return p && p.status === "ciente" && p.ciente_por === S.me.id;
+    });
+    if (!meus.length) {
+      await aviso("Outro operador pegou essa carreta primeiro.");
+      bus.recarregar();
+      return;
+    }
+    UI.alertaCarreta = { lugar, chave, sel: [], reservei };
     bus.render();
+  }
+  async function soltarCarretaAlerta() {
+    const a = UI.alertaCarreta;
+    UI.alertaCarreta = null;
+    for (const id of (a == null ? void 0 : a.reservei) || []) {
+      const p = D.prontas.find((x) => x.id === id);
+      if ((p == null ? void 0 : p.status) !== "ciente" || p.ciente_por !== S.me.id) continue;
+      const { error } = await devolverProntaDb(id);
+      if (error) {
+        await erro(error);
+        return;
+      }
+      p.status = "pronta";
+      p.ciente_por = null;
+    }
   }
   function togVooAlerta(id) {
     const a = UI.alertaCarreta;
@@ -12230,8 +12365,9 @@ ${resumoMonte(ds)} na ${esc(textoMonte(via))}`
     }
     abrirEscolhaVoosBox(tipo, box, meus);
   }
-  function alternarOlhoLugar(lugar) {
+  async function alternarOlhoLugar(lugar) {
     UI.olhoLugar = UI.olhoLugar === lugar ? null : lugar;
+    if (UI.alertaCarreta && UI.alertaCarreta.lugar !== UI.olhoLugar) await soltarCarretaAlerta();
     bus.render();
   }
   function escolherSecaoBox(nome) {
@@ -15173,6 +15309,22 @@ Sair mesmo assim?`
       arquivo: "screens/telaOperador.js",
       desc: "Uma demanda: voo, timer e os bot\xF5es quadrados na ponta."
     },
+    // Antes de .alerta-carretas: embrulha UMA carreta dentro da lista, e
+    // quem pedir ajuste na faixa de cor quer esta.
+    {
+      nome: "cor-da-carreta-no-alerta",
+      seletor: ".carreta-cor",
+      grupo: "alerta",
+      arquivo: "screens/telaOperador.js",
+      desc: "Faixa de cor em volta de uma carreta no olho do card BOX \u2014 a mesma cor que o l\xEDder v\xEA no Ponto Delta."
+    },
+    {
+      nome: "traco-do-caminho",
+      seletor: ".caminho-linha",
+      grupo: "voo",
+      arquivo: "screens/telaOperador.js",
+      desc: "Tra\xE7o curto com um ponto andando entre o [BOX] e o voo, no cart\xE3o da TCX/TLC da viagem."
+    },
     {
       nome: "carretas-do-alerta",
       seletor: ".alerta-carretas",
@@ -16416,6 +16568,8 @@ Sair mesmo assim?`
     escolherBoxColeta,
     togDest,
     togDestPU,
+    opTogEquip,
+    puTogEquip,
     confirmarSaida,
     levarCarga,
     confirmarColeta,
