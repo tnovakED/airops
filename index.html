@@ -1608,9 +1608,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 30/09/2026, 16:01:41
+     Gerado em: 30/09/2026, 16:14:51
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 16:01";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 16:14";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -3348,524 +3348,7 @@
     return rows;
   }
 
-  // src/ui/screens/telaVoos.js
-  function telaVoos() {
-    const lista = D.voos.filter((v) => v.data === hoje()).filter(passaVista);
-    const editar = pode("malha_editar");
-    const posicionar = pode("oc_posicionar");
-    const cartaoImportar = !editar ? "" : `
-  <div class="card">
-    <h3 style="color:var(--amber)">Importar malha do dia</h3>
-    <p class="note">Aceita .csv ou .xlsx no formato do sistema (com ou sem cabe\xE7alho).</p>
-    <div class="row" style="align-items:end">
-      <div><label>Data da malha (importar/limpar)</label><input id="mdata" type="date" value="${esc(UI.malhaData || hoje())}" onchange="UI.malhaData=this.value"></div>
-      <div><label>Arquivo</label><input id="mfile" type="file" accept=".csv,.xlsx,.xls" onchange="UI.malhaArquivo=this.files[0]||null;renderSeguro()"></div>
-    </div>
-    ${UI.malhaArquivo ? `<p class="note" style="margin-top:8px">Arquivo pronto: <b style="color:var(--amber)">${esc(UI.malhaArquivo.name)}</b></p>` : ""}
-    <div class="row" style="margin-top:10px">
-      <button class="primary" ${UI.malhaArquivo ? "" : "disabled"} onclick="importarMalha()">Importar</button>
-      <button class="ghost" onclick="limparMalha()">Limpar malha desta data</button>
-    </div>
-    <div class="note" id="mlog" style="margin-top:8px"></div>
-  </div>`;
-    return `
-  ${cartaoImportar}
-  <div class="board-title">
-    <h2>Malha de hoje</h2>
-    <span class="flip">${lista.length}</span>
-    <span class="malha-ajuda" onclick="abrirAjudaMalha()" aria-label="Como usar a malha">${ico("notificacao", 18)}</span>
-  </div>
-  <div class="card" style="padding:10px 12px">
-    <div class="row" style="align-items:end">
-      <div style="flex:0 0 84px"><label>Janela de</label><input value="${esc(UI.vHDe)}" inputmode="numeric"
-        oninput="this.value=mascaraHora(this.value)" onchange="UI.vHDe=normHora(this.value);renderSeguro()" placeholder="\u2014"></div>
-      <div style="flex:0 0 84px"><label>At\xE9</label><input value="${esc(UI.vHAte)}" inputmode="numeric"
-        oninput="this.value=mascaraHora(this.value)" onchange="UI.vHAte=normHora(this.value);renderSeguro()" placeholder="\u2014"></div>
-      <p class="note" style="margin:0 0 10px 4px">Vazio = sem limite. Filtra por hor\xE1rio \u2014 a malha continua sendo s\xF3 a de hoje.</p>
-    </div>
-  </div>
-  ${editar ? `<div style="margin-bottom:10px"><button class="small" style="width:auto"
-      onclick="adicionarVoo()">+ Adicionar voo</button></div>` : ""}
-  <div style="display:flex;justify-content:flex-end;margin:-2px 2px 6px"><span class="note">${dm(hoje())}</span></div>
-  <div class="card tbl-wrap malha-tbl-wrap">${lista.length ? `
-    <table class="malha-tabela"><tr>
-      <th>VAR</th><th>Arr.</th>
-      <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('chegada')">STA ${UI.malhaOrdem.col === "chegada" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
-      <th>REG</th>
-      <th>VDP</th><th>DEP</th>
-      <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('saida')">STD ${UI.malhaOrdem.col === "saida" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
-      <th>Box</th><th>EST</th><th></th></tr>
-    ${ordenar(lista).map((v) => linhaVoo(v, editar, posicionar)).join("")}</table>` : `<p class="note">Nenhum voo nesta janela.</p>`}
-  </div>`;
-  }
-  function ordenar(lista) {
-    return lista.sort((a, b) => {
-      const col = UI.malhaOrdem.col || "chegada";
-      const dir = UI.malhaOrdem.col ? UI.malhaOrdem.dir : 1;
-      return (minPlain(a[col]) - minPlain(b[col])) * dir;
-    });
-  }
-  var dm = (d) => d ? d.slice(8, 10) + "/" + d.slice(5, 7) : "";
-  function iconeLogMalha(v) {
-    const entradas = (UI.malhaEntradas || []).filter((e) => e.vooId === v.id);
-    if (!entradas.length) return "";
-    const resumo = entradas.map((e) => e.texto).join("\n");
-    return `<span class="log-ponto" title="${esc(resumo)}" onclick="verLogMalha(${v.id})">${ico("exclamacao", 16)}</span>`;
-  }
-  function verLogMalha(vooId) {
-    const entradas = (UI.malhaEntradas || []).filter((e) => e.vooId === vooId);
-    if (!entradas.length) return;
-    aviso(entradas.map((e) => e.texto).join("\n"), "Avisos da importa\xE7\xE3o da malha");
-  }
-  function blocoDestrava(v, lado, travado) {
-    const icOperacao = lado === "chegada" ? "pousando" : "decolando";
-    if (v[`${lado}_destravada_em`])
-      return `<span class="malha-btn-icone" aria-label="${lado} destravado, aguardando reimporta\xE7\xE3o">${ico("cadeadoFechado", 16)}${ico(icOperacao, 16)}</span>`;
-    if (!travado) return "";
-    return `<button class="small ghost malha-btn-icone" onclick="destravarLado(${v.id},'${lado}')"
-    aria-label="Destravar ${lado}">${ico("cadeadoAberto", 16)}${ico(icOperacao, 16)}</button>`;
-  }
-  var temSaida = (v) => !!(v.saida || v.destino) || v.numero && v.numero !== v.voo_chegada;
-  function soloMin(v) {
-    const c = minutosDe(v.chegada), s = minutosDe(v.saida);
-    return c == null || s == null ? null : s - c;
-  }
-  var SOLO_APERTO_MIN = 30;
-  function soloApertado(v) {
-    const m = soloMin(v);
-    return m != null && m < SOLO_APERTO_MIN;
-  }
-  function alca(vooId, lado, pode2, emEdicao) {
-    if (!pode2 || emEdicao) return "";
-    const rot2 = lado === "chegada" ? "chegada" : "sa\xEDda";
-    return `<span class="malha-alca" onpointerdown="arrastarLadoVoo(event,${vooId},'${lado}')"
-    aria-label="Arraste para trocar o lado ${rot2} com outra linha">${ico("arrastar", 16)}</span>`;
-  }
-  function blocoOc(v, posicionar, emEdicao) {
-    if (!posicionar || !emEdicao) return "";
-    const ocs = D.users.filter((u) => u.perfil === "oc");
-    return `<label class="note" style="display:block;margin-top:8px">OC do box
-    <select onchange="posicionarOcTela(${v.id},this.value)">
-      <option value="">\u2014</option>
-      ${ocs.map((u) => `<option value="${u.id}" ${v.oc_posicionado_id === u.id ? "selected" : ""}>${esc(u.nome)}</option>`).join("")}
-    </select></label>`;
-  }
-  function linhaVoo(v, editar, posicionar) {
-    const emEdicao = UI.linhaEditando === v.id;
-    const podeAlgo = editar || posicionar;
-    const campo = (nome, largura, extra = "") => emEdicao && editar ? `<input value="${esc(v[nome] || "")}" style="width:${largura}px" ${extra}
-         onchange="mudarVoo(${v.id},'${nome}',this.value)">` : `<span>${esc(v[nome] || "\u2014")}</span>`;
-    const campoHora = (nome) => emEdicao && editar ? `<input value="${esc(v[nome] || "")}" style="width:76px" inputmode="numeric"
-         oninput="this.value=mascaraHora(this.value)"
-         onchange="mudarVoo(${v.id},'${nome}',this.value)">` : `<span class="mono">${esc(v[nome] || "\u2014")}</span>`;
-    const botao = !podeAlgo ? "" : emEdicao ? `<button class="small ok" style="width:auto" onclick="UI.linhaEditando=null;render()">OK</button>` : `<button class="small ghost malha-btn-icone" onclick="UI.linhaEditando=${v.id};render()"
-        aria-label="Editar">${ico("lapis", 16)}</button>`;
-    const btnApagar = emEdicao && editar ? `<button class="small ghost" style="width:auto;color:var(--red);border-color:var(--red)"
-         onclick="apagarVoo(${v.id})">Apagar</button>` : "";
-    const destravaChegada = emEdicao && editar ? blocoDestrava(v, "chegada", !!v.chegada && jaPousou(v)) : "";
-    const destravaSaida = emEdicao && editar ? blocoDestrava(v, "saida", jaDecolou(v)) : "";
-    const solo = soloMin(v);
-    const tituloSolo = solo != null ? ` title="Solo: ${solo} min"` : "";
-    return `<tr data-voo-id="${v.id}"${emEdicao ? ' style="background:var(--surface2)"' : ""}>
-    <td class="mono lado-a" data-campo="voo_chegada">${alca(v.id, "chegada", editar && !!v.voo_chegada, emEdicao)}${campo("voo_chegada", 64)}</td>
-    <td class="lado-a" data-campo="origem">${campo("origem", 56)}</td>
-    <td class="lado-a" data-campo="chegada">${campoHora("chegada")}</td>
-    <td class="lado-a" data-campo="prefixo">${campo("prefixo", 82)}</td>
-    <td class="mono lado-b" data-campo="numero" style="color:var(--amber)">${alca(v.id, "saida", editar && temSaida(v), emEdicao)}${temSaida(v) || emEdicao && editar ? campo("numero", 64) : '<span class="note">\u2014</span>'}</td>
-    <td class="lado-b" data-campo="destino">${campo("destino", 56)}</td>
-    <td class="lado-b${soloApertado(v) ? " solo-apertado" : ""}" data-campo="saida"${tituloSolo}>${campoHora("saida")}</td>
-    <td>${editar ? `<input class="malha-in-box" value="${esc(v.box || "")}" onchange="mudarVoo(${v.id},'box',this.value)">` : `<span class="badge sm">${esc(v.box || "?")}</span>`}</td>
-    <td><input class="malha-in-esteira" value="${esc(v.esteira || "")}"
-      onchange="mudarVoo(${v.id},'esteira',this.value)"></td>
-    <td>${iconeLogMalha(v)}${botao}${btnApagar}${destravaChegada}${destravaSaida}${blocoOc(v, posicionar, emEdicao)}</td>
-  </tr>`;
-  }
-  function passaVista(v) {
-    const t = minPlain(v.saida || v.chegada);
-    if (UI.vHDe && t !== 99999 && t < minPlain(UI.vHDe)) return false;
-    if (UI.vHAte && t !== 99999 && t > minPlain(UI.vHAte)) return false;
-    return true;
-  }
-  function ordenarMalha(col) {
-    if (UI.malhaOrdem.col === col) UI.malhaOrdem.dir *= -1;
-    else UI.malhaOrdem = { col, dir: 1 };
-    bus.renderSeguro();
-  }
-  async function mudarVoo(id, campo, valor) {
-    valor = campo === "chegada" || campo === "saida" ? normHora(valor) : valor.trim();
-    const alvo2 = valor || null;
-    if (campo === "box" && alvo2) {
-      const outros = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2) && !jaDecolou(v));
-      if (outros.length) {
-        abrirEscolhaTrocaBox(id, alvo2, outros);
-        return;
-      }
-    }
-    await gravarCampo(id, campo, alvo2);
-  }
-  function rotacaoTexto(vooChegada, vooSaida, box) {
-    const c = esc(vooChegada || "?");
-    const s = vooSaida ? `vai sair como ${esc(vooSaida)}` : "n\xE3o tem sa\xEDda na malha";
-    const b = box ? `, no box ${esc(box)}` : "";
-    return `${c} (chegando) ${s}${b}`;
-  }
-  function abrirEscolhaTrocaBox(id, alvo2, outros) {
-    const eu = D.voos.find((v) => v.id === id) || {};
-    const opcoes = outros.map((o) => {
-      const linha1 = rotacaoTexto(eu.voo_chegada, eu.numero, alvo2);
-      const linha2 = rotacaoTexto(o.voo_chegada, o.numero, eu.box);
-      return `<button class="primary" style="margin-bottom:8px;text-align:left"
-      onclick="confirmarTrocaBox(${id},'${esc(alvo2)}',${o.id})">
-      Trocar
-      <span style="display:block;font-size:12px;opacity:.85;margin-top:4px">
-        O voo ${linha1}</span>
-      <span style="display:block;font-size:12px;opacity:.85">
-        O voo ${linha2}</span></button>`;
-    }).join("");
-    const jaNoBox = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2) && !jaDecolou(v)).map((v) => v.numero || v.voo_chegada || "?");
-    const dica = jaNoBox.length ? `os voos ${esc(jaNoBox.join(", "))} v\xE3o sair no box ${esc(alvo2)} \u2014 use quando o voo de chegada mais tarde est\xE1 programado para esse box` : `use quando o voo de chegada mais tarde est\xE1 programado para o box ${esc(alvo2)}`;
-    const manter = `<button style="margin-bottom:8px;text-align:left"
-    onclick="confirmarTrocaBox(${id},'${esc(alvo2)}',null)">
-    S\xF3 colocar ${esc(alvo2)} neste voo
-    <span style="display:block;font-size:12px;opacity:.75;margin-top:4px">${dica}</span></button>`;
-    abrirModal(`<h3>BOX ${esc(alvo2)} j\xE1 est\xE1 em uso</h3>
-    <p class="note">Escolha o que fazer:</p>
-    ${opcoes}${manter}
-    <button class="ghost" onclick="fecharModal();render()">Desfazer a edi\xE7\xE3o</button>`);
-  }
-  async function confirmarTrocaBox(id, alvo2, outroId) {
-    fecharModal();
-    if (outroId == null) {
-      await gravarCampo(id, "box", alvo2);
-      return;
-    }
-    const eu = D.voos.find((v) => v.id === id) || {};
-    const outro = D.voos.find((v) => v.id === outroId) || {};
-    const boxEu = eu.box || null;
-    const ocEu = eu.oc_posicionado_id || null;
-    const ocOutro = outro.oc_posicionado_id || null;
-    const r1 = await alterarVoo(outro.id, { box: boxEu, oc_posicionado_id: ocEu });
-    if (r1.error) {
-      await erro(r1.error);
-      await bus.recarregar();
-      forcarDesenho();
-      return;
-    }
-    const r2 = await alterarVoo(id, { box: alvo2, oc_posicionado_id: ocOutro });
-    if (r2.error) {
-      await erro(r2.error);
-      await bus.recarregar();
-      forcarDesenho();
-      return;
-    }
-    aplicarLocal(id, { box: alvo2, oc_posicionado_id: ocOutro });
-    aplicarLocal(outro.id, { box: boxEu, oc_posicionado_id: ocEu });
-    forcarDesenho();
-  }
-  function campoLado(linha2, campo) {
-    const td = linha2.querySelector ? linha2.querySelector(`[data-campo="${campo}"]`) : null;
-    return td ? (td.textContent || "").trim() : "";
-  }
-  function conteudoFantasma(linha2, lado) {
-    if (lado === "chegada") {
-      const voo3 = campoLado(linha2, "voo_chegada"), reg = campoLado(linha2, "prefixo"), hora3 = campoLado(linha2, "chegada");
-      return { icone: "pousando", titulo: voo3 || "?", legenda: [reg, hora3].filter(Boolean).join(" \xB7 ") };
-    }
-    const voo2 = campoLado(linha2, "numero"), destino = campoLado(linha2, "destino"), hora2 = campoLado(linha2, "saida");
-    return { icone: "decolando", titulo: voo2 || "?", legenda: [destino, hora2].filter(Boolean).join(" \xB7 ") };
-  }
-  function elementoFantasma() {
-    let f = document.getElementById("malha-fantasma");
-    if (!f) {
-      f = document.createElement("div");
-      f.id = "malha-fantasma";
-      document.body.appendChild(f);
-    }
-    return f;
-  }
-  function mostrarFantasma(linha2, lado, x, y) {
-    const f = elementoFantasma();
-    const { icone, titulo, legenda } = conteudoFantasma(linha2, lado);
-    f.className = `malha-fantasma ${lado === "chegada" ? "chegada" : "saida"}`;
-    f.innerHTML = `${ico(icone, 22)}
-    <span class="malha-fantasma-txt"><b>${esc(titulo)}</b>${legenda ? `<br>${esc(legenda)}` : ""}</span>`;
-    f.style.left = `${x}px`;
-    f.style.top = `${y}px`;
-    f.style.display = "flex";
-  }
-  function moverFantasma(x, y) {
-    const f = document.getElementById("malha-fantasma");
-    if (f) {
-      f.style.left = `${x}px`;
-      f.style.top = `${y}px`;
-    }
-  }
-  function esconderFantasma() {
-    const f = document.getElementById("malha-fantasma");
-    if (f) f.style.display = "none";
-  }
-  function arrastarLadoVoo(ev, vooId, lado) {
-    const linhaOrigem = ev.target.closest ? ev.target.closest("tr[data-voo-id]") : null;
-    if (!linhaOrigem) return;
-    ev.preventDefault();
-    const classeArrastando = `arrastando-${lado}`;
-    linhaOrigem.classList.add(classeArrastando);
-    UI.malhaArrastando = true;
-    mostrarFantasma(linhaOrigem, lado, ev.clientX, ev.clientY);
-    let alvo2 = null;
-    function marcarAlvo(linha2) {
-      if (linha2 === alvo2) return;
-      if (alvo2) alvo2.classList.remove("solta-aqui");
-      alvo2 = linha2;
-      if (alvo2) alvo2.classList.add("solta-aqui");
-    }
-    function mover(e) {
-      moverFantasma(e.clientX, e.clientY);
-      const el = document.elementFromPoint(e.clientX, e.clientY);
-      const linha2 = (el == null ? void 0 : el.closest) ? el.closest("tr[data-voo-id]") : null;
-      marcarAlvo(linha2 && linha2 !== linhaOrigem ? linha2 : null);
-    }
-    async function soltar() {
-      document.removeEventListener("pointermove", mover);
-      document.removeEventListener("pointerup", soltar);
-      document.removeEventListener("pointercancel", soltar);
-      linhaOrigem.classList.remove(classeArrastando);
-      esconderFantasma();
-      const linhaAlvo = alvo2;
-      marcarAlvo(null);
-      UI.malhaArrastando = false;
-      if (!linhaAlvo) {
-        if (UI.renderPendente) {
-          UI.renderPendente = false;
-          bus.render();
-        }
-        return;
-      }
-      const outroId = Number(linhaAlvo.dataset.vooId);
-      const { error } = await trocarVoos(vooId, outroId, lado);
-      if (error) await erro(error);
-      UI.linhaEditando = null;
-      UI.renderPendente = false;
-      await bus.recarregar();
-      forcarDesenho();
-    }
-    document.addEventListener("pointermove", mover);
-    document.addEventListener("pointerup", soltar);
-    document.addEventListener("pointercancel", soltar);
-  }
-  function abrirAjudaMalha() {
-    abrirModal(`<h3>Como mexer na malha</h3>
-    <ul style="padding-left:18px;line-height:1.7">
-      <li><b>VAR / Arr. / STA. / REG</b> \u2014 arraste pela al\xE7a ${ico("arrastar", 14)}
-        at\xE9 OUTRA linha para trocar os dois voos de chegada inteiros.
-        V\xE3o junto o <b>BOX</b>, o <b>EST</b> e o Descarga OK: pertencem
-        \xE0 aeronave que pousou, n\xE3o \xE0 linha da tabela.</li>
-      <li><b>VDP / DEP / STD</b> \u2014 mesma ideia: arraste pela al\xE7a para
-        trocar s\xF3 o voo de sa\xEDda entre duas linhas.</li>
-      <li><b>BOX</b> \u2014 digite direto. Se o box j\xE1 estiver em uso por um
-        voo que AINDA N\xC3O DECOLOU, o sistema pergunta se \xE9 para trocar
-        com ele (quem j\xE1 decolou n\xE3o entra na pergunta).</li>
-      <li><b>EST</b> (esteira) \u2014 digite direto, sem troca nenhuma.</li>
-      <li>Hor\xE1rio de sa\xEDda em <span style="color:var(--red)">laranja/vermelho</span>
-        = menos de 30 min entre o pouso (STA) e a decolagem (STD).</li>
-      <li>A malha aqui \xE9 sempre a <b>de hoje</b> \u2014 d\xE1 pra filtrar por
-        janela de hor\xE1rio, mas n\xE3o d\xE1 pra ver ontem nem amanh\xE3.</li>
-      <li>Atribuir <b>OC</b> a um box mora dentro de "Editar" \u2014 quem s\xF3
-        quer ver quem est\xE1 no box acompanha isso pelo Painel Operacional.</li>
-    </ul>
-    <button class="primary" onclick="fecharModal()">Entendi</button>`);
-  }
-  function forcarDesenho() {
-    var _a, _b;
-    (_b = (_a = document.activeElement) == null ? void 0 : _a.blur) == null ? void 0 : _b.call(_a);
-    bus.render();
-  }
-  async function gravarCampo(id, campo, alvo2) {
-    const { error } = await alterarVoo(id, { [campo]: alvo2 });
-    if (error) {
-      await erro(error);
-      await bus.recarregar();
-      return;
-    }
-    aplicarLocal(id, { [campo]: alvo2 });
-    bus.renderSeguro();
-  }
-  function aplicarLocal(id, campos) {
-    const v = D.voos.find((x) => x.id === id);
-    if (v) Object.assign(v, campos);
-  }
-  async function apagarVoo(id) {
-    const v = D.voos.find((x) => x.id === id) || {};
-    const usado = D.viagens.some((g) => g.voo_origem_id === id) || D.destinos.some((d) => d.voo_destino_id === id || d.origem_voo_id === id) || D.indias.some((i) => i.voo_id === id) || D.deltas.some((dl) => dl.voo_id === id);
-    if (usado) {
-      await aviso(`O voo ${esc(v.numero || v.voo_chegada || "?")} j\xE1 tem viagens, bags ou Ponto \xCDndice/Delta registrados.
-
-Apagar deixaria esse hist\xF3rico \xF3rf\xE3o. Se ele n\xE3o vai mais operar, limpe o hor\xE1rio de sa\xEDda em vez de apagar. Se algum dado do voo est\xE1 errado (n\xFAmero, REG, hora, box), corrija direto na linha em vez de apagar.`, "N\xE3o d\xE1 para apagar");
-      return;
-    }
-    const ok = await confirmar(`Apagar a linha do voo ${esc(v.numero || v.voo_chegada || "?")}${v.box ? " (box " + esc(v.box) + ")" : ""}?`);
-    if (!ok) return;
-    const { error } = await apagarVooDb(id);
-    if (error) {
-      await erro(error);
-      return;
-    }
-    UI.linhaEditando = null;
-    await bus.recarregar();
-  }
-  async function adicionarVoo() {
-    const num = await perguntar("N\xFAmero do voo de sa\xEDda (deixe vazio se for s\xF3 chegada)", "", "Adicionar voo");
-    if (num === null) return;
-    const cheg = await perguntar("N\xFAmero do voo de chegada (opcional)", "", "Adicionar voo");
-    if (cheg === null) return;
-    if (!num.trim() && !cheg.trim()) {
-      await aviso("Informe ao menos um dos dois n\xFAmeros.");
-      return;
-    }
-    const dia = UI.malhaData || hoje();
-    const { error } = await criarVoo({
-      data: dia,
-      numero: num.trim() || cheg.trim(),
-      voo_chegada: cheg.trim() || null
-    });
-    if (error) {
-      await erro(error);
-      return;
-    }
-    await bus.recarregar();
-  }
-  async function destravarLado(vooId, lado) {
-    const v = D.voos.find((x) => x.id === vooId) || {};
-    const ok = await confirmar(`Destravar o lado ${lado} do voo ${esc(v.numero || v.voo_chegada || "?")}?
-
-A pr\xF3xima reimporta\xE7\xE3o da malha vai poder sobrescrever estes campos.`);
-    if (!ok) return;
-    try {
-      await destravarLadoVoo(vooId, lado);
-    } catch (e) {
-      await erro(e);
-      return;
-    }
-    aplicarLocal(vooId, { [`${lado}_destravada_em`]: (/* @__PURE__ */ new Date()).toISOString() });
-    bus.renderSeguro();
-  }
-  async function posicionarOcTela(vooId, ocId) {
-    try {
-      await posicionarOc(vooId, ocId || null);
-      const v = D.voos.find((x) => x.id === vooId);
-      if (v) v.oc_posicionado_id = ocId || null;
-    } catch (e) {
-      await erro(e);
-    }
-  }
-  async function limparMalha() {
-    const dia = UI.malhaData || hoje();
-    const ok = await confirmar(`Apagar todos os voos de ${esc(dia)}?
-
-Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, ficam preservados para n\xE3o perder o hist\xF3rico.`);
-    if (!ok) return;
-    const log = $("mlog");
-    if (log) log.textContent = "Limpando...";
-    const { error } = await apagarMalhaDoDia(dia);
-    await bus.recarregar();
-    const log2 = $("mlog");
-    if (log2) log2.textContent = error ? "Erro ao limpar: " + error.message : `Malha de ${dia} limpa. Agora importe o arquivo correto.`;
-  }
-  var _libImportPromise = null;
-  function carregarLibImportacao() {
-    if (window.XLSX && window.Papa) return Promise.resolve();
-    if (_libImportPromise) return _libImportPromise;
-    const carregar = (src) => new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
-      document.head.appendChild(s);
-    });
-    _libImportPromise = Promise.all([
-      carregar("https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"),
-      carregar("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js")
-    ]).catch((e) => {
-      _libImportPromise = null;
-      throw e;
-    });
-    return _libImportPromise;
-  }
-  async function importarMalha() {
-    var _a, _b, _c;
-    const f = UI.malhaArquivo, log = $("mlog");
-    if (!f) {
-      if (log) log.textContent = "Escolha um arquivo primeiro.";
-      return;
-    }
-    if (log) log.textContent = "Carregando leitor de planilha...";
-    try {
-      await carregarLibImportacao();
-    } catch (e) {
-      if (log) log.textContent = `N\xE3o consegui carregar o leitor de arquivo: ${e.message}`;
-      return;
-    }
-    if (log) log.textContent = "Lendo arquivo...";
-    let mat = [];
-    try {
-      if (/\.(xlsx|xls)$/i.test(f.name)) {
-        const wb = XLSX.read(await f.arrayBuffer());
-        mat = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" });
-      } else {
-        const buf = await f.arrayBuffer();
-        let txt2;
-        try {
-          txt2 = new TextDecoder("utf-8", { fatal: true }).decode(buf);
-        } catch (e) {
-          txt2 = new TextDecoder("iso-8859-1").decode(buf);
-        }
-        const l1 = txt2.split(/\r?\n/).find((l) => l.replace(/[;,\t]/g, "").trim().length > 2) || "";
-        const delim = [[";", (l1.match(/;/g) || []).length], [",", (l1.match(/,/g) || []).length], ["	", (l1.match(/\t/g) || []).length]].sort((a, b) => b[1] - a[1])[0][0];
-        mat = Papa.parse(txt2, { delimiter: delim, skipEmptyLines: true }).data;
-      }
-    } catch (e) {
-      if (log) log.textContent = "N\xE3o consegui ler o arquivo: " + e.message;
-      return;
-    }
-    const dia = UI.malhaData || hoje();
-    const rows = processarMalha(mat, dia);
-    const carimbo = (/* @__PURE__ */ new Date()).toISOString();
-    rows.forEach((r) => r.importada_em = carimbo);
-    if (!rows.length) {
-      if (log) log.textContent = "Nenhuma linha de voo reconhecida no arquivo.";
-      return;
-    }
-    const amanha = new Date(dia);
-    amanha.setDate(amanha.getDate() + 1);
-    const diaAmanha = amanha.toISOString().slice(0, 10);
-    rows.forEach((r) => {
-      if (r.saida && /^0?[0-4]:/.test(r.saida)) r.data = diaAmanha;
-    });
-    const vistos = /* @__PURE__ */ new Set();
-    const rowsFinal = rows.filter((r) => {
-      const k = r.data + "|" + r.numero;
-      if (vistos.has(k)) return false;
-      vistos.add(k);
-      return true;
-    });
-    const numerosManha = rowsFinal.filter((r) => r.data === diaAmanha).map((r) => r.numero);
-    const jaExistem = await numerosJaNaData(diaAmanha, numerosManha);
-    const rowsGravar = rowsFinal.filter((r) => !(r.data === diaAmanha && jaExistem.has(r.numero)));
-    UI.malhaEntradas = [];
-    const { data, error } = await importarMalhaDb(rowsGravar, UI.malhaEntradas);
-    if (error) {
-      if (log) log.textContent = "Erro ao gravar: " + error.message;
-      return;
-    }
-    UI.malhaArquivo = null;
-    await bus.recarregar();
-    const log2 = $("mlog");
-    const madrugada = rowsFinal.filter((r) => r.data === diaAmanha).length;
-    const ignorados = ((_a = data == null ? void 0 : data.ignorados) == null ? void 0 : _a.length) || 0;
-    if (log2) log2.textContent = `${(_b = data == null ? void 0 : data.inseridos) != null ? _b : 0} voo(s) novo(s), ${(_c = data == null ? void 0 : data.atualizados) != null ? _c : 0} atualizado(s) para ${dia}${madrugada ? ` (${madrugada} de madrugada gravados como ${diaAmanha})` : ""}${ignorados ? ` \u2014 ${ignorados} campo(s) mantido(s) por j\xE1 terem acontecido, veja o aviso na linha do voo.` : ""}.`;
-  }
-
-  // src/ui/screens/telaViagensCCO.js
+  // src/ui/screens/telaTriagem.js
   init_store();
   init_dom();
 
@@ -3895,8 +3378,12 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     cancelada: "Cancelada"
   };
 
-  // src/ui/screens/telaViagensCCO.js
+  // src/ui/screens/telaTriagem.js
   init_horas();
+
+  // src/ui/components/grades.js
+  init_store();
+  init_dom();
 
   // src/ui/components/voo.js
   init_dom();
@@ -3940,220 +3427,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     return `${porCarreta} ${ico("pacote", 16)} ${soma}`;
   }
 
-  // src/ui/screens/telaViagensCCO.js
-  init_regras();
-  var nomeVia = (via) => via === "ESTEIRA" ? "Esteira" : via;
-  function faltam(v) {
-    const t = minutosDe(v.saida);
-    return t === null ? null : t - agoraMin();
-  }
-  function corDoTempo(min) {
-    if (min === null) return "var(--muted)";
-    if (min < 0) return "var(--red)";
-    if (min < 20) return "var(--red)";
-    if (min < 60) return "var(--amber)";
-    return "var(--muted)";
-  }
-  function origemDe(d, vg) {
-    const box = d.origem_box || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
-    if (!box) return vg.origem || "?";
-    const vo = voo(d.origem_voo_id || vg.voo_origem_id);
-    return (vo ? vooRotulo(vo, "chegada", { box: false }) + " \xB7 " : "") + `BOX ${box}`;
-  }
-  function origemCurta(d, vg) {
-    const box = d.origem_box || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
-    return box ? `BOX ${box}` : vg.origem || "?";
-  }
-  function linhaVoo2(v) {
-    const ds = destinosDe_doVoo(v.id);
-    const pend = ds.filter((d) => d.status === "a_caminho");
-    const min = faltam(v);
-    const aberto = UI.coordAberto === v.id;
-    const cor = corDoTempo(min);
-    const naTriagem2 = ds.filter((d) => d.status === "entregue" && (d.entrega_via === "TCX" || d.entrega_via === "TLC"));
-    const naEsteira2 = ds.filter((d) => d.status === "entregue" && d.entrega_via === "ESTEIRA");
-    const resumo = pend.length ? pend.map((d) => {
-      const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
-      const via = chegouNoVoo(d) ? "" : " \u2192 " + nomeVia(d.entrega_via);
-      return `${origemCurta(d, vg)} ${nomeDe(vg.operador_id)}${via}`;
-    }).join(" \xB7 ") : naTriagem2.length ? `parada na ${naTriagem2[0].entrega_via} \u2014 falta levar ao voo` : naEsteira2.length ? "na Esteira" : ds.length ? "tudo entregue" : "nada a caminho";
-    const chip = pend.length ? `<span class="chip st-a_caminho">${pend.length} a caminho</span>` : naTriagem2.length ? `<span class="chip st-aceita">na ${naTriagem2[0].entrega_via}</span>` : naEsteira2.length ? `<span class="chip st-entregue">na Esteira</span>` : ds.length ? `<span class="chip st-entregue">entregue</span>` : `<span class="chip" style="border-color:var(--line);color:var(--muted)">sem viagem</span>`;
-    const tempo = min === null ? `<span class="note">\u2014</span>` : min < 0 ? `<div style="font-size:22px;font-weight:600;color:var(--red);line-height:1">${min}</div>
-       <div class="note" style="font-size:11px">atrasado</div>` : `<div style="font-size:22px;font-weight:600;color:${cor};line-height:1">${min}</div>
-       <div class="note" style="font-size:11px">min</div>`;
-    return `<div class="card" style="padding:0;overflow:hidden;${min !== null && min < 20 ? "border-color:var(--red)" : ""}">
-    <div class="list-line" style="border:none;padding:10px 12px;cursor:pointer;align-items:center"
-         onclick="UI.coordAberto=${aberto ? "null" : v.id};renderSeguro()">
-      <div style="min-width:52px;text-align:center">${tempo}</div>
-      <div class="grow" style="padding-left:12px">
-        <div>${vooRotulo(v, "saida", { hora: true })}</div>
-        <div class="note" style="margin-top:2px">${esc(resumo)}</div>
-      </div>
-      ${chip}
-    </div>
-    ${aberto ? detalhe(ds) : ""}
-  </div>`;
-  }
-  function detalhe(ds) {
-    if (!ds.length) return `<div style="border-top:1px solid var(--line);padding:10px 12px 12px 76px">
-    <p class="note" style="margin:0">Nenhuma viagem saiu para este voo ainda.</p></div>`;
-    return `<div style="border-top:1px solid var(--line);background:var(--surface2);padding:4px 12px 8px 76px">
-    ${ds.map((d) => {
-      const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
-      const parou = !chegouNoVoo(d);
-      const alvo2 = parou ? ` <span class="note">\u2192 ${esc(nomeVia(d.entrega_via))}</span>` : "";
-      return `<div class="list-line">
-        <span class="mono grow" style="${d.status === "entregue" ? "color:var(--muted)" : ""}">${origemDe(d, vg)} \xB7 ${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}${alvo2}</span>
-        <span class="chip st-${d.status === "entregue" && parou ? "aceita" : d.status}">${d.status === "entregue" && parou ? "na " + esc(nomeVia(d.entrega_via)) : ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
-      </div>`;
-    }).join("")}</div>`;
-  }
-  var destinosDe_doVoo = (vooId) => D.destinos.filter((d) => d.voo_destino_id === vooId);
-  var paradoEmTriagem = (vooId) => destinosDe_doVoo(vooId).some((d) => d.status === "entregue" && !chegouNoVoo(d));
-  function blocoBase() {
-    const ds = D.destinos.filter((d) => d.setor_destino === "ESTEIRA");
-    if (!ds.length) return "";
-    return `<div class="board-title"><h2>Chegando \xB7 bag da base</h2><span class="flip">${ds.length}</span></div>` + ds.map((d) => {
-      const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
-      const vo = voo(d.origem_voo_id || vg.voo_origem_id) || {};
-      return `<div class="card"><div class="list-line" style="border:none;padding:0;align-items:center">
-        <div class="grow">
-          <div>${vooRotulo(vo, "chegada")} <span class="note">esteira ${esc(vo.esteira || "?")}</span></div>
-          <div class="note" style="margin-top:2px">${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}</div>
-        </div>
-        <span class="chip st-${d.status}">${ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
-      </div></div>`;
-    }).join("");
-  }
-  function blocoProntas() {
-    const pr = D.prontas.filter((p) => p.status === "pronta" || p.status === "ciente");
-    if (!pr.length) return "";
-    return `<div class="board-title"><h2 style="color:var(--orange)">Prontas aguardando coleta</h2><span class="flip">${pr.length}</span></div>` + pr.map((p) => {
-      const v = voo(p.voo_destino_id) || {};
-      return `<div class="card"><div class="list-line" style="border:none;padding:0">
-        <span class="dcode">${p.setor === "BOX" ? "BOX " + esc(p.box || "?") : p.setor}</span>
-        <span class="grow" style="padding-left:8px">${vooRotuloPronta(p, v)} <span class="note">${hora(p.criada_em)}</span></span>
-        <span class="chip st-${p.status === "pronta" ? "solicitada" : "aceita"}">${p.status === "pronta" ? "Aguardando" : esc(nomeDe(p.ciente_por)) + " vai buscar"}</span>
-      </div></div>`;
-    }).join("");
-  }
-  function telaViagensCCO() {
-    const comMov = new Set(D.destinos.map((d) => d.voo_destino_id).filter(Boolean));
-    const lista = D.voos.filter((v) => {
-      if (!v.saida && !v.destino) return false;
-      const min = faltam(v);
-      const pend = destinosDe_doVoo(v.id).some((d) => d.status === "a_caminho");
-      if (pend || paradoEmTriagem(v.id)) return true;
-      if (min === null) return false;
-      return min > -CCO_JANELA_ATRAS_MIN && min < CCO_JANELA_FRENTE_MIN;
-    });
-    const abertos = lista.filter((v) => destinosDe_doVoo(v.id).some((d) => d.status === "a_caminho") || paradoEmTriagem(v.id) || !comMov.has(v.id));
-    const fechados = lista.filter((v) => !abertos.includes(v));
-    abertos.sort((a, b) => {
-      const ma = faltam(a), mb = faltam(b);
-      return (ma === null ? 99999 : ma) - (mb === null ? 99999 : mb);
-    });
-    return `
-    ${blocoProntas()}
-    <div class="board-title"><h2>Bags em movimento</h2><span class="flip">${abertos.length}</span></div>
-    ${abertos.length ? abertos.map(linhaVoo2).join("") : `<div class="card note">Nenhum voo com movimenta\xE7\xE3o no momento.</div>`}
-    ${blocoBase()}
-    ${fechados.length ? `
-      <div class="list-line" style="cursor:pointer;margin-top:12px"
-           onclick="UI.coordVerEntregues=${UI.coordVerEntregues ? "false" : "true"};renderSeguro()">
-        <span class="note grow">${fechados.length} voo${fechados.length === 1 ? "" : "s"} com tudo entregue \u2014 toque para ${UI.coordVerEntregues ? "esconder" : "ver"}</span>
-      </div>
-      ${UI.coordVerEntregues ? fechados.map(linhaVoo2).join("") : ""}` : ""}`;
-  }
-
-  // src/ui/screens/telaSolicitacoes.js
-  init_store();
-  init_dom();
-
-  // src/data/solicitacoes.js
-  init_supabase();
-  init_store();
-  async function criarSolicitacao(dados) {
-    return sb.from("solicitacoes").insert({ solicitante_id: S.me.id, ...dados });
-  }
-  async function mudarStatusSolicitacao(id, status, extra) {
-    const patch = { status, ...extra };
-    if (status === "aceita") {
-      patch.atendente_id = S.me.id;
-      patch.aceita_em = (/* @__PURE__ */ new Date()).toISOString();
-    }
-    if (status === "concluida") patch.concluida_em = (/* @__PURE__ */ new Date()).toISOString();
-    return sb.from("solicitacoes").update(patch).eq("id", id);
-  }
-  async function avisarTlcZeradaDb(vooId) {
-    return sb.rpc("avisar_tlc_zerada", { p_voo_id: vooId });
-  }
-  async function fecharPedidosTlcDoVoo(vooId) {
-    return sb.rpc("fechar_pedidos_tlc_do_voo", { p_voo_id: vooId });
-  }
-
-  // src/ui/screens/telaSolicitacoes.js
-  function listaSolicitacoes(sols, mostraTudo, opcoes) {
-    if (!sols.length) return `<div class="card note">Nenhuma solicita\xE7\xE3o hoje.</div>`;
-    const semAtender = !!(opcoes == null ? void 0 : opcoes.semAtender);
-    return sols.map((s) => {
-      const v = s.voo_id ? voo(s.voo_id) : null;
-      const vc = s.voo_origem_id ? voo(s.voo_origem_id) : null;
-      const podeAceitar = !semAtender && s.status === "solicitada" && (S.me.perfil === "equipamentos" || S.me.perfil === "operador" || mostraTudo);
-      const minha = s.atendente_id === S.me.id;
-      return `<div class="card">
-      <div class="list-line" style="border:none;padding:0">
-        <b class="grow">${ROTULO[s.tipo]}${v ? ` \xB7 ${vooRotulo(v, "saida")}` : ""}${vc ? ` \xB7 bag de ${vooRotulo(vc, "chegada", { box: false })}` : ""}</b>
-        <span class="chip st-${s.status}">${ROTULO[s.status]}</span>
-      </div>
-      ${s.descricao ? `<div class="note">${esc(s.descricao)}</div>` : ""}
-      <div class="note">Pedido: ${esc(nomeDe(s.solicitante_id))} ${hora(s.criada_em)}${s.atendente_id ? ` \xB7 Atendendo: ${esc(nomeDe(s.atendente_id))}` : ""}</div>
-      <div class="row" style="margin-top:8px">
-        ${s.status === "solicitada" && podeAceitar ? `<button class="small ok" onclick="mudarSol(${s.id},'aceita')">Aceitar</button>` : ""}
-        ${!semAtender && s.status === "aceita" && (minha || mostraTudo) ? `<button class="small" onclick="mudarSol(${s.id},'a_caminho')">A caminho</button>` : ""}
-        ${!semAtender && (s.status === "aceita" || s.status === "a_caminho") && (minha || mostraTudo) ? `<button class="small ok" onclick="mudarSol(${s.id},'concluida')">Concluir</button>` : ""}
-        ${s.status !== "concluida" && s.status !== "cancelada" && (s.solicitante_id === S.me.id || mostraTudo) ? `<button class="small ghost" onclick="mudarSol(${s.id},'cancelada')">Cancelar</button>` : ""}
-      </div>
-    </div>`;
-    }).join("");
-  }
-  function telaSolicitacoesCCO() {
-    const opts = D.voos.map((v) => `<option value="${v.id}">${esc(v.numero)} \xB7 box ${esc(v.box || "?")}</option>`).join("");
-    return `
-  <div class="card">
-    <h3 style="color:var(--amber)">Nova solicita\xE7\xE3o de equipamento</h3>
-    <div class="row">
-      <div><label>Tipo</label><select id="stipo"><option>QTU</option><option>QTA</option></select></div>
-      <div><label>Voo (opcional)</label><select id="svoo"><option value="">\u2014</option>${opts}</select></div>
-    </div>
-    <label>Observa\xE7\xE3o</label><input id="sdesc" placeholder="ex.: 2 unidades no box 12">
-    <div style="margin-top:10px"><button class="primary" onclick="criarSolTela()">Solicitar</button></div>
-  </div>
-  ${listaSolicitacoes(D.sols, true)}`;
-  }
-  function telaEquip() {
-    const fila = D.sols.filter((s) => ["QTU", "QTA"].includes(s.tipo));
-    return `<div class="board-title"><h2>Fila de equipamentos</h2><span class="flip">${fila.filter((s) => s.status === "solicitada").length}</span></div>
-    ${listaSolicitacoes(fila, false)}`;
-  }
-  async function criarSolTela() {
-    const tipo = $("stipo").value;
-    const vooId = $("svoo").value || null;
-    const desc = $("sdesc").value;
-    await criarSolicitacao({ tipo, voo_id: vooId, descricao: desc.trim() || null });
-  }
-  async function mudarSol(id, status) {
-    await mudarStatusSolicitacao(id, status);
-  }
-
-  // src/ui/screens/telaOperador.js
-  init_store();
-  init_dom();
-  init_horas();
-
   // src/ui/components/grades.js
-  init_store();
-  init_dom();
   init_horas();
   function destinoInfo(d) {
     if (d.setor_destino) {
@@ -4259,250 +3533,6 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   </div>`;
   }
 
-  // src/data/viagens.js
-  init_supabase();
-  init_store();
-  init_offline_sync();
-  async function abrirViagem(dados) {
-    return sb.from("viagens").insert({ operador_id: S.me.id, ...dados }).select().single();
-  }
-  async function adicionarDestinos(linhas) {
-    return sb.from("viagens_destinos").insert(linhas);
-  }
-  function subirErro(res) {
-    if (res == null ? void 0 : res.error) throw res.error;
-    return res;
-  }
-  async function entregarDestino(destId, vgId, qtd) {
-    try {
-      subirErro(await sb.from("viagens_destinos").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), qtd_entregue: qtd != null ? qtd : null }).eq("id", destId));
-      await fecharSeAcabou(vgId);
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("entregar_destino", { destId, vgId, qtd });
-        return { error: null, fila: true };
-      }
-      throw e;
-    }
-  }
-  async function entregarDestinos(ids, vgId) {
-    if (!(ids == null ? void 0 : ids.length)) return;
-    try {
-      subirErro(await sb.from("viagens_destinos").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString() }).in("id", ids));
-      await fecharSeAcabou(vgId);
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("entregar_destinos", { ids, vgId });
-        return { error: null, fila: true };
-      }
-      throw e;
-    }
-  }
-  async function fecharSeAcabou(vgId) {
-    const { data: resto, error } = await sb.from("viagens_destinos").select("id").eq("viagem_id", vgId).eq("status", "a_caminho");
-    if (error) throw error;
-    if (!(resto == null ? void 0 : resto.length)) {
-      subirErro(await sb.from("viagens").update({ status: "concluida", concluida_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", vgId));
-    }
-  }
-  async function cancelarViagemDb(id) {
-    return sb.from("viagens").update({ status: "cancelada" }).eq("id", id);
-  }
-
-  // src/data/bagsLocal.js
-  init_supabase();
-  init_store();
-  init_offline_sync();
-  async function marcarLocalBags(vooDestinoId, vooOrigemId, local, box, status) {
-    try {
-      const { error } = await sb.rpc("marcar_local_bags", {
-        p_voo_destino: vooDestinoId,
-        p_voo_origem: vooOrigemId != null ? vooOrigemId : null,
-        p_local: local,
-        p_box: box != null ? box : null,
-        p_status: status || "no_local"
-      });
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("marcar_local_bags", {
-          vooDestinoId,
-          vooOrigemId,
-          local,
-          box,
-          status
-        });
-        return;
-      }
-      throw e;
-    }
-  }
-  async function baixarLocalBags(vooDestinoId, vooOrigemId) {
-    try {
-      const { error } = await sb.rpc("baixar_local_bags", {
-        p_voo_destino: vooDestinoId,
-        p_voo_origem: vooOrigemId != null ? vooOrigemId : null
-      });
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("baixar_local_bags", { vooDestinoId, vooOrigemId });
-        return;
-      }
-      throw e;
-    }
-  }
-  async function montarCarreta(local, vooIds) {
-    const { data, error } = await sb.rpc("montar_carreta", {
-      p_local: local,
-      p_voos: vooIds
-    });
-    if (error) throw error;
-    return data;
-  }
-  function localDasBags(vooDestinoId, vooChegadaId) {
-    const todos = D.bagsLocal.filter((b) => mesmoId(b.voo_destino_id, vooDestinoId) && b.status !== "retirada");
-    if (!todos.length) return null;
-    const linhas = vooChegadaId == null ? todos : todos.filter((b) => mesmoId(b.voo_origem_id, vooChegadaId));
-    if (!linhas.length) return null;
-    linhas.sort((a, b) => String(b.atualizado_em || "").localeCompare(String(a.atualizado_em || "")));
-    return linhas[0];
-  }
-
-  // src/data/deltaCarretas.js
-  init_supabase();
-  init_offline_sync();
-  async function criarCarretaDelta(vooId, nome) {
-    const { data, error } = await sb.rpc("criar_carreta_delta", { p_voo_id: vooId, p_nome: nome });
-    if (error) throw error;
-    return data;
-  }
-  async function moverConexaoCarretaDelta(pontoDeltaId, carretaId) {
-    try {
-      const { error } = await sb.rpc(
-        "mover_conexao_carreta_delta",
-        { p_ponto_delta_id: pontoDeltaId, p_carreta_id: carretaId }
-      );
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("mover_conexao_carreta_delta", { pontoDeltaId, carretaId });
-        return;
-      }
-      throw e;
-    }
-  }
-  async function moverConexoesCarretaDelta(pontoDeltaIds, carretaId) {
-    try {
-      const { error } = await sb.rpc(
-        "mover_conexoes_carreta_delta",
-        { p_ponto_delta_ids: pontoDeltaIds, p_carreta_id: carretaId }
-      );
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("mover_conexoes_carreta_delta", { pontoDeltaIds, carretaId });
-        return;
-      }
-      throw e;
-    }
-  }
-  async function definirBagQtdManualDelta(pontoDeltaId, qtd) {
-    try {
-      const { error } = await sb.rpc(
-        "definir_bag_qtd_manual_delta",
-        { p_ponto_delta_id: pontoDeltaId, p_qtd: qtd }
-      );
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("definir_bag_qtd_manual_delta", { pontoDeltaId, qtd });
-        return;
-      }
-      throw e;
-    }
-  }
-  async function definirBagContadaDelta(pontoDeltaId, qtd) {
-    try {
-      const { error } = await sb.rpc(
-        "definir_bag_contada_delta",
-        { p_ponto_delta_id: pontoDeltaId, p_qtd: qtd }
-      );
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("definir_bag_contada_delta", { pontoDeltaId, qtd });
-        return;
-      }
-      throw e;
-    }
-  }
-  async function resetarBagContadaDelta(pontoDeltaId, visto) {
-    try {
-      const { error } = await sb.rpc(
-        "resetar_bag_contada_delta",
-        { p_ponto_delta_id: pontoDeltaId, p_visto: visto }
-      );
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("resetar_bag_contada_delta", { pontoDeltaId, visto });
-        return;
-      }
-    }
-  }
-  async function marcarNaoConectaDelta(pontoDeltaId, marcar) {
-    const { error } = await sb.rpc(
-      "marcar_nao_conecta_delta",
-      { p_ponto_delta_id: pontoDeltaId, p_marcar: !!marcar }
-    );
-    if (error) throw error;
-  }
-  async function excluirCarretaDelta(id) {
-    const { error } = await sb.rpc("excluir_carreta_delta", { p_id: id });
-    if (error) throw error;
-  }
-  async function pegarConexoesDelta(destinos, pontoDeltaIds) {
-    try {
-      const { error } = await sb.rpc(
-        "pegar_conexoes_delta",
-        { p_destinos: destinos, p_ponto_delta_ids: pontoDeltaIds }
-      );
-      if (error) throw error;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("pegar_conexoes_delta", { destinos, pontoDeltaIds });
-        return;
-      }
-      throw e;
-    }
-  }
-  async function solicitarCarretaDeltaDb(vooChegadaId, destinos, nome, pontoDeltaIds) {
-    const { data, error } = await sb.rpc(
-      "solicitar_carreta_delta",
-      {
-        p_voo_chegada_id: vooChegadaId,
-        p_destinos: destinos,
-        p_carreta_nome: nome || null,
-        p_ponto_delta_ids: pontoDeltaIds || null
-      }
-    );
-    if (error) throw error;
-    return data;
-  }
-  async function rechamarAlertaDeltaDb(prontaId) {
-    const { data, error } = await sb.rpc("rechamar_alerta_delta", { p_id: prontaId });
-    if (error) throw error;
-    return data;
-  }
-  async function marcarPpDelta(pontoDeltaId, estado) {
-    const { error } = await sb.rpc(
-      "marcar_pp_delta",
-      { p_ponto_delta_id: pontoDeltaId, p_estado: estado || null }
-    );
-    if (error) throw error;
-  }
-
   // src/data/prontas.js
   init_supabase();
   init_store();
@@ -4582,6 +3612,99 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   }
   async function marcarProntaEntregueDb(pontoIndiaId) {
     return sb.from("prontas").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("ponto_india_id", pontoIndiaId).eq("status", "coletada");
+  }
+
+  // src/data/bagsLocal.js
+  init_supabase();
+  init_store();
+  init_offline_sync();
+  async function marcarLocalBags(vooDestinoId, vooOrigemId, local, box, status) {
+    try {
+      const { error } = await sb.rpc("marcar_local_bags", {
+        p_voo_destino: vooDestinoId,
+        p_voo_origem: vooOrigemId != null ? vooOrigemId : null,
+        p_local: local,
+        p_box: box != null ? box : null,
+        p_status: status || "no_local"
+      });
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("marcar_local_bags", {
+          vooDestinoId,
+          vooOrigemId,
+          local,
+          box,
+          status
+        });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function baixarLocalBags(vooDestinoId, vooOrigemId) {
+    try {
+      const { error } = await sb.rpc("baixar_local_bags", {
+        p_voo_destino: vooDestinoId,
+        p_voo_origem: vooOrigemId != null ? vooOrigemId : null
+      });
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("baixar_local_bags", { vooDestinoId, vooOrigemId });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function montarCarreta(local, vooIds) {
+    const { data, error } = await sb.rpc("montar_carreta", {
+      p_local: local,
+      p_voos: vooIds
+    });
+    if (error) throw error;
+    return data;
+  }
+  function localDasBags(vooDestinoId, vooChegadaId) {
+    const todos = D.bagsLocal.filter((b) => mesmoId(b.voo_destino_id, vooDestinoId) && b.status !== "retirada");
+    if (!todos.length) return null;
+    const linhas = vooChegadaId == null ? todos : todos.filter((b) => mesmoId(b.voo_origem_id, vooChegadaId));
+    if (!linhas.length) return null;
+    linhas.sort((a, b) => String(b.atualizado_em || "").localeCompare(String(a.atualizado_em || "")));
+    return linhas[0];
+  }
+
+  // src/data/bagsDespachadas.js
+  init_supabase();
+  init_offline_sync();
+  async function somarBagsDespachadasDb(dia, vooId, qtd) {
+    try {
+      const res = await sb.rpc(
+        "somar_bags_despachadas",
+        { p_data: dia, p_voo_id: vooId, p_qtd: qtd }
+      );
+      if ((res == null ? void 0 : res.error) && erroDeRede(res.error)) throw res.error;
+      return res;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("somar_bags_despachadas", { dia, vooId, qtd });
+        return { error: null, fila: true };
+      }
+      throw e;
+    }
+  }
+  async function avisarBagsDespachadasDb(dia, vooId) {
+    try {
+      const res = await sb.rpc("avisar_bags_despachadas", { p_data: dia, p_voo_id: vooId });
+      if ((res == null ? void 0 : res.error) && erroDeRede(res.error)) throw res.error;
+      return res;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("avisar_bags_despachadas", { dia, vooId });
+        return { error: null, fila: true };
+      }
+      throw e;
+    }
   }
 
   // src/ui/screens/telaPontos.js
@@ -4810,6 +3933,218 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     if (previsto == null || (novoR || 0) < previsto) return { entregue: false };
     const r = await sb.from("ponto_india").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), entregue_por: S.me.id }).eq("id", id);
     return r.error ? { error: r.error } : { entregue: true };
+  }
+
+  // src/data/deltaCarretas.js
+  init_supabase();
+  init_offline_sync();
+  async function criarCarretaDelta(vooId, nome) {
+    const { data, error } = await sb.rpc("criar_carreta_delta", { p_voo_id: vooId, p_nome: nome });
+    if (error) throw error;
+    return data;
+  }
+  async function moverConexaoCarretaDelta(pontoDeltaId, carretaId) {
+    try {
+      const { error } = await sb.rpc(
+        "mover_conexao_carreta_delta",
+        { p_ponto_delta_id: pontoDeltaId, p_carreta_id: carretaId }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("mover_conexao_carreta_delta", { pontoDeltaId, carretaId });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function moverConexoesCarretaDelta(pontoDeltaIds, carretaId) {
+    try {
+      const { error } = await sb.rpc(
+        "mover_conexoes_carreta_delta",
+        { p_ponto_delta_ids: pontoDeltaIds, p_carreta_id: carretaId }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("mover_conexoes_carreta_delta", { pontoDeltaIds, carretaId });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function definirBagQtdManualDelta(pontoDeltaId, qtd) {
+    try {
+      const { error } = await sb.rpc(
+        "definir_bag_qtd_manual_delta",
+        { p_ponto_delta_id: pontoDeltaId, p_qtd: qtd }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("definir_bag_qtd_manual_delta", { pontoDeltaId, qtd });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function definirBagContadaDelta(pontoDeltaId, qtd) {
+    try {
+      const { error } = await sb.rpc(
+        "definir_bag_contada_delta",
+        { p_ponto_delta_id: pontoDeltaId, p_qtd: qtd }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("definir_bag_contada_delta", { pontoDeltaId, qtd });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function resetarBagContadaDelta(pontoDeltaId, visto) {
+    try {
+      const { error } = await sb.rpc(
+        "resetar_bag_contada_delta",
+        { p_ponto_delta_id: pontoDeltaId, p_visto: visto }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("resetar_bag_contada_delta", { pontoDeltaId, visto });
+        return;
+      }
+    }
+  }
+  async function marcarNaoConectaDelta(pontoDeltaId, marcar) {
+    const { error } = await sb.rpc(
+      "marcar_nao_conecta_delta",
+      { p_ponto_delta_id: pontoDeltaId, p_marcar: !!marcar }
+    );
+    if (error) throw error;
+  }
+  async function excluirCarretaDelta(id) {
+    const { error } = await sb.rpc("excluir_carreta_delta", { p_id: id });
+    if (error) throw error;
+  }
+  async function pegarConexoesDelta(destinos, pontoDeltaIds) {
+    try {
+      const { error } = await sb.rpc(
+        "pegar_conexoes_delta",
+        { p_destinos: destinos, p_ponto_delta_ids: pontoDeltaIds }
+      );
+      if (error) throw error;
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("pegar_conexoes_delta", { destinos, pontoDeltaIds });
+        return;
+      }
+      throw e;
+    }
+  }
+  async function solicitarCarretaDeltaDb(vooChegadaId, destinos, nome, pontoDeltaIds) {
+    const { data, error } = await sb.rpc(
+      "solicitar_carreta_delta",
+      {
+        p_voo_chegada_id: vooChegadaId,
+        p_destinos: destinos,
+        p_carreta_nome: nome || null,
+        p_ponto_delta_ids: pontoDeltaIds || null
+      }
+    );
+    if (error) throw error;
+    return data;
+  }
+  async function rechamarAlertaDeltaDb(prontaId) {
+    const { data, error } = await sb.rpc("rechamar_alerta_delta", { p_id: prontaId });
+    if (error) throw error;
+    return data;
+  }
+  async function marcarPpDelta(pontoDeltaId, estado) {
+    const { error } = await sb.rpc(
+      "marcar_pp_delta",
+      { p_ponto_delta_id: pontoDeltaId, p_estado: estado || null }
+    );
+    if (error) throw error;
+  }
+
+  // src/data/solicitacoes.js
+  init_supabase();
+  init_store();
+  async function criarSolicitacao(dados) {
+    return sb.from("solicitacoes").insert({ solicitante_id: S.me.id, ...dados });
+  }
+  async function mudarStatusSolicitacao(id, status, extra) {
+    const patch = { status, ...extra };
+    if (status === "aceita") {
+      patch.atendente_id = S.me.id;
+      patch.aceita_em = (/* @__PURE__ */ new Date()).toISOString();
+    }
+    if (status === "concluida") patch.concluida_em = (/* @__PURE__ */ new Date()).toISOString();
+    return sb.from("solicitacoes").update(patch).eq("id", id);
+  }
+  async function avisarTlcZeradaDb(vooId) {
+    return sb.rpc("avisar_tlc_zerada", { p_voo_id: vooId });
+  }
+  async function fecharPedidosTlcDoVoo(vooId) {
+    return sb.rpc("fechar_pedidos_tlc_do_voo", { p_voo_id: vooId });
+  }
+
+  // src/ui/screens/telaSolicitacoes.js
+  init_store();
+  init_dom();
+  function listaSolicitacoes(sols, mostraTudo, opcoes) {
+    if (!sols.length) return `<div class="card note">Nenhuma solicita\xE7\xE3o hoje.</div>`;
+    const semAtender = !!(opcoes == null ? void 0 : opcoes.semAtender);
+    return sols.map((s) => {
+      const v = s.voo_id ? voo(s.voo_id) : null;
+      const vc = s.voo_origem_id ? voo(s.voo_origem_id) : null;
+      const podeAceitar = !semAtender && s.status === "solicitada" && (S.me.perfil === "equipamentos" || S.me.perfil === "operador" || mostraTudo);
+      const minha = s.atendente_id === S.me.id;
+      return `<div class="card">
+      <div class="list-line" style="border:none;padding:0">
+        <b class="grow">${ROTULO[s.tipo]}${v ? ` \xB7 ${vooRotulo(v, "saida")}` : ""}${vc ? ` \xB7 bag de ${vooRotulo(vc, "chegada", { box: false })}` : ""}</b>
+        <span class="chip st-${s.status}">${ROTULO[s.status]}</span>
+      </div>
+      ${s.descricao ? `<div class="note">${esc(s.descricao)}</div>` : ""}
+      <div class="note">Pedido: ${esc(nomeDe(s.solicitante_id))} ${hora(s.criada_em)}${s.atendente_id ? ` \xB7 Atendendo: ${esc(nomeDe(s.atendente_id))}` : ""}</div>
+      <div class="row" style="margin-top:8px">
+        ${s.status === "solicitada" && podeAceitar ? `<button class="small ok" onclick="mudarSol(${s.id},'aceita')">Aceitar</button>` : ""}
+        ${!semAtender && s.status === "aceita" && (minha || mostraTudo) ? `<button class="small" onclick="mudarSol(${s.id},'a_caminho')">A caminho</button>` : ""}
+        ${!semAtender && (s.status === "aceita" || s.status === "a_caminho") && (minha || mostraTudo) ? `<button class="small ok" onclick="mudarSol(${s.id},'concluida')">Concluir</button>` : ""}
+        ${s.status !== "concluida" && s.status !== "cancelada" && (s.solicitante_id === S.me.id || mostraTudo) ? `<button class="small ghost" onclick="mudarSol(${s.id},'cancelada')">Cancelar</button>` : ""}
+      </div>
+    </div>`;
+    }).join("");
+  }
+  function telaSolicitacoesCCO() {
+    const opts = D.voos.map((v) => `<option value="${v.id}">${esc(v.numero)} \xB7 box ${esc(v.box || "?")}</option>`).join("");
+    return `
+  <div class="card">
+    <h3 style="color:var(--amber)">Nova solicita\xE7\xE3o de equipamento</h3>
+    <div class="row">
+      <div><label>Tipo</label><select id="stipo"><option>QTU</option><option>QTA</option></select></div>
+      <div><label>Voo (opcional)</label><select id="svoo"><option value="">\u2014</option>${opts}</select></div>
+    </div>
+    <label>Observa\xE7\xE3o</label><input id="sdesc" placeholder="ex.: 2 unidades no box 12">
+    <div style="margin-top:10px"><button class="primary" onclick="criarSolTela()">Solicitar</button></div>
+  </div>
+  ${listaSolicitacoes(D.sols, true)}`;
+  }
+  function telaEquip() {
+    const fila = D.sols.filter((s) => ["QTU", "QTA"].includes(s.tipo));
+    return `<div class="board-title"><h2>Fila de equipamentos</h2><span class="flip">${fila.filter((s) => s.status === "solicitada").length}</span></div>
+    ${listaSolicitacoes(fila, false)}`;
+  }
+  async function criarSolTela() {
+    const tipo = $("stipo").value;
+    const vooId = $("svoo").value || null;
+    const desc = $("sdesc").value;
+    await criarSolicitacao({ tipo, voo_id: vooId, descricao: desc.trim() || null });
+  }
+  async function mudarSol(id, status) {
+    await mudarStatusSolicitacao(id, status);
   }
 
   // src/ui/screens/telaPontos.js
@@ -6131,6 +5466,61 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     }
     await bus.recarregar();
     abrirPontoIndiaOC(pi.voo_id);
+  }
+
+  // src/ui/screens/telaOperador.js
+  init_store();
+  init_dom();
+  init_horas();
+
+  // src/data/viagens.js
+  init_supabase();
+  init_store();
+  init_offline_sync();
+  async function abrirViagem(dados) {
+    return sb.from("viagens").insert({ operador_id: S.me.id, ...dados }).select().single();
+  }
+  async function adicionarDestinos(linhas) {
+    return sb.from("viagens_destinos").insert(linhas);
+  }
+  function subirErro(res) {
+    if (res == null ? void 0 : res.error) throw res.error;
+    return res;
+  }
+  async function entregarDestino(destId, vgId, qtd) {
+    try {
+      subirErro(await sb.from("viagens_destinos").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), qtd_entregue: qtd != null ? qtd : null }).eq("id", destId));
+      await fecharSeAcabou(vgId);
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("entregar_destino", { destId, vgId, qtd });
+        return { error: null, fila: true };
+      }
+      throw e;
+    }
+  }
+  async function entregarDestinos(ids, vgId) {
+    if (!(ids == null ? void 0 : ids.length)) return;
+    try {
+      subirErro(await sb.from("viagens_destinos").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString() }).in("id", ids));
+      await fecharSeAcabou(vgId);
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("entregar_destinos", { ids, vgId });
+        return { error: null, fila: true };
+      }
+      throw e;
+    }
+  }
+  async function fecharSeAcabou(vgId) {
+    const { data: resto, error } = await sb.from("viagens_destinos").select("id").eq("viagem_id", vgId).eq("status", "a_caminho");
+    if (error) throw error;
+    if (!(resto == null ? void 0 : resto.length)) {
+      subirErro(await sb.from("viagens").update({ status: "concluida", concluida_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", vgId));
+    }
+  }
+  async function cancelarViagemDb(id) {
+    return sb.from("viagens").update({ status: "cancelada" }).eq("id", id);
   }
 
   // src/ui/screens/telaOperador.js
@@ -10727,7 +10117,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       const patio = desempatarBoxes(voosChegando());
       const noBox = st.boxOrigem ? patio.filter((v) => String(v.box) === String(st.boxOrigem)) : [];
       const um = noBox.length === 1 ? noBox[0] : null;
-      const acao = um ? `<button class="primary passo-canto" onclick="${confirmarVoo}(${um.id})">Confirmar<br>${vooRotulo(um, "chegada", { box: false })}${linhaPouso(um)}</button>` : noBox.length > 1 ? `<div class="passo-canto passo-escolha">
+      const acao = um ? `<button class="primary passo-canto" onclick="${confirmarVoo}(${um.id})">${vooRotulo(um, "chegada", { box: false })}${linhaPouso(um)}</button>` : noBox.length > 1 ? `<div class="passo-canto passo-escolha">
            ${noBox.map((v) => `<button class="primary" onclick="${confirmarVoo}(${v.id})">${vooRotulo(v, "chegada", { box: false })}${linhaPouso(v)}</button>`).join("")}
          </div>` : "";
       const nota = !st.boxOrigem ? "Toque no box onde voc\xEA est\xE1." : noBox.length === 0 ? "Nenhum voo da malha neste box." : noBox.length > 1 ? `Mais de um voo no box ${esc(st.boxOrigem)} \u2014 qual \xE9?` : "";
@@ -10752,14 +10142,14 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     ) + listaDestinos(candidatos, st.sel, togDestSel);
   }
   function linhaPouso(v) {
-    const real = minutosDe(v.pouso);
-    const alvo2 = real != null ? real : minutosDe(v.chegada);
+    var _a;
+    const alvo2 = (_a = minutosDe(v.pouso)) != null ? _a : minutosDe(v.chegada);
     let t = "";
     if (alvo2 != null) {
       let d = alvo2 - agoraMin();
       if (d > 720) d -= 1440;
       else if (d < -720) d += 1440;
-      t = d > 0 ? `pousa em ${d}min` : real != null ? `pousou h\xE1 ${-d}min` : `previsto h\xE1 ${-d}min`;
+      t = d > 0 ? `pousa em ${d}min` : `pousou h\xE1 ${-d}min`;
     }
     const partes = [v.prefixo ? esc(v.prefixo) : "", t].filter(Boolean);
     return partes.length ? `<span class="passo-pouso">${partes.join(" \xB7 ")}</span>` : "";
@@ -11318,7 +10708,6 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const chave = item.grupo ? `v${primeiro.voo_destino_id}` : `d${primeiro.id}`;
     const aberto = !!(UI.viagemAberto && UI.viagemAberto[chave]);
     const origens = origensDoGrupo(ds, vg);
-    const temColeta = ds.some((d) => d.coleta_caminho);
     const rotuloVoo = rotuloDestinoCompacto(primeiro, vg, item.grupo ? { aviao: true, aviaoApos: true } : void 0);
     const bags = bagsDoCartao(ds, vg);
     const carretasBase = carretasBaseDoCartao(ds);
@@ -11330,11 +10719,10 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
             <span class="acordeon-seta">${ico("seta", 14)}</span>
             <span class="destino-viagem">${rotuloVoo}</span>
             ${vg.carga === "CARGA" ? `<span class="carga-icone" title="Levando a carga deste voo">${ico("caixaCarga", 20)}</span>` : ""}
-            ${temColeta ? `<span class="chip st-aceita">Coleta no caminho</span>` : ""}
           </span>
           ${bags ? `<span class="destino-bags viagem-bags">${(_a = bags.contado) != null ? _a : "?"}/${bags.total}${ico("pacote", 16)}</span>` : ""}
           ${carretasBase.length ? `<span class="destino-bags viagem-bags">${chipsCarretas(carretasBase)}</span>` : ""}
-          <button class="ok" style="width:auto" onclick="event.stopPropagation();${onclickCheck}" aria-label="Entreguei">${ico("aceite", 18)}</button>
+          <button class="ok" style="width:auto" onclick="event.stopPropagation();${onclickCheck}" aria-label="Entreguei">${ico("aceite", 34)}</button>
         </div>
         <div class="acordeon-corpo">
           ${origens.map((o) => `<div class="note" style="margin-top:4px">${o.rotulo}</div>`).join("")}
@@ -11401,7 +10789,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
             <span class="destino-viagem"><span class="voo voo-saida"><span class="voo-num">${esc(nomeMonte(via))}</span></span></span>
             <span class="note">${resumo}</span>
           </span>
-          <button class="ok" style="width:auto" onclick="event.stopPropagation();entregarTriagem('${esc(via)}',${vg.id})" aria-label="Entreguei">${ico("aceite", 18)}</button>
+          <button class="ok" style="width:auto" onclick="event.stopPropagation();entregarTriagem('${esc(via)}',${vg.id})" aria-label="Entreguei">${ico("aceite", 34)}</button>
         </div>
         <div class="acordeon-corpo">${ds.map(linha2).join("")}</div>
       </div>`;
@@ -11416,25 +10804,12 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       ...TRIAGENS,
       ...new Set(montePendente.filter(naEsteira).map((d) => chaveMonte(d, vg)))
     ];
-    const feitas = ds.filter((d) => d.status === "entregue");
     return `
     <div class="board-title"><h2>Viagem em andamento</h2><span class="chip st-a_caminho">A caminho</span></div>
     ${gruposDiretos(diretosPendentes).map((x) => cartaoVooDestino(x, vg)).join("")}
     ${chavesMonte.map((chave) => cartaoTriagem(chave, montePendente.filter((d) => chaveMonte(d, vg) === chave), vg)).join("")}
-    ${feitas.length ? `<button class="ghost" style="margin-top:8px" onclick="abrirEntregasFeitas(${vg.id})">${ico("aceite", 16)} Ver entregas feitas (${feitas.length})</button>` : ""}
     <button onclick="UI.pu={origem:null,boxOrigem:null,vooOrigemId:null,sel:[]};render()">+ Pegar bags no caminho</button>
     ${podeCancelar(vg) ? `<button class="ghost" style="margin-top:8px" onclick="cancelarViagem(${vg.id})">Cancelar viagem</button>` : ""}`;
-  }
-  function abrirEntregasFeitas(vgId) {
-    const vg = D.viagens.find((x) => x.id === vgId);
-    if (!vg) return;
-    const feitas = destinosDe(vg.id).filter((d) => d.status === "entregue");
-    const linhas = feitas.length ? feitas.map((d) => `<div class="list-line">
-      <span class="grow">${rotuloDestinoCompacto(d, vg)}</span>
-      ${ico("aceite", 16)}
-    </div>`).join("") : `<p class="note">Nada entregue ainda.</p>`;
-    abrirModal(`<h3>Entregas feitas</h3>${linhas}
-    <div class="modal-acoes" style="margin-top:12px"><button class="ghost" onclick="fecharModal()">Fechar</button></div>`);
   }
   async function gravarEntrega(gravar2) {
     try {
@@ -12635,50 +12010,6 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     if (r.error) await erro(r.error);
   }
 
-  // src/ui/screens/telaOC.js
-  init_store();
-  init_dom();
-  init_modal();
-  init_horas();
-
-  // src/ui/screens/telaTriagem.js
-  init_store();
-  init_dom();
-  init_horas();
-
-  // src/data/bagsDespachadas.js
-  init_supabase();
-  init_offline_sync();
-  async function somarBagsDespachadasDb(dia, vooId, qtd) {
-    try {
-      const res = await sb.rpc(
-        "somar_bags_despachadas",
-        { p_data: dia, p_voo_id: vooId, p_qtd: qtd }
-      );
-      if ((res == null ? void 0 : res.error) && erroDeRede(res.error)) throw res.error;
-      return res;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("somar_bags_despachadas", { dia, vooId, qtd });
-        return { error: null, fila: true };
-      }
-      throw e;
-    }
-  }
-  async function avisarBagsDespachadasDb(dia, vooId) {
-    try {
-      const res = await sb.rpc("avisar_bags_despachadas", { p_data: dia, p_voo_id: vooId });
-      if ((res == null ? void 0 : res.error) && erroDeRede(res.error)) throw res.error;
-      return res;
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("avisar_bags_despachadas", { dia, vooId });
-        return { error: null, fila: true };
-      }
-      throw e;
-    }
-  }
-
   // src/ui/screens/telaTriagem.js
   init_conexoes();
   init_modal();
@@ -13259,7 +12590,668 @@ ${e.message || e}` : e);
     else if (falhasLocal.length) await aviso(`Os operadores foram avisados, mas o \xCDndia do l\xEDder pode n\xE3o mostrar "carreta da TCX" (falha ao gravar o local): ${falhasLocal[0]}`);
   }
 
+  // src/ui/screens/telaVoos.js
+  function telaVoos() {
+    const lista = D.voos.filter((v) => v.data === hoje()).filter(passaVista).filter((v) => malhaBateBusca(v, UI.malhaBusca));
+    const editar = pode("malha_editar");
+    const posicionar = pode("oc_posicionar");
+    const cartaoImportar = !editar ? "" : `
+  <div class="card">
+    <h3 style="color:var(--amber)">Importar malha do dia</h3>
+    <p class="note">Aceita .csv ou .xlsx no formato do sistema (com ou sem cabe\xE7alho).</p>
+    <div class="row" style="align-items:end">
+      <div><label>Data da malha (importar/limpar)</label><input id="mdata" type="date" value="${esc(UI.malhaData || hoje())}" onchange="UI.malhaData=this.value"></div>
+      <div><label>Arquivo</label><input id="mfile" type="file" accept=".csv,.xlsx,.xls" onchange="UI.malhaArquivo=this.files[0]||null;renderSeguro()"></div>
+    </div>
+    ${UI.malhaArquivo ? `<p class="note" style="margin-top:8px">Arquivo pronto: <b style="color:var(--amber)">${esc(UI.malhaArquivo.name)}</b></p>` : ""}
+    <div class="row" style="margin-top:10px">
+      <button class="primary" ${UI.malhaArquivo ? "" : "disabled"} onclick="importarMalha()">Importar</button>
+      <button class="ghost" onclick="limparMalha()">Limpar malha desta data</button>
+    </div>
+    <div class="note" id="mlog" style="margin-top:8px"></div>
+  </div>`;
+    return `
+  ${cartaoImportar}
+  <div class="board-title">
+    <h2>Malha de hoje</h2>
+    <span class="flip">${lista.length}</span>
+    <span class="malha-ajuda" onclick="abrirAjudaMalha()" aria-label="Como usar a malha">${ico("notificacao", 18)}</span>
+  </div>
+  <div class="card" style="padding:10px 12px">
+    <div class="row" style="align-items:end">
+      <div style="flex:0 0 84px"><label>Janela de</label><input value="${esc(UI.vHDe)}" inputmode="numeric"
+        oninput="this.value=mascaraHora(this.value)" onchange="UI.vHDe=normHora(this.value);renderSeguro()" placeholder="\u2014"></div>
+      <div style="flex:0 0 84px"><label>At\xE9</label><input value="${esc(UI.vHAte)}" inputmode="numeric"
+        oninput="this.value=mascaraHora(this.value)" onchange="UI.vHAte=normHora(this.value);renderSeguro()" placeholder="\u2014"></div>
+      <p class="note" style="margin:0 0 10px 4px">Vazio = sem limite. Filtra por hor\xE1rio \u2014 a malha continua sendo s\xF3 a de hoje.</p>
+    </div>
+    <input id="malhaBusca" type="text" inputmode="numeric" placeholder="Buscar voo (ex.: 18)"
+      value="${esc(UI.malhaBusca || "")}" oninput="buscarMalha(this.value)" class="busca-voo" style="margin:4px 0 0">
+  </div>
+  ${editar ? `<div style="margin-bottom:10px"><button class="small" style="width:auto"
+      onclick="adicionarVoo()">+ Adicionar voo</button></div>` : ""}
+  <div style="display:flex;justify-content:flex-end;margin:-2px 2px 6px"><span class="note">${dm(hoje())}</span></div>
+  <div class="card tbl-wrap malha-tbl-wrap">${lista.length ? `
+    <table class="malha-tabela"><tr>
+      <th>VAR</th><th>Arr.</th>
+      <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('chegada')">STA ${UI.malhaOrdem.col === "chegada" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
+      <th>REG</th>
+      <th>VDP</th><th>DEP</th>
+      <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('saida')">STD ${UI.malhaOrdem.col === "saida" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
+      <th>Box</th><th>EST</th><th></th></tr>
+    ${ordenar(lista).map((v) => linhaVoo(v, editar, posicionar)).join("")}</table>` : `<p class="note">Nenhum voo nesta janela${UI.malhaBusca ? " com esse n\xFAmero" : ""}.</p>`}
+  </div>`;
+  }
+  function malhaBateBusca(v, busca) {
+    const b = String(busca || "").trim().toLowerCase();
+    if (!b) return true;
+    return [v.numero, v.voo_chegada].some((n) => String(n || "").toLowerCase().includes(b));
+  }
+  function buscarMalha(txt2) {
+    UI.malhaBusca = txt2;
+    redesenharMantendoFoco("malhaBusca");
+  }
+  function ordenar(lista) {
+    return lista.sort((a, b) => {
+      const col = UI.malhaOrdem.col || "chegada";
+      const dir = UI.malhaOrdem.col ? UI.malhaOrdem.dir : 1;
+      return (minPlain(a[col]) - minPlain(b[col])) * dir;
+    });
+  }
+  var dm = (d) => d ? d.slice(8, 10) + "/" + d.slice(5, 7) : "";
+  function iconeLogMalha(v) {
+    const entradas = (UI.malhaEntradas || []).filter((e) => e.vooId === v.id);
+    if (!entradas.length) return "";
+    const resumo = entradas.map((e) => e.texto).join("\n");
+    return `<span class="log-ponto" title="${esc(resumo)}" onclick="verLogMalha(${v.id})">${ico("exclamacao", 16)}</span>`;
+  }
+  function verLogMalha(vooId) {
+    const entradas = (UI.malhaEntradas || []).filter((e) => e.vooId === vooId);
+    if (!entradas.length) return;
+    aviso(entradas.map((e) => e.texto).join("\n"), "Avisos da importa\xE7\xE3o da malha");
+  }
+  function blocoDestrava(v, lado, travado) {
+    const icOperacao = lado === "chegada" ? "pousando" : "decolando";
+    if (v[`${lado}_destravada_em`])
+      return `<span class="malha-btn-icone" aria-label="${lado} destravado, aguardando reimporta\xE7\xE3o">${ico("cadeadoFechado", 16)}${ico(icOperacao, 16)}</span>`;
+    if (!travado) return "";
+    return `<button class="small ghost malha-btn-icone" onclick="destravarLado(${v.id},'${lado}')"
+    aria-label="Destravar ${lado}">${ico("cadeadoAberto", 16)}${ico(icOperacao, 16)}</button>`;
+  }
+  var temSaida = (v) => !!(v.saida || v.destino) || v.numero && v.numero !== v.voo_chegada;
+  function soloMin(v) {
+    const c = minutosDe(v.chegada), s = minutosDe(v.saida);
+    return c == null || s == null ? null : s - c;
+  }
+  var SOLO_APERTO_MIN = 30;
+  function soloApertado(v) {
+    const m = soloMin(v);
+    return m != null && m < SOLO_APERTO_MIN;
+  }
+  function alca(vooId, lado, pode2, emEdicao) {
+    if (!pode2 || emEdicao) return "";
+    const rot2 = lado === "chegada" ? "chegada" : "sa\xEDda";
+    return `<span class="malha-alca" onpointerdown="arrastarLadoVoo(event,${vooId},'${lado}')"
+    aria-label="Arraste para trocar o lado ${rot2} com outra linha">${ico("arrastar", 16)}</span>`;
+  }
+  function blocoOc(v, posicionar, emEdicao) {
+    if (!posicionar || !emEdicao) return "";
+    const ocs = D.users.filter((u) => u.perfil === "oc");
+    return `<label class="note" style="display:block;margin-top:8px">OC do box
+    <select onchange="posicionarOcTela(${v.id},this.value)">
+      <option value="">\u2014</option>
+      ${ocs.map((u) => `<option value="${u.id}" ${v.oc_posicionado_id === u.id ? "selected" : ""}>${esc(u.nome)}</option>`).join("")}
+    </select></label>`;
+  }
+  function linhaVoo(v, editar, posicionar) {
+    const emEdicao = UI.linhaEditando === v.id;
+    const podeAlgo = editar || posicionar;
+    const campo = (nome, largura, extra = "") => emEdicao && editar ? `<input value="${esc(v[nome] || "")}" style="width:${largura}px" ${extra}
+         onchange="mudarVoo(${v.id},'${nome}',this.value)">` : `<span>${esc(v[nome] || "\u2014")}</span>`;
+    const campoHora = (nome) => emEdicao && editar ? `<input value="${esc(v[nome] || "")}" style="width:76px" inputmode="numeric"
+         oninput="this.value=mascaraHora(this.value)"
+         onchange="mudarVoo(${v.id},'${nome}',this.value)">` : `<span class="mono">${esc(v[nome] || "\u2014")}</span>`;
+    const botao = !podeAlgo ? "" : emEdicao ? `<button class="small ok" style="width:auto" onclick="UI.linhaEditando=null;render()">OK</button>` : `<button class="small ghost malha-btn-icone" onclick="UI.linhaEditando=${v.id};render()"
+        aria-label="Editar">${ico("lapis", 16)}</button>`;
+    const btnApagar = emEdicao && editar ? `<button class="small ghost" style="width:auto;color:var(--red);border-color:var(--red)"
+         onclick="apagarVoo(${v.id})">Apagar</button>` : "";
+    const destravaChegada = emEdicao && editar ? blocoDestrava(v, "chegada", !!v.chegada && jaPousou(v)) : "";
+    const destravaSaida = emEdicao && editar ? blocoDestrava(v, "saida", jaDecolou(v)) : "";
+    const solo = soloMin(v);
+    const tituloSolo = solo != null ? ` title="Solo: ${solo} min"` : "";
+    return `<tr data-voo-id="${v.id}"${emEdicao ? ' style="background:var(--surface2)"' : ""}>
+    <td class="mono lado-a" data-campo="voo_chegada">${alca(v.id, "chegada", editar && !!v.voo_chegada, emEdicao)}${campo("voo_chegada", 64)}</td>
+    <td class="lado-a" data-campo="origem">${campo("origem", 56)}</td>
+    <td class="lado-a" data-campo="chegada">${campoHora("chegada")}</td>
+    <td class="lado-a" data-campo="prefixo">${campo("prefixo", 82)}</td>
+    <td class="mono lado-b" data-campo="numero" style="color:var(--amber)">${alca(v.id, "saida", editar && temSaida(v), emEdicao)}${temSaida(v) || emEdicao && editar ? campo("numero", 64) : '<span class="note">\u2014</span>'}</td>
+    <td class="lado-b" data-campo="destino">${campo("destino", 56)}</td>
+    <td class="lado-b${soloApertado(v) ? " solo-apertado" : ""}" data-campo="saida"${tituloSolo}>${campoHora("saida")}</td>
+    <td>${editar ? `<input class="malha-in-box" value="${esc(v.box || "")}" onchange="mudarVoo(${v.id},'box',this.value)">` : `<span class="badge sm">${esc(v.box || "?")}</span>`}</td>
+    <td><input class="malha-in-esteira" value="${esc(v.esteira || "")}"
+      onchange="mudarVoo(${v.id},'esteira',this.value)"></td>
+    <td>${iconeLogMalha(v)}${botao}${btnApagar}${destravaChegada}${destravaSaida}${blocoOc(v, posicionar, emEdicao)}</td>
+  </tr>`;
+  }
+  function passaVista(v) {
+    const t = minPlain(v.saida || v.chegada);
+    if (UI.vHDe && t !== 99999 && t < minPlain(UI.vHDe)) return false;
+    if (UI.vHAte && t !== 99999 && t > minPlain(UI.vHAte)) return false;
+    return true;
+  }
+  function ordenarMalha(col) {
+    if (UI.malhaOrdem.col === col) UI.malhaOrdem.dir *= -1;
+    else UI.malhaOrdem = { col, dir: 1 };
+    bus.renderSeguro();
+  }
+  async function mudarVoo(id, campo, valor) {
+    valor = campo === "chegada" || campo === "saida" ? normHora(valor) : valor.trim();
+    const alvo2 = valor || null;
+    if (campo === "box" && alvo2) {
+      const outros = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2) && !jaDecolou(v));
+      if (outros.length) {
+        abrirEscolhaTrocaBox(id, alvo2, outros);
+        return;
+      }
+    }
+    await gravarCampo(id, campo, alvo2);
+  }
+  function rotacaoTexto(vooChegada, vooSaida, box) {
+    const c = esc(vooChegada || "?");
+    const s = vooSaida ? `vai sair como ${esc(vooSaida)}` : "n\xE3o tem sa\xEDda na malha";
+    const b = box ? `, no box ${esc(box)}` : "";
+    return `${c} (chegando) ${s}${b}`;
+  }
+  function abrirEscolhaTrocaBox(id, alvo2, outros) {
+    const eu = D.voos.find((v) => v.id === id) || {};
+    const opcoes = outros.map((o) => {
+      const linha1 = rotacaoTexto(eu.voo_chegada, eu.numero, alvo2);
+      const linha2 = rotacaoTexto(o.voo_chegada, o.numero, eu.box);
+      return `<button class="primary" style="margin-bottom:8px;text-align:left"
+      onclick="confirmarTrocaBox(${id},'${esc(alvo2)}',${o.id})">
+      Trocar
+      <span style="display:block;font-size:12px;opacity:.85;margin-top:4px">
+        O voo ${linha1}</span>
+      <span style="display:block;font-size:12px;opacity:.85">
+        O voo ${linha2}</span></button>`;
+    }).join("");
+    const jaNoBox = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2) && !jaDecolou(v)).map((v) => v.numero || v.voo_chegada || "?");
+    const dica = jaNoBox.length ? `os voos ${esc(jaNoBox.join(", "))} v\xE3o sair no box ${esc(alvo2)} \u2014 use quando o voo de chegada mais tarde est\xE1 programado para esse box` : `use quando o voo de chegada mais tarde est\xE1 programado para o box ${esc(alvo2)}`;
+    const manter = `<button style="margin-bottom:8px;text-align:left"
+    onclick="confirmarTrocaBox(${id},'${esc(alvo2)}',null)">
+    S\xF3 colocar ${esc(alvo2)} neste voo
+    <span style="display:block;font-size:12px;opacity:.75;margin-top:4px">${dica}</span></button>`;
+    abrirModal(`<h3>BOX ${esc(alvo2)} j\xE1 est\xE1 em uso</h3>
+    <p class="note">Escolha o que fazer:</p>
+    ${opcoes}${manter}
+    <button class="ghost" onclick="fecharModal();render()">Desfazer a edi\xE7\xE3o</button>`);
+  }
+  async function confirmarTrocaBox(id, alvo2, outroId) {
+    fecharModal();
+    if (outroId == null) {
+      await gravarCampo(id, "box", alvo2);
+      return;
+    }
+    const eu = D.voos.find((v) => v.id === id) || {};
+    const outro = D.voos.find((v) => v.id === outroId) || {};
+    const boxEu = eu.box || null;
+    const ocEu = eu.oc_posicionado_id || null;
+    const ocOutro = outro.oc_posicionado_id || null;
+    const r1 = await alterarVoo(outro.id, { box: boxEu, oc_posicionado_id: ocEu });
+    if (r1.error) {
+      await erro(r1.error);
+      await bus.recarregar();
+      forcarDesenho();
+      return;
+    }
+    const r2 = await alterarVoo(id, { box: alvo2, oc_posicionado_id: ocOutro });
+    if (r2.error) {
+      await erro(r2.error);
+      await bus.recarregar();
+      forcarDesenho();
+      return;
+    }
+    aplicarLocal(id, { box: alvo2, oc_posicionado_id: ocOutro });
+    aplicarLocal(outro.id, { box: boxEu, oc_posicionado_id: ocEu });
+    forcarDesenho();
+  }
+  function campoLado(linha2, campo) {
+    const td = linha2.querySelector ? linha2.querySelector(`[data-campo="${campo}"]`) : null;
+    return td ? (td.textContent || "").trim() : "";
+  }
+  function conteudoFantasma(linha2, lado) {
+    if (lado === "chegada") {
+      const voo3 = campoLado(linha2, "voo_chegada"), reg = campoLado(linha2, "prefixo"), hora3 = campoLado(linha2, "chegada");
+      return { icone: "pousando", titulo: voo3 || "?", legenda: [reg, hora3].filter(Boolean).join(" \xB7 ") };
+    }
+    const voo2 = campoLado(linha2, "numero"), destino = campoLado(linha2, "destino"), hora2 = campoLado(linha2, "saida");
+    return { icone: "decolando", titulo: voo2 || "?", legenda: [destino, hora2].filter(Boolean).join(" \xB7 ") };
+  }
+  function elementoFantasma() {
+    let f = document.getElementById("malha-fantasma");
+    if (!f) {
+      f = document.createElement("div");
+      f.id = "malha-fantasma";
+      document.body.appendChild(f);
+    }
+    return f;
+  }
+  function mostrarFantasma(linha2, lado, x, y) {
+    const f = elementoFantasma();
+    const { icone, titulo, legenda } = conteudoFantasma(linha2, lado);
+    f.className = `malha-fantasma ${lado === "chegada" ? "chegada" : "saida"}`;
+    f.innerHTML = `${ico(icone, 22)}
+    <span class="malha-fantasma-txt"><b>${esc(titulo)}</b>${legenda ? `<br>${esc(legenda)}` : ""}</span>`;
+    f.style.left = `${x}px`;
+    f.style.top = `${y}px`;
+    f.style.display = "flex";
+  }
+  function moverFantasma(x, y) {
+    const f = document.getElementById("malha-fantasma");
+    if (f) {
+      f.style.left = `${x}px`;
+      f.style.top = `${y}px`;
+    }
+  }
+  function esconderFantasma() {
+    const f = document.getElementById("malha-fantasma");
+    if (f) f.style.display = "none";
+  }
+  function arrastarLadoVoo(ev, vooId, lado) {
+    const linhaOrigem = ev.target.closest ? ev.target.closest("tr[data-voo-id]") : null;
+    if (!linhaOrigem) return;
+    ev.preventDefault();
+    const classeArrastando = `arrastando-${lado}`;
+    linhaOrigem.classList.add(classeArrastando);
+    UI.malhaArrastando = true;
+    mostrarFantasma(linhaOrigem, lado, ev.clientX, ev.clientY);
+    let alvo2 = null;
+    function marcarAlvo(linha2) {
+      if (linha2 === alvo2) return;
+      if (alvo2) alvo2.classList.remove("solta-aqui");
+      alvo2 = linha2;
+      if (alvo2) alvo2.classList.add("solta-aqui");
+    }
+    function mover(e) {
+      moverFantasma(e.clientX, e.clientY);
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const linha2 = (el == null ? void 0 : el.closest) ? el.closest("tr[data-voo-id]") : null;
+      marcarAlvo(linha2 && linha2 !== linhaOrigem ? linha2 : null);
+    }
+    async function soltar() {
+      document.removeEventListener("pointermove", mover);
+      document.removeEventListener("pointerup", soltar);
+      document.removeEventListener("pointercancel", soltar);
+      linhaOrigem.classList.remove(classeArrastando);
+      esconderFantasma();
+      const linhaAlvo = alvo2;
+      marcarAlvo(null);
+      UI.malhaArrastando = false;
+      if (!linhaAlvo) {
+        if (UI.renderPendente) {
+          UI.renderPendente = false;
+          bus.render();
+        }
+        return;
+      }
+      const outroId = Number(linhaAlvo.dataset.vooId);
+      const { error } = await trocarVoos(vooId, outroId, lado);
+      if (error) await erro(error);
+      UI.linhaEditando = null;
+      UI.renderPendente = false;
+      await bus.recarregar();
+      forcarDesenho();
+    }
+    document.addEventListener("pointermove", mover);
+    document.addEventListener("pointerup", soltar);
+    document.addEventListener("pointercancel", soltar);
+  }
+  function abrirAjudaMalha() {
+    abrirModal(`<h3>Como mexer na malha</h3>
+    <ul style="padding-left:18px;line-height:1.7">
+      <li><b>VAR / Arr. / STA. / REG</b> \u2014 arraste pela al\xE7a ${ico("arrastar", 14)}
+        at\xE9 OUTRA linha para trocar os dois voos de chegada inteiros.
+        V\xE3o junto o <b>BOX</b>, o <b>EST</b> e o Descarga OK: pertencem
+        \xE0 aeronave que pousou, n\xE3o \xE0 linha da tabela.</li>
+      <li><b>VDP / DEP / STD</b> \u2014 mesma ideia: arraste pela al\xE7a para
+        trocar s\xF3 o voo de sa\xEDda entre duas linhas.</li>
+      <li><b>BOX</b> \u2014 digite direto. Se o box j\xE1 estiver em uso por um
+        voo que AINDA N\xC3O DECOLOU, o sistema pergunta se \xE9 para trocar
+        com ele (quem j\xE1 decolou n\xE3o entra na pergunta).</li>
+      <li><b>EST</b> (esteira) \u2014 digite direto, sem troca nenhuma.</li>
+      <li>Hor\xE1rio de sa\xEDda em <span style="color:var(--red)">laranja/vermelho</span>
+        = menos de 30 min entre o pouso (STA) e a decolagem (STD).</li>
+      <li>A malha aqui \xE9 sempre a <b>de hoje</b> \u2014 d\xE1 pra filtrar por
+        janela de hor\xE1rio, mas n\xE3o d\xE1 pra ver ontem nem amanh\xE3.</li>
+      <li>Atribuir <b>OC</b> a um box mora dentro de "Editar" \u2014 quem s\xF3
+        quer ver quem est\xE1 no box acompanha isso pelo Painel Operacional.</li>
+    </ul>
+    <button class="primary" onclick="fecharModal()">Entendi</button>`);
+  }
+  function forcarDesenho() {
+    var _a, _b;
+    (_b = (_a = document.activeElement) == null ? void 0 : _a.blur) == null ? void 0 : _b.call(_a);
+    bus.render();
+  }
+  async function gravarCampo(id, campo, alvo2) {
+    const { error } = await alterarVoo(id, { [campo]: alvo2 });
+    if (error) {
+      await erro(error);
+      await bus.recarregar();
+      return;
+    }
+    aplicarLocal(id, { [campo]: alvo2 });
+    bus.renderSeguro();
+  }
+  function aplicarLocal(id, campos) {
+    const v = D.voos.find((x) => x.id === id);
+    if (v) Object.assign(v, campos);
+  }
+  async function apagarVoo(id) {
+    const v = D.voos.find((x) => x.id === id) || {};
+    const usado = D.viagens.some((g) => g.voo_origem_id === id) || D.destinos.some((d) => d.voo_destino_id === id || d.origem_voo_id === id) || D.indias.some((i) => i.voo_id === id) || D.deltas.some((dl) => dl.voo_id === id);
+    if (usado) {
+      await aviso(`O voo ${esc(v.numero || v.voo_chegada || "?")} j\xE1 tem viagens, bags ou Ponto \xCDndice/Delta registrados.
+
+Apagar deixaria esse hist\xF3rico \xF3rf\xE3o. Se ele n\xE3o vai mais operar, limpe o hor\xE1rio de sa\xEDda em vez de apagar. Se algum dado do voo est\xE1 errado (n\xFAmero, REG, hora, box), corrija direto na linha em vez de apagar.`, "N\xE3o d\xE1 para apagar");
+      return;
+    }
+    const ok = await confirmar(`Apagar a linha do voo ${esc(v.numero || v.voo_chegada || "?")}${v.box ? " (box " + esc(v.box) + ")" : ""}?`);
+    if (!ok) return;
+    const { error } = await apagarVooDb(id);
+    if (error) {
+      await erro(error);
+      return;
+    }
+    UI.linhaEditando = null;
+    await bus.recarregar();
+  }
+  async function adicionarVoo() {
+    const num = await perguntar("N\xFAmero do voo de sa\xEDda (deixe vazio se for s\xF3 chegada)", "", "Adicionar voo");
+    if (num === null) return;
+    const cheg = await perguntar("N\xFAmero do voo de chegada (opcional)", "", "Adicionar voo");
+    if (cheg === null) return;
+    if (!num.trim() && !cheg.trim()) {
+      await aviso("Informe ao menos um dos dois n\xFAmeros.");
+      return;
+    }
+    const dia = UI.malhaData || hoje();
+    const { error } = await criarVoo({
+      data: dia,
+      numero: num.trim() || cheg.trim(),
+      voo_chegada: cheg.trim() || null
+    });
+    if (error) {
+      await erro(error);
+      return;
+    }
+    await bus.recarregar();
+  }
+  async function destravarLado(vooId, lado) {
+    const v = D.voos.find((x) => x.id === vooId) || {};
+    const ok = await confirmar(`Destravar o lado ${lado} do voo ${esc(v.numero || v.voo_chegada || "?")}?
+
+A pr\xF3xima reimporta\xE7\xE3o da malha vai poder sobrescrever estes campos.`);
+    if (!ok) return;
+    try {
+      await destravarLadoVoo(vooId, lado);
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    aplicarLocal(vooId, { [`${lado}_destravada_em`]: (/* @__PURE__ */ new Date()).toISOString() });
+    bus.renderSeguro();
+  }
+  async function posicionarOcTela(vooId, ocId) {
+    try {
+      await posicionarOc(vooId, ocId || null);
+      const v = D.voos.find((x) => x.id === vooId);
+      if (v) v.oc_posicionado_id = ocId || null;
+    } catch (e) {
+      await erro(e);
+    }
+  }
+  async function limparMalha() {
+    const dia = UI.malhaData || hoje();
+    const ok = await confirmar(`Apagar todos os voos de ${esc(dia)}?
+
+Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, ficam preservados para n\xE3o perder o hist\xF3rico.`);
+    if (!ok) return;
+    const log = $("mlog");
+    if (log) log.textContent = "Limpando...";
+    const { error } = await apagarMalhaDoDia(dia);
+    await bus.recarregar();
+    const log2 = $("mlog");
+    if (log2) log2.textContent = error ? "Erro ao limpar: " + error.message : `Malha de ${dia} limpa. Agora importe o arquivo correto.`;
+  }
+  var _libImportPromise = null;
+  function carregarLibImportacao() {
+    if (window.XLSX && window.Papa) return Promise.resolve();
+    if (_libImportPromise) return _libImportPromise;
+    const carregar = (src) => new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
+      document.head.appendChild(s);
+    });
+    _libImportPromise = Promise.all([
+      carregar("https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"),
+      carregar("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js")
+    ]).catch((e) => {
+      _libImportPromise = null;
+      throw e;
+    });
+    return _libImportPromise;
+  }
+  async function importarMalha() {
+    var _a, _b, _c;
+    const f = UI.malhaArquivo, log = $("mlog");
+    if (!f) {
+      if (log) log.textContent = "Escolha um arquivo primeiro.";
+      return;
+    }
+    if (log) log.textContent = "Carregando leitor de planilha...";
+    try {
+      await carregarLibImportacao();
+    } catch (e) {
+      if (log) log.textContent = `N\xE3o consegui carregar o leitor de arquivo: ${e.message}`;
+      return;
+    }
+    if (log) log.textContent = "Lendo arquivo...";
+    let mat = [];
+    try {
+      if (/\.(xlsx|xls)$/i.test(f.name)) {
+        const wb = XLSX.read(await f.arrayBuffer());
+        mat = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" });
+      } else {
+        const buf = await f.arrayBuffer();
+        let txt2;
+        try {
+          txt2 = new TextDecoder("utf-8", { fatal: true }).decode(buf);
+        } catch (e) {
+          txt2 = new TextDecoder("iso-8859-1").decode(buf);
+        }
+        const l1 = txt2.split(/\r?\n/).find((l) => l.replace(/[;,\t]/g, "").trim().length > 2) || "";
+        const delim = [[";", (l1.match(/;/g) || []).length], [",", (l1.match(/,/g) || []).length], ["	", (l1.match(/\t/g) || []).length]].sort((a, b) => b[1] - a[1])[0][0];
+        mat = Papa.parse(txt2, { delimiter: delim, skipEmptyLines: true }).data;
+      }
+    } catch (e) {
+      if (log) log.textContent = "N\xE3o consegui ler o arquivo: " + e.message;
+      return;
+    }
+    const dia = UI.malhaData || hoje();
+    const rows = processarMalha(mat, dia);
+    const carimbo = (/* @__PURE__ */ new Date()).toISOString();
+    rows.forEach((r) => r.importada_em = carimbo);
+    if (!rows.length) {
+      if (log) log.textContent = "Nenhuma linha de voo reconhecida no arquivo.";
+      return;
+    }
+    const amanha = new Date(dia);
+    amanha.setDate(amanha.getDate() + 1);
+    const diaAmanha = amanha.toISOString().slice(0, 10);
+    rows.forEach((r) => {
+      if (r.saida && /^0?[0-4]:/.test(r.saida)) r.data = diaAmanha;
+    });
+    const vistos = /* @__PURE__ */ new Set();
+    const rowsFinal = rows.filter((r) => {
+      const k = r.data + "|" + r.numero;
+      if (vistos.has(k)) return false;
+      vistos.add(k);
+      return true;
+    });
+    const numerosManha = rowsFinal.filter((r) => r.data === diaAmanha).map((r) => r.numero);
+    const jaExistem = await numerosJaNaData(diaAmanha, numerosManha);
+    const rowsGravar = rowsFinal.filter((r) => !(r.data === diaAmanha && jaExistem.has(r.numero)));
+    UI.malhaEntradas = [];
+    const { data, error } = await importarMalhaDb(rowsGravar, UI.malhaEntradas);
+    if (error) {
+      if (log) log.textContent = "Erro ao gravar: " + error.message;
+      return;
+    }
+    UI.malhaArquivo = null;
+    await bus.recarregar();
+    const log2 = $("mlog");
+    const madrugada = rowsFinal.filter((r) => r.data === diaAmanha).length;
+    const ignorados = ((_a = data == null ? void 0 : data.ignorados) == null ? void 0 : _a.length) || 0;
+    if (log2) log2.textContent = `${(_b = data == null ? void 0 : data.inseridos) != null ? _b : 0} voo(s) novo(s), ${(_c = data == null ? void 0 : data.atualizados) != null ? _c : 0} atualizado(s) para ${dia}${madrugada ? ` (${madrugada} de madrugada gravados como ${diaAmanha})` : ""}${ignorados ? ` \u2014 ${ignorados} campo(s) mantido(s) por j\xE1 terem acontecido, veja o aviso na linha do voo.` : ""}.`;
+  }
+
+  // src/ui/screens/telaViagensCCO.js
+  init_store();
+  init_dom();
+  init_horas();
+  init_regras();
+  var nomeVia = (via) => via === "ESTEIRA" ? "Esteira" : via;
+  function faltam(v) {
+    const t = minutosDe(v.saida);
+    return t === null ? null : t - agoraMin();
+  }
+  function corDoTempo(min) {
+    if (min === null) return "var(--muted)";
+    if (min < 0) return "var(--red)";
+    if (min < 20) return "var(--red)";
+    if (min < 60) return "var(--amber)";
+    return "var(--muted)";
+  }
+  function origemDe(d, vg) {
+    const box = d.origem_box || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
+    if (!box) return vg.origem || "?";
+    const vo = voo(d.origem_voo_id || vg.voo_origem_id);
+    return (vo ? vooRotulo(vo, "chegada", { box: false }) + " \xB7 " : "") + `BOX ${box}`;
+  }
+  function origemCurta(d, vg) {
+    const box = d.origem_box || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
+    return box ? `BOX ${box}` : vg.origem || "?";
+  }
+  function linhaVoo2(v) {
+    const ds = destinosDe_doVoo(v.id);
+    const pend = ds.filter((d) => d.status === "a_caminho");
+    const min = faltam(v);
+    const aberto = UI.coordAberto === v.id;
+    const cor = corDoTempo(min);
+    const naTriagem2 = ds.filter((d) => d.status === "entregue" && (d.entrega_via === "TCX" || d.entrega_via === "TLC"));
+    const naEsteira2 = ds.filter((d) => d.status === "entregue" && d.entrega_via === "ESTEIRA");
+    const resumo = pend.length ? pend.map((d) => {
+      const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
+      const via = chegouNoVoo(d) ? "" : " \u2192 " + nomeVia(d.entrega_via);
+      return `${origemCurta(d, vg)} ${nomeDe(vg.operador_id)}${via}`;
+    }).join(" \xB7 ") : naTriagem2.length ? `parada na ${naTriagem2[0].entrega_via} \u2014 falta levar ao voo` : naEsteira2.length ? "na Esteira" : ds.length ? "tudo entregue" : "nada a caminho";
+    const chip = pend.length ? `<span class="chip st-a_caminho">${pend.length} a caminho</span>` : naTriagem2.length ? `<span class="chip st-aceita">na ${naTriagem2[0].entrega_via}</span>` : naEsteira2.length ? `<span class="chip st-entregue">na Esteira</span>` : ds.length ? `<span class="chip st-entregue">entregue</span>` : `<span class="chip" style="border-color:var(--line);color:var(--muted)">sem viagem</span>`;
+    const tempo = min === null ? `<span class="note">\u2014</span>` : min < 0 ? `<div style="font-size:22px;font-weight:600;color:var(--red);line-height:1">${min}</div>
+       <div class="note" style="font-size:11px">atrasado</div>` : `<div style="font-size:22px;font-weight:600;color:${cor};line-height:1">${min}</div>
+       <div class="note" style="font-size:11px">min</div>`;
+    return `<div class="card" style="padding:0;overflow:hidden;${min !== null && min < 20 ? "border-color:var(--red)" : ""}">
+    <div class="list-line" style="border:none;padding:10px 12px;cursor:pointer;align-items:center"
+         onclick="UI.coordAberto=${aberto ? "null" : v.id};renderSeguro()">
+      <div style="min-width:52px;text-align:center">${tempo}</div>
+      <div class="grow" style="padding-left:12px">
+        <div>${vooRotulo(v, "saida", { hora: true })}</div>
+        <div class="note" style="margin-top:2px">${esc(resumo)}</div>
+      </div>
+      ${chip}
+    </div>
+    ${aberto ? detalhe(ds) : ""}
+  </div>`;
+  }
+  function detalhe(ds) {
+    if (!ds.length) return `<div style="border-top:1px solid var(--line);padding:10px 12px 12px 76px">
+    <p class="note" style="margin:0">Nenhuma viagem saiu para este voo ainda.</p></div>`;
+    return `<div style="border-top:1px solid var(--line);background:var(--surface2);padding:4px 12px 8px 76px">
+    ${ds.map((d) => {
+      const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
+      const parou = !chegouNoVoo(d);
+      const alvo2 = parou ? ` <span class="note">\u2192 ${esc(nomeVia(d.entrega_via))}</span>` : "";
+      return `<div class="list-line">
+        <span class="mono grow" style="${d.status === "entregue" ? "color:var(--muted)" : ""}">${origemDe(d, vg)} \xB7 ${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}${alvo2}</span>
+        <span class="chip st-${d.status === "entregue" && parou ? "aceita" : d.status}">${d.status === "entregue" && parou ? "na " + esc(nomeVia(d.entrega_via)) : ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
+      </div>`;
+    }).join("")}</div>`;
+  }
+  var destinosDe_doVoo = (vooId) => D.destinos.filter((d) => d.voo_destino_id === vooId);
+  var paradoEmTriagem = (vooId) => destinosDe_doVoo(vooId).some((d) => d.status === "entregue" && !chegouNoVoo(d));
+  function blocoBase() {
+    const ds = D.destinos.filter((d) => d.setor_destino === "ESTEIRA");
+    if (!ds.length) return "";
+    return `<div class="board-title"><h2>Chegando \xB7 bag da base</h2><span class="flip">${ds.length}</span></div>` + ds.map((d) => {
+      const vg = D.viagens.find((x) => x.id === d.viagem_id) || {};
+      const vo = voo(d.origem_voo_id || vg.voo_origem_id) || {};
+      return `<div class="card"><div class="list-line" style="border:none;padding:0;align-items:center">
+        <div class="grow">
+          <div>${vooRotulo(vo, "chegada")} <span class="note">esteira ${esc(vo.esteira || "?")}</span></div>
+          <div class="note" style="margin-top:2px">${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}</div>
+        </div>
+        <span class="chip st-${d.status}">${ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
+      </div></div>`;
+    }).join("");
+  }
+  function blocoProntas() {
+    const pr = D.prontas.filter((p) => p.status === "pronta" || p.status === "ciente");
+    if (!pr.length) return "";
+    return `<div class="board-title"><h2 style="color:var(--orange)">Prontas aguardando coleta</h2><span class="flip">${pr.length}</span></div>` + pr.map((p) => {
+      const v = voo(p.voo_destino_id) || {};
+      return `<div class="card"><div class="list-line" style="border:none;padding:0">
+        <span class="dcode">${p.setor === "BOX" ? "BOX " + esc(p.box || "?") : p.setor}</span>
+        <span class="grow" style="padding-left:8px">${vooRotuloPronta(p, v)} <span class="note">${hora(p.criada_em)}</span></span>
+        <span class="chip st-${p.status === "pronta" ? "solicitada" : "aceita"}">${p.status === "pronta" ? "Aguardando" : esc(nomeDe(p.ciente_por)) + " vai buscar"}</span>
+      </div></div>`;
+    }).join("");
+  }
+  function telaViagensCCO() {
+    const comMov = new Set(D.destinos.map((d) => d.voo_destino_id).filter(Boolean));
+    const lista = D.voos.filter((v) => {
+      if (!v.saida && !v.destino) return false;
+      const min = faltam(v);
+      const pend = destinosDe_doVoo(v.id).some((d) => d.status === "a_caminho");
+      if (pend || paradoEmTriagem(v.id)) return true;
+      if (min === null) return false;
+      return min > -CCO_JANELA_ATRAS_MIN && min < CCO_JANELA_FRENTE_MIN;
+    });
+    const abertos = lista.filter((v) => destinosDe_doVoo(v.id).some((d) => d.status === "a_caminho") || paradoEmTriagem(v.id) || !comMov.has(v.id));
+    const fechados = lista.filter((v) => !abertos.includes(v));
+    abertos.sort((a, b) => {
+      const ma = faltam(a), mb = faltam(b);
+      return (ma === null ? 99999 : ma) - (mb === null ? 99999 : mb);
+    });
+    return `
+    ${blocoProntas()}
+    <div class="board-title"><h2>Bags em movimento</h2><span class="flip">${abertos.length}</span></div>
+    ${abertos.length ? abertos.map(linhaVoo2).join("") : `<div class="card note">Nenhum voo com movimenta\xE7\xE3o no momento.</div>`}
+    ${blocoBase()}
+    ${fechados.length ? `
+      <div class="list-line" style="cursor:pointer;margin-top:12px"
+           onclick="UI.coordVerEntregues=${UI.coordVerEntregues ? "false" : "true"};renderSeguro()">
+        <span class="note grow">${fechados.length} voo${fechados.length === 1 ? "" : "s"} com tudo entregue \u2014 toque para ${UI.coordVerEntregues ? "esconder" : "ver"}</span>
+      </div>
+      ${UI.coordVerEntregues ? fechados.map(linhaVoo2).join("") : ""}` : ""}`;
+  }
+
   // src/ui/screens/telaOC.js
+  init_store();
+  init_dom();
+  init_modal();
+  init_horas();
   init_bus();
   function telaOC() {
     const vs = voosSaindo(UI.ocDe, UI.ocAte).filter((v) => vooBateBusca(v, UI.ocBusca));
@@ -16592,6 +16584,7 @@ Sair mesmo assim?`
     // malha (CCO)
     mudarVoo,
     ordenarMalha,
+    buscarMalha,
     importarMalha,
     limparMalha,
     posicionarOcTela,
@@ -16620,7 +16613,6 @@ Sair mesmo assim?`
     cancelarViagem,
     abrirEntregaGrupo,
     confirmarEntregaGrupo,
-    abrirEntregasFeitas,
     entregarTriagem,
     opAbrirVia,
     opFecharVia,
