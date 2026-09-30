@@ -1002,6 +1002,17 @@
   /* Nota logo embaixo do titulo do passo, colada nele (15/09/2026, Tiago:
      "no limite da linha de QUAIS VOOS?"). Antes: 10px de margem do titulo. */
   .passo-cab .folha-pergunta{margin-bottom:0}
+  /* Na folha, o cabecalho do passo (titulo, frase e o "Sair: N destinos")
+     fica PRESO no topo do corpo, e so os voos rolam por baixo (Tiago,
+     30/09/2026). Com lista longa, o Sair subia junto e o operador tinha
+     que rolar de volta pra terminar. Sticky no .folha-corpo, que e quem
+     rola -- a cabeca e a trilha, acima dele, ja eram fixas. Fundo branco
+     para os voos nao aparecerem por tras. */
+  .folha-corpo .passo-cab{position:sticky; top:0; z-index:2; background:var(--surface);
+    padding-bottom:6px}
+  /* "PP - Porta a Porta": a sigla continua grande, o nome vem menor para
+     o titulo nao quebrar em duas linhas ao lado do Sair em 360px. */
+  .passo-titulo-nome{font-size:17px; font-weight:600; letter-spacing:0}
   .passo-nota{margin:0}
   /* Rotulo de secao logo abaixo do cabecalho do passo ("CONEXOES DO ..."),
      colado na nota de cima (15/09/2026). O -10px cancela o margin-bottom
@@ -1597,9 +1608,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 30/09/2026, 15:55:33
+     Gerado em: 30/09/2026, 16:01:41
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 15:55";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 16:01";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -10419,7 +10430,6 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
 
   // src/ui/screens/telaOperador.js
   init_regras();
-  var BASE_IATA = "BSB";
   var viagemAtiva = () => D.viagens.find((v) => v.operador_id === S.me.id && v.status === "a_caminho");
   function contarMarcados(st) {
     if (!st.origem) return 0;
@@ -10754,6 +10764,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const partes = [v.prefixo ? esc(v.prefixo) : "", t].filter(Boolean);
     return partes.length ? `<span class="passo-pouso">${partes.join(" \xB7 ")}</span>` : "";
   }
+  var NOME_VIA = { PP: "Porta a Porta", TCX: "Triagem CNX", TLC: "Triagem LOCAL" };
   var quantosDestinos = (n) => n === 1 ? "o destino j\xE1 marcado" : `os ${n} destinos j\xE1 marcados`;
   async function abrirFolhaOp(origem) {
     const o = UI.op;
@@ -10927,10 +10938,10 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const idsConex = new Set(daConexao.map((v) => v.id));
     const outros = todos.filter((v) => !idsConex.has(v.id));
     const escondidos = candidatosDestinoJanela([vooOrigem]).length - todos.length;
-    const legenda = via === "PP" ? "Voos que voc\xEA vai levar direto no box deles." : via === "ESTEIRA" ? "Bagagem local do voo e voos cujas bags v\xE3o para a esteira." : `Voos cujas bags voc\xEA vai deixar na ${via}. Elas continuam sendo desses voos \u2014 quem for buscar depois sabe que est\xE3o na ${via}.`;
     const tagEsteira = via === "ESTEIRA" ? `<span class="destino-est">EST<span class="esteira-quad">${esc(vo.esteira || "?")}</span></span>` : "";
     const grade = (lista) => listaDestinos(lista, g[via], pre === "op" ? "togDest" : "togDestPU", tagEsteira);
     const rotOrigem = esc((vo.origem || "") + "-" + (vo.voo_chegada || vo.numero || "?"));
+    const legenda = via === "PP" ? "Voos direto para o BOX" : via === "ESTEIRA" ? `do ${rotOrigem} para a esteira local` : `do ${rotOrigem} para ${via}`;
     const linhaTodos = (lista, rotulo2) => {
       if (lista.length < 2) return "";
       const marcados = lista.every((v) => g[via].includes(v.id));
@@ -10979,11 +10990,11 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const linhaEsteira = via !== "ESTEIRA" ? "" : `<div class="destino-lista esteira-lista">
       <div class="pt-linha destino-linha esteira-linha${st.esteira ? " sel" : ""}" onclick="${pre}TogEsteira()">
         ${vooRotulo(vo, "chegada", { box: false })}
-        <span class="esteira-info">BAGs p/ ${esc(BASE_IATA)}<span class="esteira-est">EST<span class="esteira-quad">${esc(vo.esteira || "?")}</span></span></span>
+        <span class="esteira-info">para a BASE<span class="esteira-est">EST<span class="esteira-quad">${esc(vo.esteira || "?")}</span></span></span>
       </div>
     </div>`;
-    const sigla = via === "ESTEIRA" ? "EST" : via;
-    return passoCab(sigla, legenda, botaoSaindo(totalDestinos(st), acaoConfirmar)) + linhaEsteira + corpo + rodape;
+    const titulo = via === "ESTEIRA" ? "ESTEIRAS" : `${via}<span class="passo-titulo-nome"> - ${NOME_VIA[via]}</span>`;
+    return passoCab(titulo, legenda, botaoSaindo(totalDestinos(st), acaoConfirmar)) + linhaEsteira + corpo + rodape;
   }
   function alternarTodosDaVia(st) {
     const lista = conexoesDaVia(st).map((v) => v.id);
@@ -15334,6 +15345,13 @@ Sair mesmo assim?`
       grupo: "alerta",
       arquivo: "screens/telaOperador.js",
       desc: "Faixa de cor em volta de uma carreta no olho do card BOX \u2014 a mesma cor que o l\xEDder v\xEA no Ponto Delta."
+    },
+    {
+      nome: "nome-da-via-no-titulo",
+      seletor: ".passo-titulo-nome",
+      grupo: "voo",
+      arquivo: "screens/telaOperador.js",
+      desc: 'O nome por extenso ao lado da sigla no t\xEDtulo do passo ("PP - Porta a Porta", "TCX - Triagem CNX"), em letra menor.'
     },
     {
       nome: "pouso-no-botao-do-voo",
