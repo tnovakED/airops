@@ -1738,9 +1738,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 14:39:43
+     Gerado em: 01/10/2026, 14:52:14
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 14:39";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 14:52";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2559,6 +2559,10 @@
   }
   function ehSaida(v) {
     return !!(v.saida || v.destino);
+  }
+  function jaPousou(v) {
+    const tc = minutosDe(v.chegada);
+    return tc === null ? true : agoraMin() >= tc;
   }
   function jaDecolou(v) {
     const ts = minutosDe(v.saida);
@@ -10040,10 +10044,11 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       let vivos = vs.filter(fisicamenteNoBox);
       if (vivos.length > 1) {
         const tc = (v) => {
-          var _a;
-          return (_a = minutosDe(v.chegada)) != null ? _a : 99999;
+          var _a, _b;
+          return (_b = (_a = minutosDe(v.pouso)) != null ? _a : minutosDe(v.chegada)) != null ? _b : 99999;
         };
-        vivos = [vivos.reduce((a, b) => tc(b) < tc(a) ? b : a)];
+        const pousados = vivos.filter((v) => v.pouso || jaPousou(v));
+        vivos = pousados.length ? [pousados.reduce((a, b) => tc(b) > tc(a) ? b : a)] : [vivos.reduce((a, b) => tc(b) < tc(a) ? b : a)];
       }
       if (!vivos.length) vivos = vs.filter(aindaNoBox);
       if (vivos.length) {
