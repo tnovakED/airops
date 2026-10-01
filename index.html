@@ -1738,9 +1738,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 14:09:55
+     Gerado em: 01/10/2026, 14:39:43
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 14:09";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 14:39";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2262,10 +2262,11 @@
     if (qtd == null || qtd <= 0) return null;
     return ((_a = VEICULO_POR_QTD.find((f) => qtd <= f.ate)) == null ? void 0 : _a.nome) || null;
   }
-  var JANELA_DESCARGA_ESTIMADA_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN, SINO_IMINENTE_MIN, PATIO_PRONTA_ESPERA_MIN, PATIO_PRONTA_CRITICA_MIN, PATIO_DESCARGA_ATRASO_MIN, PATIO_OC_ANTES_MIN, PATIO_VIAGEM_LONGA_MIN, PATIO_PEDIDO_ESPERA_MIN, PATIO_SAIDA_ALERTA_MIN, PATIO_POSICAO_VALIDA_H, VEICULO_POR_QTD;
+  var JANELA_DESCARGA_ESTIMADA_MIN, SAIDA_DO_BOX_MIN, CCO_JANELA_ATRAS_MIN, CCO_JANELA_FRENTE_MIN, HORA_VIRADA_DIA, RAIO_PORTA_A_PORTA_BOX, TIMER_FOLGA_MIN, TIMER_APERTO_MIN, TIMER_HORA_IR_MIN, SINO_IMINENTE_MIN, PATIO_PRONTA_ESPERA_MIN, PATIO_PRONTA_CRITICA_MIN, PATIO_DESCARGA_ATRASO_MIN, PATIO_OC_ANTES_MIN, PATIO_VIAGEM_LONGA_MIN, PATIO_PEDIDO_ESPERA_MIN, PATIO_SAIDA_ALERTA_MIN, PATIO_POSICAO_VALIDA_H, VEICULO_POR_QTD;
   var init_regras = __esm({
     "src/config/regras.js"() {
       JANELA_DESCARGA_ESTIMADA_MIN = 30;
+      SAIDA_DO_BOX_MIN = 15;
       CCO_JANELA_ATRAS_MIN = 60;
       CCO_JANELA_FRENTE_MIN = 240;
       HORA_VIRADA_DIA = 5;
@@ -2584,12 +2585,13 @@
   function candidatosDestinoJanela(excluir) {
     return voosSaindo(UI.opDe, UI.opAte).filter((v) => !excluir.includes(v.id));
   }
-  function fisicamenteNoBox(v) {
-    const tc = minutosDe(v.chegada);
-    if (tc !== null && agoraMin() < tc) return true;
+  function saiuDoBox(v) {
+    if (v.decolagem) return true;
     const ts = minutosDe(v.saida);
-    if (ts === null) return true;
-    return agoraMin() <= ts;
+    return ts !== null && agoraMin() > ts + SAIDA_DO_BOX_MIN;
+  }
+  function fisicamenteNoBox(v) {
+    return !saiuDoBox(v);
   }
   function aindaNoBox(v) {
     return fisicamenteNoBox(v) || pendenciaDeChegada(v.id);
@@ -10025,6 +10027,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     return `<div class="folha-trilha">${linhas.join("")}</div>`;
   }
   function desempatarBoxes(patio) {
+    patio = patio.filter((v) => !saiuDoBox(v) || pendenciaDeChegada(v.id));
     const porBox = /* @__PURE__ */ new Map();
     for (const v of patio) {
       if (!v.box) continue;
@@ -10035,6 +10038,13 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     for (const vs of porBox.values()) {
       if (vs.length < 2) continue;
       let vivos = vs.filter(fisicamenteNoBox);
+      if (vivos.length > 1) {
+        const tc = (v) => {
+          var _a;
+          return (_a = minutosDe(v.chegada)) != null ? _a : 99999;
+        };
+        vivos = [vivos.reduce((a, b) => tc(b) < tc(a) ? b : a)];
+      }
       if (!vivos.length) vivos = vs.filter(aindaNoBox);
       if (vivos.length) {
         for (const v of vs) if (!vivos.includes(v)) fora.add(v.id);
