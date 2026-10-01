@@ -1758,6 +1758,14 @@
     .patio-legenda{max-width:230px}
   }
 
+  /* Significado do icone de aviso (01/10/2026): tocar no icone mostra
+     o que ele quer dizer -- no celular o title nunca aparece. */
+  [data-sig]{cursor:help}
+  .sig-balao{position:fixed; z-index:70; display:none; max-width:260px;
+    background:var(--text); color:#fff; padding:8px 10px; border-radius:8px;
+    font-size:15px; line-height:1.3; box-shadow:0 4px 14px rgba(0,0,0,.25);
+    pointer-events:none}
+
 </style>
 </head>
 <body>
@@ -1768,9 +1776,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 15:53:20
+     Gerado em: 01/10/2026, 16:08:04
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 15:53";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 16:08";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2056,7 +2064,7 @@
     } catch (e) {
     }
   }
-  var $, esc, hora;
+  var $, esc, sig, hora;
   var init_dom = __esm({
     "src/utils/dom.js"() {
       $ = (id) => document.getElementById(id);
@@ -2064,6 +2072,10 @@
         /[&<>"']/g,
         (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
       );
+      sig = (texto, passa) => {
+        const t = esc(texto);
+        return ` title="${t}" data-sig="${t}"${passa ? " data-sig-passa" : ""}`;
+      };
       hora = (ts) => ts ? new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
     }
   });
@@ -2161,12 +2173,12 @@
     if (m) {
       m.classList.remove("show");
       if (m._timerFechar) clearTimeout(m._timerFechar);
-      const esconder = () => {
+      const esconder2 = () => {
         m.style.display = "none";
         m._timerFechar = null;
       };
-      if (movimentoReduzido()) esconder();
-      else m._timerFechar = setTimeout(esconder, DURACAO_SAIDA);
+      if (movimentoReduzido()) esconder2();
+      else m._timerFechar = setTimeout(esconder2, DURACAO_SAIDA);
     }
     UI.modalVivo = null;
   }
@@ -3269,12 +3281,12 @@
   function esconderMenu(m) {
     m.classList.remove("show");
     if (m._timerFechar) clearTimeout(m._timerFechar);
-    const esconder = () => {
+    const esconder2 = () => {
       m.style.display = "none";
       m._timerFechar = null;
     };
-    if (movimentoReduzido()) esconder();
-    else m._timerFechar = setTimeout(esconder, DURACAO_SAIDA);
+    if (movimentoReduzido()) esconder2();
+    else m._timerFechar = setTimeout(esconder2, DURACAO_SAIDA);
   }
   function sincronizarMenu(abas) {
     const jaExiste = !!$("menu-bg");
@@ -3638,21 +3650,21 @@
       const vs = porBox.get(b);
       const pend = vs.some((v) => pendenciaDeChegada(v.id));
       const faltas = vs.map(minutosParaPousar).filter((m) => m != null);
-      const timer = faltas.length ? Math.min(...faltas) : null;
+      const timer2 = faltas.length ? Math.min(...faltas) : null;
       if (compacta) {
         return `<div class="bxq-wrap" onclick="${fn}('${esc(b)}')">
       <div class="bxq bxq-ic bx-${est} ${String(selecionado) === String(b) ? "sel" : ""}">
-      ${vs.length > 1 ? `<span class="bxq-n">${vs.length}</span>` : ""}
+      ${vs.length > 1 ? `<span class="bxq-n"${sig(`${vs.length} voos disputando este box \u2014 toque no box para escolher`, true)}>${vs.length}</span>` : ""}
       <span class="bxq-num">${esc(b)}</span>
-      ${pend ? `<span class="bxq-pt" title="bag em curso"></span>` : ""}
-      ${timer != null ? `<span class="bxq-timer">${timer}min</span>` : ""}
+      ${pend ? `<span class="bxq-pt"${sig("Bag deste voo em curso: a caminho com um operador ou parada numa triagem", true)}></span>` : ""}
+      ${timer2 != null ? `<span class="bxq-timer"${sig(`Faltam ${timer2} min para este voo pousar`, true)}>${timer2}min</span>` : ""}
       <span class="bxq-faixa"></span>
     </div>
     </div>`;
       }
       return `<div class="voo-btn bx-${est} ${String(selecionado) === String(b) ? "sel" : ""}" onclick="${fn}('${esc(b)}')">
       <div class="linha-c">${vs.map((v) => vooRotulo(v, "chegada")).join(" ")}</div>
-      <div class="bx-estado">${ico("pousando", 14)} ${esc(vs[0].chegada || "")}${est === "ok" ? " \xB7 descarga OK" : est === "descarregando" ? " \xB7 descarregando" : est === "chegando" ? " \xB7 ainda vai pousar" : ""}${pend ? " \xB7 bag em curso" : ""}</div>
+      <div class="bx-estado"><span${sig("Hor\xE1rio de pouso previsto deste voo")}>${ico("pousando", 14)}</span> ${esc(vs[0].chegada || "")}${est === "ok" ? " \xB7 descarga OK" : est === "descarregando" ? " \xB7 descarregando" : est === "chegando" ? " \xB7 ainda vai pousar" : ""}${pend ? " \xB7 bag em curso" : ""}</div>
     </div>`;
     };
     const txtVazio = (opcoes == null ? void 0 : opcoes.vazio) || "Nenhum voo no p\xE1tio nesta janela.";
@@ -3682,7 +3694,7 @@
       const partiu = ts !== null && agoraMin() > ts;
       return `<div class="voo-btn ${sel.includes(v.id) ? "sel" : ""}" onclick="${fn}(${v.id})">
       <div class="linha-c">${vooRotulo(v, "saida", { aviao: true })}</div>
-      <div class="dhora">${partiu ? `<span class="voo-partiu">${ico("decolando", 14)}${ico("aceite", 14)}${v._bag != null ? ` ${v._bag}` : ""}</span>` : `${esc(v.saida || "")}${v._bag != null ? ` \xB7 ${v._bag} bag${v._bag === 1 ? "" : "s"}` : ""}`}&nbsp;</div>
+      <div class="dhora">${partiu ? `<span class="voo-partiu"${sig("Este voo j\xE1 decolou \u2014 continua na lista porque ainda tem bag pendente para ele")}>${ico("decolando", 14)}${ico("aceite", 14)}${v._bag != null ? ` ${v._bag}` : ""}</span>` : `${esc(v.saida || "")}${v._bag != null ? ` \xB7 ${v._bag} bag${v._bag === 1 ? "" : "s"}` : ""}`}&nbsp;</div>
     </div>`;
     }).join("")}
   </div>`;
@@ -3693,10 +3705,10 @@
       const ts = minutosDe(v.saida);
       const partiu = ts !== null && agoraMin() > ts;
       const marcado = sel.includes(v.id);
-      const bags = v._bag != null ? `<span class="destino-bags">${v._bag}${ico("pacote", 16)}</span>` : "";
+      const bags = v._bag != null ? `<span class="destino-bags"${sig("Bags previstas para este voo, pelo Ponto Delta do voo que chegou")}>${v._bag}${ico("pacote", 16)}</span>` : "";
       return `<div class="pt-linha destino-linha${marcado ? " sel" : ""}" onclick="${fn}(${v.id})">
       ${vooRotulo(v, "saida", { aviao: true })}
-      <span class="destino-info">${bags}<span class="destino-hora">${partiu ? `<span class="voo-partiu">${ico("decolando", 14)}${ico("aceite", 14)}</span>` : ""}${esc(v.saida || "")}</span>${marcado && tagMarcado ? tagMarcado : ""}</span>
+      <span class="destino-info">${bags}<span class="destino-hora">${partiu ? `<span class="voo-partiu"${sig("Este voo j\xE1 decolou \u2014 continua na lista porque ainda tem bag pendente para ele")}>${ico("decolando", 14)}${ico("aceite", 14)}</span>` : ""}${esc(v.saida || "")}</span>${marcado && tagMarcado ? tagMarcado : ""}</span>
     </div>`;
     }).join("")}
   </div>`;
@@ -4454,7 +4466,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     var _a, _b;
     const processando = (UI.indiaProcessando || []).some((p) => p.vooId === v.id && p.tipo === tipo);
     if (processando) {
-      return `<span class="log-carregando" title="Importando...">${ico("carregando", 16)}</span>`;
+      return `<span class="log-carregando"${sig("Importando o arquivo...")}>${ico("carregando", 16)}</span>`;
     }
     const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId === v.id && e.tipo === tipo);
     if (entradas.length) {
@@ -4462,11 +4474,11 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       return `<span class="log-ponto" title="${esc(resumo)}" onclick="verLogPonto(${v.id},'${tipo}')">${ico("exclamacao", 16)}</span>`;
     }
     const imp = pontoImportado(v, tipo);
-    if (!imp) return `<span class="ponto-selo sem" title="Arquivo ainda n\xE3o subiu">${ico("ampulheta", 16)}</span>`;
+    if (!imp) return `<span class="ponto-selo sem"${sig("O arquivo deste ponto ainda n\xE3o subiu")}>${ico("ampulheta", 16)}</span>`;
     const quando = hora(imp.em);
     const quem = imp.por ? nomeDe(imp.por) : null;
     const assina = `${quando}${quem ? ` por ${quem}` : ""}`;
-    return imp.qtd === 0 ? `<span class="ponto-selo vazio" title="Arquivo lido ${esc(assina)} \u2014 nenhuma conex\xE3o. Este voo n\xE3o conecta com nenhum outro.">${ico("check", 16)}<i>0</i></span>` : `<span class="ponto-selo ok" title="Arquivo lido ${esc(assina)} \u2014 ${(_a = imp.qtd) != null ? _a : "?"} conex\xE3o(\xF5es).">${ico("check", 16)}<i>${(_b = imp.qtd) != null ? _b : "?"}</i></span>`;
+    return imp.qtd === 0 ? `<span class="ponto-selo vazio"${sig(`Arquivo lido ${assina} \u2014 nenhuma conex\xE3o. Este voo n\xE3o conecta com nenhum outro.`)}>${ico("check", 16)}<i>0</i></span>` : `<span class="ponto-selo ok"${sig(`Arquivo lido ${assina} \u2014 ${(_a = imp.qtd) != null ? _a : "?"} conex\xE3o(\xF5es).`)}>${ico("check", 16)}<i>${(_b = imp.qtd) != null ? _b : "?"}</i></span>`;
   }
   function iconeLogAnomalias() {
     const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId == null);
@@ -4744,7 +4756,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       ${vooRotulo(comoSaida(pd.destino, pd.voo_saida_numero, (vSaida == null ? void 0 : vSaida.box) || BOX_DESCONHECIDO), "saida")}
       <span class="grow"></span>
       ${seloPp(vooId, pd, tipo) || (selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : "")}
-      ${seloStatus ? `<span class="delta-status ${seloStatus.classe}" title="${esc(seloStatus.titulo)}" aria-label="${seloStatus.texto}">${ico(seloStatus.icone, 18)}</span>` : ""}
+      ${seloStatus ? `<span class="delta-status ${seloStatus.classe}"${sig(seloStatus.titulo)} aria-label="${seloStatus.texto}">${ico(seloStatus.icone, 18)}</span>` : ""}
       <span class="delta-qtd">${pd.bag_qtd}</span>
       ${manual}
       ${chamar}
@@ -4764,12 +4776,12 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const nPeg = ps.filter((p) => p.status === "coletada").length;
     const partes = [];
     if (ps.length) partes.push(`<span title="Alertas criados para as bags da base deste voo">${ps.length} alerta${ps.length === 1 ? "" : "s"}</span>`);
-    if (nSol) partes.push(`<span title="${nSol} chamado(s) aguardando um operador">${nSol}${ico("ampulheta", 16)}</span>`);
-    if (nPeg) partes.push(`<span title="${nPeg} j\xE1 pego(s) por um operador">${nPeg}${ico("mala-confirmada", 16)}</span>`);
+    if (nSol) partes.push(`<span${sig(`${nSol} chamado(s) aguardando um operador`)}>${nSol}${ico("ampulheta", 16)}</span>`);
+    if (nPeg) partes.push(`<span${sig(`${nPeg} j\xE1 pego(s) por um operador`)}>${nPeg}${ico("mala-confirmada", 16)}</span>`);
     const resumo = partes.length ? `<span class="note carreta-resumo">${partes.join(" \xB7 ")}</span>` : "";
     const linhas = ps.slice().sort((a, b) => String(a.criada_em).localeCompare(String(b.criada_em))).map((p, i) => {
       const aberto = p.status === "pronta" || p.status === "ciente";
-      const selo = aberto ? `<span class="delta-status solicitado" title="Aguardando um operador buscar" aria-label="solicitado">${ico("ampulheta", 18)}</span>` : `<span class="delta-status pega" title="J\xE1 foi pego por um operador" aria-label="pego">${ico("mala-confirmada", 18)}</span>`;
+      const selo = aberto ? `<span class="delta-status solicitado"${sig("J\xE1 solicitado, aguardando um operador buscar")} aria-label="solicitado">${ico("ampulheta", 18)}</span>` : `<span class="delta-status pega"${sig("J\xE1 foi pego por um operador")} aria-label="pego">${ico("mala-confirmada", 18)}</span>`;
       const acoes = aberto ? `<button class="small ghost delta-icone" onclick="rechamarAlertaBase(${p.id},${vooId})" aria-label="Chamar este alerta de novo" title="Chamar de novo \u2014 o operador est\xE1 demorando">${ico("campanha", 34)}<span class="delta-n">+1</span></button>
            <button class="small ghost delta-icone" onclick="cancelarAlertaBase(${p.id},${vooId})" aria-label="Cancelar este alerta" title="Cancelar este alerta">${ico("cancelar", 34)}</button>` : "";
       return `<div class="list-line alerta-base">
@@ -4832,10 +4844,10 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const linhas = balde.itens.length ? balde.itens.map((pd) => linhaDeltaConexao(vooId, v, pd, editavel)).join("") : `<p class="note" style="margin:4px 0">Nada aqui.</p>`;
     const partesResumo = [];
     if (nSolicitadas) partesResumo.push(
-      `<span title="${nSolicitadas} aguardando um operador buscar">${nSolicitadas}${ico("ampulheta", 16)}</span>`
+      `<span${sig(`${nSolicitadas} aguardando um operador buscar`)}>${nSolicitadas}${ico("ampulheta", 16)}</span>`
     );
     if (nPegas) partesResumo.push(
-      `<span title="${nPegas} j\xE1 pego${nPegas === 1 ? "" : "s"} por um operador">${nPegas}${ico("mala-confirmada", 16)}</span>`
+      `<span${sig(`${nPegas} j\xE1 pego${nPegas === 1 ? "" : "s"} por um operador`)}>${nPegas}${ico("mala-confirmada", 16)}</span>`
     );
     const resumo = partesResumo.length ? `<span class="note carreta-resumo">${partesResumo.join(" \xB7 ")}</span>` : "";
     const solicitar = balde.itens.length ? `<button class="small ghost delta-icone" onclick="solicitarCarretaDelta(${vooId},'${balde.chave}')" aria-label="Chamar operador" title="Chamar operador">${ico("carreta", 34)}${ico("campanha", 34)}${(nSolicitadas || nPegas) && livres.length ? `<span class="delta-n">(${livres.length})</span>` : ""}</button>` : "";
@@ -5431,7 +5443,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     return D.destinos.some((d) => mesmoId(d.voo_destino_id, vooId) && d.status === "a_caminho" && (d.origem_setor === "TLC" || !d.origem_setor && !d.origem_box && D.viagens.some((vg) => mesmoId(vg.id, d.viagem_id) && vg.origem === "TLC")));
   }
   function tratorTlcDoVoo(vooId) {
-    return bagTlcACaminho(vooId) ? `<span class="tlc-a-caminho" title="Bag da Triagem Local a caminho do voo">${ico("carreta", 22)}</span>` : "";
+    return bagTlcACaminho(vooId) ? `<span class="tlc-a-caminho"${sig("Bag da Triagem Local a caminho do voo")}>${ico("carreta", 22)}</span>` : "";
   }
   function bagsTlcDoVoo(vooId) {
     var _a;
@@ -5480,10 +5492,10 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const indo = aCaminhoDaConexao(pi);
       const pedido = pedidoAtivoDaConexao(pi);
       const trazendo = indo.map(
-        (id) => `<span class="india-trazendo" title="${esc(nomeDe(id))} est\xE1 trazendo">${ico("carreta", 19)}</span>`
+        (id) => `<span class="india-trazendo"${sig(`${nomeDe(id)} est\xE1 trazendo a bag desta conex\xE3o`)}>${ico("carreta", 19)}</span>`
       ).join("");
       const nEntregas = entregasDaConexao(pi);
-      const marca = nEntregas ? `<span class="india-entregue" title="${nEntregas} entrega${nEntregas === 1 ? "" : "s"} registrada${nEntregas === 1 ? "" : "s"}">${ico("mala-confirmada", 19)}${nEntregas > 1 ? `<i class="india-entregas-n">${nEntregas}</i>` : ""}</span>${trazendo}` : trazendo;
+      const marca = nEntregas ? `<span class="india-entregue"${sig(`${nEntregas} entrega${nEntregas === 1 ? "" : "s"} registrada${nEntregas === 1 ? "" : "s"} por operador para esta conex\xE3o`)}>${ico("mala-confirmada", 19)}${nEntregas > 1 ? `<i class="india-entregas-n">${nEntregas}</i>` : ""}</span>${trazendo}` : trazendo;
       const lbl = vooRotulo(
         comoChegada(pi.origem, pi.voo_chegada_numero, boxDaChegada(pi.voo_chegada_numero)),
         "chegada"
@@ -10890,7 +10902,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     return ds.filter((d) => d.qtd_sugerida != null).map((d) => d.qtd_sugerida);
   }
   function cartaoVooDestino(item, vg) {
-    var _a;
+    var _a, _b;
     const ds = item.grupo || [item.solo];
     const primeiro = ds[0];
     const chave = item.grupo ? `v${primeiro.voo_destino_id}` : `d${primeiro.id}`;
@@ -10906,10 +10918,10 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
           <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span class="acordeon-seta">${ico("seta", 14)}</span>
             <span class="destino-viagem">${rotuloVoo}</span>
-            ${vg.carga === "CARGA" ? `<span class="carga-icone" title="Levando a carga deste voo">${ico("caixaCarga", 20)}</span>` : ""}
+            ${vg.carga === "CARGA" ? `<span class="carga-icone"${sig("Esta viagem est\xE1 levando a CARGA deste voo")}>${ico("caixaCarga", 20)}</span>` : ""}
           </span>
-          ${bags ? `<span class="destino-bags viagem-bags">${(_a = bags.contado) != null ? _a : "?"}/${bags.total}${ico("pacote", 16)}</span>` : ""}
-          ${carretasBase.length ? `<span class="destino-bags viagem-bags">${chipsCarretas(carretasBase)}</span>` : ""}
+          ${bags ? `<span class="destino-bags viagem-bags"${sig(`Bags deste voo: ${(_a = bags.contado) != null ? _a : "?"} contadas pelo l\xEDder no Delta, de ${bags.total} previstas ("?" = ainda n\xE3o contou)`)}>${(_b = bags.contado) != null ? _b : "?"}/${bags.total}${ico("pacote", 16)}</span>` : ""}
+          ${carretasBase.length ? `<span class="destino-bags viagem-bags"${sig("Bags da base: quantas em cada carreta chamada e o total")}>${chipsCarretas(carretasBase)}</span>` : ""}
           <button class="ok" style="width:auto" onclick="event.stopPropagation();${onclickCheck}" aria-label="Entreguei">${ico("aceite", 34)}</button>
         </div>
         <div class="acordeon-corpo">
@@ -11717,7 +11729,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const restam = alvo2 - agoraMin();
     return restam > 0 && restam <= SINO_IMINENTE_MIN;
   }
-  var selosDoVoo = (v) => sinoIminente(v) ? ` <span class="sino-iminente" title="Decola em ${SINO_IMINENTE_MIN} minutos ou menos" aria-label="decolagem iminente">${ico("sinoAtivo", 16)}</span>` : "";
+  var selosDoVoo = (v) => sinoIminente(v) ? ` <span class="sino-iminente"${sig(`Decolagem iminente: este voo sai em ${SINO_IMINENTE_MIN} minutos ou menos`)} aria-label="decolagem iminente">${ico("sinoAtivo", 16)}</span>` : "";
   function linhasSolicitacoes(ps) {
     const vistos = /* @__PURE__ */ new Set();
     const partes = [];
@@ -11743,7 +11755,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       ${vooRotulo(v, "saida", { aviao: true })}
       <span class="alerta-contagem">${ps.length} voos</span>
-      ${urgentes > 0 ? `<span class="alerta-urgentes">${ico("alerta", 16)} ${urgentes}</span>` : ""}
+      ${urgentes > 0 ? `<span class="alerta-urgentes"${sig(`${urgentes} voo${urgentes === 1 ? "" : "s"} com sa\xEDda em menos de 15 min (timer vermelho)`)}>${ico("alerta", 16)} ${urgentes}</span>` : ""}
     </span>
   </div>${aberta ? `<div class="alerta-carretas">${ps.map(linhaSolicitacao).join("")}</div>` : ""}`;
   }
@@ -11769,8 +11781,8 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       const v = voo(p.voo_destino_id) || {};
       return `<div class="list-line alerta-linha carga-linha">
       <span class="grow" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${vooRotulo(v, "saida", { aviao: true })}
-        <span class="carga-icone" title="Carga">${ico("caixaCarga", 20)}</span>
-        <span class="carga-hora" title="Decolagem">${ico("decolando", 16)}${esc(v.saida || "\u2014")}</span></span>
+        <span class="carga-icone"${sig("CARGA do voo para levar")}>${ico("caixaCarga", 20)}</span>
+        <span class="carga-hora"${sig("Hor\xE1rio de decolagem previsto deste voo")}>${ico("decolando", 16)}${esc(v.saida || "\u2014")}</span></span>
       <button class="alerta-acao primary" onclick="levarCarga(${p.id})" aria-label="Levar a carga deste voo" title="Levar a carga deste voo">${ico("carreta", 20)}</button>
     </div>`;
     }).join("");
@@ -11810,9 +11822,9 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const aberto = UI.olhoLugar === s.lugar;
     return `<div class="list-line alerta-linha">
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      ${s.box ? `Chamando no ${placaBox(s.box, "saida")}` : ico("pousando", 20)}
+      ${s.box ? `Chamando no ${placaBox(s.box, "saida")}` : `<span${sig("Bags prontas para buscar neste lugar")}>${ico("pousando", 20)}</span>`}
       <span class="alerta-contagem">${totalVoos} voo${totalVoos === 1 ? "" : "s"}</span>
-      ${urgentes > 0 ? `<span class="alerta-urgentes">${ico("alerta", 16)} ${urgentes}</span>` : ""}
+      ${urgentes > 0 ? `<span class="alerta-urgentes"${sig(`${urgentes} voo${urgentes === 1 ? "" : "s"} com sa\xEDda em menos de 15 min (timer vermelho)`)}>${ico("alerta", 16)} ${urgentes}</span>` : ""}
     </span>
     ${cancelar}${olho}
   </div>${aberto ? carretasDoAlerta(tipo, s) : ""}`;
@@ -12006,7 +12018,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
   function cartaoTipo(g) {
     const { abas, corpo } = boxFiltrado(g);
     const urgCartao = contarUrgentes(g.sub.flatMap((s) => s.ps));
-    const sino = urgCartao > 0 ? `<span class="card-urgentes" title="${urgCartao} urgente${urgCartao === 1 ? "" : "s"} neste card">${ico("notificacao", 18)} ${urgCartao}</span>` : "";
+    const sino = urgCartao > 0 ? `<span class="card-urgentes"${sig(`${urgCartao} voo${urgCartao === 1 ? "" : "s"} urgente${urgCartao === 1 ? "" : "s"} neste card (${urgCartao === 1 ? "sai" : "saem"} em menos de 15 min)`)}>${ico("notificacao", 18)} ${urgCartao}</span>` : "";
     return `<div class="card alerta" data-tipo="${esc(g.tipo)}">
     <div class="lugar-linha">
       ${abas}
@@ -12344,7 +12356,7 @@ Os operadores recebem UM aviso para vir buscar a carreta inteira.`);
     const nomeColeta = p.status === "coletada" ? ` <span class="note">${esc(nomeDe(p.ciente_por))}</span>` : "";
     return `<div class="list-line">
     <span class="grow">${qtd} bag${qtd === 1 ? "" : "s"}</span>
-    <span class="note" title="Solicitado">${ico("sinoSolicitado", 14)} ${hora(p.criada_em)}</span>
+    <span class="note"${sig(`Pedido feito \xE0s ${hora(p.criada_em)}`)}>${ico("sinoSolicitado", 14)} ${hora(p.criada_em)}</span>
     <span class="chip ${classe}">${texto}</span>${nomeColeta}
   </div>`;
   }
@@ -12352,7 +12364,7 @@ Os operadores recebem UM aviso para vir buscar a carreta inteira.`);
     const alvo2 = minutosDe(v.saida);
     if (alvo2 == null) return "";
     const restam = alvo2 - agoraMin();
-    if (restam <= 0) return ` ${ico("decolando", 18)}`;
+    if (restam <= 0) return ` <span${sig("Este voo j\xE1 decolou")}>${ico("decolando", 18)}</span>`;
     return ` <span class="op-timer ${corTimer(restam)}">${restam}min</span>`;
   }
   function vooBateBusca(v, busca) {
@@ -12383,7 +12395,7 @@ Os operadores recebem UM aviso para vir buscar a carreta inteira.`);
       const tituloPedido = pedido ? `${doIndice ? "L\xEDder" : "Orange Cap"} est\xE1 pedindo estas bags` : "";
       return `<div class="base-tlc-voo">
           <div class="list-line base-tlc-topo">
-            <span class="grow">${vooRotulo(v, "saida")}${timerBaseTlc(v)}${pedido ? ` <span class="pedido-tlc-sino" title="${esc(tituloPedido)}">${ico("notificacao", 16)}</span>` : ""}</span>
+            <span class="grow">${vooRotulo(v, "saida")}${timerBaseTlc(v)}${pedido ? ` <span class="pedido-tlc-sino"${sig(tituloPedido)}>${ico("notificacao", 16)}</span>` : ""}</span>
             <span class="base-tlc-chips">
               ${n ? `<button class="chip st-a_caminho chip-botao" title="Ver carretas sinalizadas" onclick="abrirCarretasBaseTlc(${v.id})">${ico("carretaOk", 16)}${n}</button>` : ""}
               <span class="chip st-aceita">${total}${ico("pacote", 16)}</span>
@@ -16598,6 +16610,13 @@ Sair mesmo assim?`
     },
     // ---- basicas ----
     {
+      nome: "balao-do-significado",
+      seletor: ".sig-balao",
+      grupo: "base",
+      arquivo: "components/significado.js",
+      desc: "Bal\xE3o escuro que aparece ao tocar num \xEDcone de aviso, dizendo o que ele significa. Some em 4 s, ao tocar fora ou ao rolar. Lista dos textos: docs/significado-dos-icones.md."
+    },
+    {
       nome: "contador",
       seletor: ".cont",
       grupo: "base",
@@ -17055,6 +17074,54 @@ Sair mesmo assim?`
     aplicar();
   }
 
+  // src/ui/components/significado.js
+  var balao2 = null;
+  var timer = null;
+  function esconder() {
+    if (balao2) balao2.style.display = "none";
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  }
+  function mostrar2(el) {
+    const texto = el.getAttribute("data-sig");
+    if (!texto) return;
+    if (!balao2) {
+      balao2 = document.createElement("div");
+      balao2.className = "sig-balao";
+      balao2.setAttribute("role", "status");
+      document.body.appendChild(balao2);
+    }
+    balao2.textContent = texto;
+    balao2.style.display = "block";
+    const r = el.getBoundingClientRect();
+    const W = window.innerWidth, larg = balao2.offsetWidth, alt = balao2.offsetHeight;
+    const x = Math.max(8, Math.min(r.left + r.width / 2 - larg / 2, W - larg - 8));
+    const y = r.top - alt - 8 >= 8 ? r.top - alt - 8 : r.bottom + 8;
+    balao2.style.left = `${x}px`;
+    balao2.style.top = `${y}px`;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(esconder, 4e3);
+  }
+  function ligarSignificados() {
+    if (typeof document === "undefined" || !document.addEventListener) return;
+    document.addEventListener("click", (e) => {
+      var _a, _b;
+      const el = (_b = (_a = e.target) == null ? void 0 : _a.closest) == null ? void 0 : _b.call(_a, "[data-sig]");
+      if (!el) {
+        esconder();
+        return;
+      }
+      if (!el.hasAttribute("data-sig-passa")) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      mostrar2(el);
+    }, true);
+    window.addEventListener("scroll", esconder, true);
+  }
+
   // src/main.js
   init_horas();
   init_modal();
@@ -17300,6 +17367,7 @@ Sair mesmo assim?`
   });
   boot();
   iniciarModoPecas();
+  ligarSignificados();
 })();
 
 </script>
