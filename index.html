@@ -1495,16 +1495,15 @@
   .patio-kpi span{font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
   .patio-kpi.atencao b{color:var(--orange)} .patio-kpi.ruim b{color:var(--red)}
 
-  /* 446px na malha = a tabela com UMA linha aberta pelo lapis (440,
-     medido na vitrine) + borda. Fixo de proposito: abrir a edicao nao
-     muda o tamanho de nada nem liga rolagem de lado (Tiago, 01/10/2026). */
-  .patio-corpo{display:grid; grid-template-columns:minmax(0,1fr) 380px 446px; flex:1; min-height:0}
-  .patio-corpo > .patio-malha-col .patio-malha-tab{width:100%}
-  /* Tela media: tres colunas espremeriam o mapa (abaixo de 1300px ele
-     ficaria com menos de ~470) -- a malha desce pra baixo, na largura
-     toda, e a tabela volta a largura natural. */
+  /* A coluna da malha e "auto": tem a largura da grade dela, e cresce
+     quando uma linha abre pra edicao (o mapa cede esses pixels). Teto de
+     560px pra uma linha aberta nunca engolir o mapa. */
+  .patio-corpo{display:grid; grid-template-columns:minmax(0,1fr) 380px auto; flex:1; min-height:0}
+  .patio-corpo > .patio-malha-col{max-width:560px}
+  /* Tela media: tres colunas espremeriam o mapa -- a malha desce pra
+     baixo, na largura toda. */
   @media (max-width: 1299px){
-    .patio-corpo > .patio-malha-col .patio-malha-tab{width:auto}
+    .patio-corpo > .patio-malha-col{max-width:none}
     .patio-corpo{grid-template-columns:minmax(0,1fr) 380px}
     .patio-malha-col{grid-column:1 / -1; border-left:0; border-top:1px solid var(--line); max-height:60vh}
   }
@@ -1548,49 +1547,67 @@
   .patio-abas .n{background:var(--red); color:#fff; border-radius:9px; padding:1px 6px; margin-left:4px; font-size:11px}
   .patio-lista{flex:1; overflow-y:auto; min-height:0}
   /* Malha em coluna propria, a direita do cartao do box (01/10/2026):
-     mapa | cartao | malha. Cabecalho com a busca parado; so a tabela rola,
-     nos dois sentidos (a linha em edicao fica mais larga que a coluna). */
+     mapa | cartao | malha. Cabecalho com a busca parado; so a grade rola. */
   .patio-malha-col{background:var(--surface); border-left:1px solid var(--line); display:flex;
     flex-direction:column; min-height:0; min-width:0}
   .pm-cab{flex:none; display:flex; align-items:center; gap:8px; padding:6px 8px;
     background:var(--surface2); border-bottom:1px solid var(--line)}
   .pm-tit{font-weight:700; font-size:13px; letter-spacing:.05em; text-transform:uppercase}
   .pm-corpo{flex:1; min-height:0; overflow:auto}
-  /* Campos da malha: 16px de letra (abaixo disso o iOS da zoom ao focar);
-     a compactacao vem da largura e da altura, nao da letra. ".patio" no
-     seletor: "input{min-height:52px}" geral tem que perder aqui. */
+
+  /* A malha e um CSS GRID, nao uma <table> (Tiago, 01/10/2026): a tabela
+     de largura fixa nao cedia quando a linha abria pra edicao, e os campos
+     encavalavam. Seis colunas "auto": cada uma tem a largura do MAIOR
+     conteudo dela -- a linha aberta alarga a coluna em vez de sobrepor o
+     vizinho, e fechada a coluna volta ao tamanho do texto. A linha e
+     display:contents, entao as celulas sao itens da MESMA grade e as
+     colunas alinham entre linhas. */
+  .pm-grade{display:grid; grid-template-columns:repeat(6, auto); justify-content:start;
+    font-size:11px; font-variant-numeric:tabular-nums}
+  .pm-linha{display:contents}
+  .pm-c{padding:3px 5px; white-space:nowrap; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:2px; min-width:0}
+  .pm-th{position:sticky; top:0; z-index:1; background:var(--surface); font-size:10px; color:var(--muted);
+    cursor:pointer; user-select:none}
+  .pm-th[aria-sort="ascending"], .pm-th[aria-sort="descending"]{color:var(--text)}
+  .pm-c.mb{font-weight:700}
+  .pm-grade .apt{color:var(--muted); font-size:10px}
+  .pm-linha[data-sel] > .pm-c{cursor:pointer}
+  /* Toque longo (celular) abre o menu do botao direito; sem isto o iOS
+     abre a lupa/selecao de texto por cima. */
+  .pm-linha[oncontextmenu] > .pm-c{-webkit-touch-callout:none; -webkit-user-select:none; user-select:none}
+  .pm-linha.est-solo > .pm-c, .pm-linha.est-descarga > .pm-c{font-weight:700}
+  .pm-linha.est-saiu > .pm-c{color:var(--muted)}
+  .pm-linha.sel > .pm-c{background:var(--accent-light)}
+  .pm-linha.pm-editando > .pm-c, .pm-linha.pm-editando > .pm-acoes{background:var(--surface2)}
+  /* OK/Apagar: faixa na largura toda da grade, logo abaixo da linha aberta. */
+  .pm-acoes{grid-column:1 / -1; display:flex; justify-content:flex-end; gap:6px; padding:4px 5px;
+    border-bottom:1px solid var(--line)}
+  /* Arrasto (arrastarLadoVoo, o mesmo da aba Malha): a linha e
+     display:contents e nao desenha nada -- o efeito vai nas celulas. */
+  .pm-linha.arrastando-chegada > .lado-a, .pm-linha.arrastando-saida > .lado-b{opacity:.35}
+  .pm-linha.solta-aqui > .pm-c{box-shadow:inset 0 2px 0 var(--amber), inset 0 -2px 0 var(--amber)}
+  .pm-grade .malha-alca{padding:6px; margin:-6px 1px -6px -4px}
+  .pm-grade .malha-alca .ico{width:14px; height:14px}
+
+  /* Campos: 16px de letra (abaixo disso o iOS da zoom ao focar); a
+     compactacao vem da largura, em "ch" -- cresce com a letra, e a coluna
+     auto da grade acompanha. ".patio" no seletor: o "input{width:100%;
+     min-height:52px}" geral tem que perder aqui. */
   .patio .pm-in{font-size:16px; min-height:28px; height:28px; padding:0 3px; border-radius:4px}
   .patio .pm-busca{flex:1; width:auto; min-width:0; min-height:34px; height:34px}
-  /* ".patio" na frente de cada largura: o "input{width:100%}" geral ganhava
-     e o campo BOX tomava a coluna inteira (visto na vitrine, 01/10/2026). */
-  .patio .pm-box{width:42px} .patio .pm-est{width:34px} .patio .pm-num{width:58px}
-  .patio .pm-apt{width:46px} .patio .pm-hora{width:58px}
-  .patio .pm-bt{min-height:28px; height:28px; padding:0 6px; font-size:11px}
-  .patio .pm-bt .ico{margin-right:0}
+  .patio .pm-box{width:4.5ch} .patio .pm-est{width:3.5ch} .patio .pm-num{width:6.5ch}
+  .patio .pm-apt{width:4.5ch} .patio .pm-hora{width:6ch}
+  .patio .pm-bt{min-height:28px; height:28px; padding:0 10px; font-size:11px}
   .patio .pm-apagar{color:var(--red); border-color:var(--red)}
-  .pm-acao{display:flex; gap:4px}
-  .patio-malha-tab tr.pm-editando td{background:var(--surface2)}
-  /* Linha aberta: cidade e numero (e OK/Apagar) um em cima do outro --
-     e o que deixa a coluna ter a largura da edicao desde o comeco. */
-  .pm-pilha{display:inline-flex; flex-direction:column; gap:2px}
-  /* Cabecalho que ordena (toque = crescente, de novo = decrescente). */
-  .patio-malha-tab th.pm-ord{cursor:pointer; user-select:none}
-  .patio-malha-tab th.pm-ord[aria-sort="ascending"], .patio-malha-tab th.pm-ord[aria-sort="descending"]{color:var(--text)}
-  /* Alca de arrastar (a mesma da aba Malha) pequena aqui: a linha tem 11px. */
-  .patio-malha-tab .malha-alca{padding:6px; margin:-6px 1px -6px -4px}
-  .patio-malha-tab .malha-alca .ico{width:14px; height:14px}
-  /* A menor tabela que ainda se le: 11px, 2px de folga, sem quebra. Numero
-     e hora em largura fixa (tabular-nums) pra coluna alinhar. */
-  .patio-malha-tab{width:auto; border-collapse:collapse; font-size:11px; font-variant-numeric:tabular-nums}
-  .patio-malha-tab th, .patio-malha-tab td{padding:2px 4px; white-space:nowrap; text-align:left;
-    border-bottom:1px solid var(--line)}
-  .patio-malha-tab th{position:sticky; top:0; background:var(--surface); font-size:10px; color:var(--muted)}
-  .patio-malha-tab td.mb{font-weight:700}
-  .patio-malha-tab .apt{color:var(--muted); font-size:10px}
-  .patio-malha-tab tr[data-sel]{cursor:pointer}
-  .patio-malha-tab tr.est-solo td, .patio-malha-tab tr.est-descarga td{font-weight:700}
-  .patio-malha-tab tr.est-saiu td{color:var(--muted)}
-  .patio-malha-tab tr.sel td{background:var(--accent-light)}
+
+  /* Menu do botao direito ("Editar"), preso ao body. */
+  .pm-menu{position:fixed; z-index:60; display:none; min-width:120px; padding:4px;
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    box-shadow:0 6px 18px rgba(22,66,91,.18)}
+  .pm-menu .pm-menu-item{width:100%; min-height:40px; text-align:left; border:0; background:none;
+    padding:0 12px; font-size:14px; text-transform:none; letter-spacing:0}
+  .pm-menu .pm-menu-item:hover{background:var(--accent-light)}
   .patio-nota{margin:0; padding:9px 12px; font-size:11px; color:var(--muted); border-top:1px solid var(--line)}
   .patio-aviso{margin:10px 12px; padding:9px 11px; border-radius:8px; background:var(--surface2); border:1px solid var(--line); font-size:13px; line-height:1.45}
   /* Dentro de uma linha do cartao o aviso ja esta recuado pela linha: a
@@ -1719,9 +1736,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 12:13:46
+     Gerado em: 01/10/2026, 13:49:10
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 12:13";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 13:49";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2540,10 +2557,6 @@
   function ehSaida(v) {
     return !!(v.saida || v.destino);
   }
-  function jaPousou(v) {
-    const tc = minutosDe(v.chegada);
-    return tc === null ? true : agoraMin() >= tc;
-  }
   function jaDecolou(v) {
     const ts = minutosDe(v.saida);
     return ts === null ? false : agoraMin() > ts;
@@ -3337,10 +3350,6 @@
     });
     return { data, error: null };
   }
-  async function destravarLadoVoo(vooId, lado) {
-    const { error } = await sb.rpc("destravar_lado_voo", { p_voo_id: vooId, p_lado: lado });
-    if (error) throw error;
-  }
   async function assumirVoo(vooId) {
     const { error } = await sb.rpc("assumir_voo", { p_voo_id: vooId });
     if (error) throw error;
@@ -3362,6 +3371,10 @@
   }
   async function lancarPousoDb(vooId, hora2) {
     const { error } = await sb.rpc("lancar_pouso", { p_voo_id: vooId, p_hora: hora2 || null });
+    if (error) throw error;
+  }
+  async function lancarDecolagemDb(vooId, hora2) {
+    const { error } = await sb.rpc("lancar_decolagem", { p_voo_id: vooId, p_hora: hora2 || null });
     if (error) throw error;
   }
 
@@ -12789,14 +12802,6 @@ ${e.message || e}` : e);
     if (!entradas.length) return;
     aviso(entradas.map((e) => e.texto).join("\n"), "Avisos da importa\xE7\xE3o da malha");
   }
-  function blocoDestrava(v, lado, travado) {
-    const icOperacao = lado === "chegada" ? "pousando" : "decolando";
-    if (v[`${lado}_destravada_em`])
-      return `<span class="malha-btn-icone" aria-label="${lado} destravado, aguardando reimporta\xE7\xE3o">${ico("cadeadoFechado", 16)}${ico(icOperacao, 16)}</span>`;
-    if (!travado) return "";
-    return `<button class="small ghost malha-btn-icone" onclick="destravarLado(${v.id},'${lado}')"
-    aria-label="Destravar ${lado}">${ico("cadeadoAberto", 16)}${ico(icOperacao, 16)}</button>`;
-  }
   var temSaida = (v) => !!(v.saida || v.destino) || v.numero && v.numero !== v.voo_chegada;
   function soloMin(v) {
     const c = minutosDe(v.chegada), s = minutosDe(v.saida);
@@ -12834,8 +12839,6 @@ ${e.message || e}` : e);
         aria-label="Editar">${ico("lapis", 16)}</button>`;
     const btnApagar = emEdicao && editar ? `<button class="small ghost" style="width:auto;color:var(--red);border-color:var(--red)"
          onclick="apagarVoo(${v.id})">Apagar</button>` : "";
-    const destravaChegada = emEdicao && editar ? blocoDestrava(v, "chegada", !!v.chegada && jaPousou(v)) : "";
-    const destravaSaida = emEdicao && editar ? blocoDestrava(v, "saida", jaDecolou(v)) : "";
     const solo = soloMin(v);
     const tituloSolo = solo != null ? ` title="Solo: ${solo} min"` : "";
     return `<tr data-voo-id="${v.id}"${emEdicao ? ' style="background:var(--surface2)"' : ""}>
@@ -12849,7 +12852,7 @@ ${e.message || e}` : e);
     <td>${editar ? `<input class="malha-in-box" value="${esc(v.box || "")}" onchange="mudarVoo(${v.id},'box',this.value)">` : `<span class="badge sm">${esc(v.box || "?")}</span>`}</td>
     <td><input class="malha-in-esteira" value="${esc(v.esteira || "")}"
       onchange="mudarVoo(${v.id},'esteira',this.value)"></td>
-    <td>${iconeLogMalha(v)}${botao}${btnApagar}${destravaChegada}${destravaSaida}${blocoOc(v, posicionar, emEdicao)}</td>
+    <td>${iconeLogMalha(v)}${botao}${btnApagar}${blocoOc(v, posicionar, emEdicao)}</td>
   </tr>`;
   }
   function passaVista(v) {
@@ -12977,7 +12980,7 @@ ${e.message || e}` : e);
     if (f) f.style.display = "none";
   }
   function arrastarLadoVoo(ev, vooId, lado) {
-    const linhaOrigem = ev.target.closest ? ev.target.closest("tr[data-voo-id]") : null;
+    const linhaOrigem = ev.target.closest ? ev.target.closest("[data-voo-id]") : null;
     if (!linhaOrigem) return;
     ev.preventDefault();
     const classeArrastando = `arrastando-${lado}`;
@@ -12994,7 +12997,7 @@ ${e.message || e}` : e);
     function mover(e) {
       moverFantasma(e.clientX, e.clientY);
       const el = document.elementFromPoint(e.clientX, e.clientY);
-      const linha2 = (el == null ? void 0 : el.closest) ? el.closest("tr[data-voo-id]") : null;
+      const linha2 = (el == null ? void 0 : el.closest) ? el.closest("[data-voo-id]") : null;
       marcarAlvo(linha2 && linha2 !== linhaOrigem ? linha2 : null);
     }
     async function soltar() {
@@ -13105,21 +13108,6 @@ Apagar deixaria esse hist\xF3rico \xF3rf\xE3o. Se ele n\xE3o vai mais operar, li
       return;
     }
     await bus.recarregar();
-  }
-  async function destravarLado(vooId, lado) {
-    const v = D.voos.find((x) => x.id === vooId) || {};
-    const ok = await confirmar(`Destravar o lado ${lado} do voo ${esc(v.numero || v.voo_chegada || "?")}?
-
-A pr\xF3xima reimporta\xE7\xE3o da malha vai poder sobrescrever estes campos.`);
-    if (!ok) return;
-    try {
-      await destravarLadoVoo(vooId, lado);
-    } catch (e) {
-      await erro(e);
-      return;
-    }
-    aplicarLocal(vooId, { [`${lado}_destravada_em`]: (/* @__PURE__ */ new Date()).toISOString() });
-    bus.renderSeguro();
   }
   async function posicionarOcTela(vooId, ocId) {
     try {
@@ -13657,6 +13645,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     };
   }
   function estadoRotacao(v, n) {
+    if (v.decolagem) return "saiu";
     const tc = minutosDe(v.chegada), ts = minutosDe(v.saida);
     if (ts !== null && n > ts) return "saiu";
     if (tc !== null && n < tc) return tc - n <= 60 ? "chegando" : "previsto";
@@ -13743,6 +13732,10 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       vs: v.numero || "",
       dst: v.destino || "",
       sai: minutosDe(v.saida),
+      // Hora REAL em que saiu (atualizacao_56.sql) -- mesmo molde do pouso.
+      decolagem: minutosDe(v.decolagem),
+      decolagemPor: v.decolagem_por ? nomeDe(v.decolagem_por) : null,
+      decolagemFonte: v.decolagem_fonte || null,
       descEm: minutosDoIso(v.descarga_ok_em),
       descPor: v.descarga_ok_por ? nomeDe(v.descarga_ok_por) : null,
       oc: v.oc_posicionado_id ? nomeDe(v.oc_posicionado_id) : null,
@@ -14508,6 +14501,27 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       fonte("voos.pouso")
     );
   }
+  function decolagemDoBox(c, v) {
+    const podeLancar = pode("pouso_lancar") && !c.demo;
+    if (v.decolagem == null) {
+      if (!podeLancar) return "";
+      return linha(
+        "Decolou",
+        `<span class="note">ainda n\xE3o lan\xE7ado</span> <span class="grow"></span>
+       <button class="patio-bt" onclick="lancarDecolagem(${v.id},'')">lan\xE7ar</button>`,
+        fonte("voos.decolagem")
+      );
+    }
+    const dif = v.sai != null ? v.decolagem - v.sai : null;
+    const desvio = dif == null ? "" : dif > 0 ? ` <span class="patio-t verm">${mins(dif)} min atrasado</span>` : dif < 0 ? ` <span class="patio-t ok">${mins(-dif)} min adiantado</span>` : ` <span class="patio-t ok">no hor\xE1rio</span>`;
+    const quem = v.decolagemFonte && v.decolagemFonte !== "manual" ? ` <small>\xB7 ${esc(v.decolagemFonte)}</small>` : v.decolagemPor ? ` <small>\xB7 por ${esc(v.decolagemPor)}</small>` : "";
+    const corrigir = !podeLancar ? "" : `<button class="patio-bt" onclick="lancarDecolagem(${v.id},'${esc(hhmm(v.decolagem))}')">corrigir</button>`;
+    return linha(
+      "Decolou",
+      `<b>${hhmm(v.decolagem)}</b>${desvio}${quem} <span class="grow"></span>${corrigir}`,
+      fonte("voos.decolagem")
+    );
+  }
   function pontosDoBox(c, v, k) {
     const P3 = UI.patio.pontos;
     const aberto = P3 && P3.box === k ? P3.qual : null;
@@ -14590,6 +14604,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     h.push(pousoDoBox(c, v));
     const iminente = v.sai != null && v.sai - n > 0 && v.sai - n <= SINO_IMINENTE_MIN ? ` <span class="sino-iminente">DECOLA J\xC1</span>` : "";
     h.push(linha("Sa\xEDda", v.sai != null ? `<b>${esc(v.vs)}</b> para ${esc(v.dst)} \xB7 <b>${hhmm(v.sai)}</b> ${tempoChip(v.sai - n)}${iminente}` : `<b>${esc(v.vs)}</b> <small>sem hora de sa\xEDda</small>`, fonte("voos")));
+    h.push(decolagemDoBox(c, v));
     h.push(linha("OC no box", v.oc ? esc(v.oc) : `<span class="ruim">ningu\xE9m posicionado</span>`, fonte("voos.oc_posicionado_id")));
     if (e === "solo" || e === "descarga")
       h.push(linha("Descarga OK", v.descEm != null ? `<span class="patio-t ok">\u2713 ${hhmm(v.descEm)}</span>${v.descPor ? ` por ${esc(v.descPor)}` : ""}` : `<span class="ruim">n\xE3o marcada</span>${((_a = v.pouso) != null ? _a : v.cheg) != null ? ` <small>\xB7 pousou h\xE1 ${mins(n - ((_b = v.pouso) != null ? _b : v.cheg))} min</small>` : ""}`, fonte("voos.descarga_ok_em")));
@@ -14650,26 +14665,27 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     return h.join("");
   }
   var malhaEditavel = () => pode("malha_editar") && !UI.patio.demo;
+  var esteiraEditavel = () => (pode("malha_editar") || pode("malha_ver")) && !UI.patio.demo;
   function linhaMalhaPainel(v, c, selId) {
     var _a;
-    const editar = malhaEditavel();
-    const esteiraEd = (pode("malha_editar") || pode("malha_ver")) && !UI.patio.demo;
+    const editar = malhaEditavel(), esteiraEd = esteiraEditavel();
     const ed = (editar || esteiraEd) && UI.linhaEditando === v.id;
     const est = ((_a = c.voos.find((x) => mesmoId(x.id, v.id))) == null ? void 0 : _a.estado) || "";
     const campo = (nome, cls, hora2) => `<input class="pm-in ${cls}" value="${esc(v[nome] || "")}"${hora2 ? ' inputmode="numeric" oninput="this.value=mascaraHora(this.value)"' : ""}
       onclick="event.stopPropagation()" onchange="mudarVoo(${v.id},'${nome}',this.value)">`;
-    const cheg = ed && editar ? `<span class="pm-pilha">${campo("origem", "pm-apt")}${campo("voo_chegada", "pm-num")}</span>` : v.voo_chegada ? `${alca(v.id, "chegada", editar, false)}<span class="apt" data-campo="origem">${esc(v.origem || "")}</span><span data-campo="voo_chegada">${esc(v.voo_chegada)}</span>` : "\u2014";
-    const sai = ed && editar ? `<span class="pm-pilha">${campo("numero", "pm-num")}${campo("destino", "pm-apt")}</span>` : temSaida(v) ? `${alca(v.id, "saida", editar, false)}<span data-campo="numero">${esc(v.numero || "")}</span><span class="apt" data-campo="destino">${esc(v.destino || "")}</span>` : "\u2014";
+    const cheg = ed && editar ? `${campo("origem", "pm-apt")}${campo("voo_chegada", "pm-num")}` : v.voo_chegada ? `${alca(v.id, "chegada", editar, false)}<span class="apt" data-campo="origem">${esc(v.origem || "")}</span><span data-campo="voo_chegada">${esc(v.voo_chegada)}</span>` : "\u2014";
+    const sai = ed && editar ? `${campo("numero", "pm-num")}${campo("destino", "pm-apt")}` : temSaida(v) ? `${alca(v.id, "saida", editar, false)}<span data-campo="numero">${esc(v.numero || "")}</span><span class="apt" data-campo="destino">${esc(v.destino || "")}</span>` : "\u2014";
     const box = ed && editar ? campo("box", "pm-box") : esc(v.box || "\u2014");
     const esteira = ed && esteiraEd ? campo("esteira", "pm-est") : esc(v.esteira || "\u2014");
-    const acao = !(editar || esteiraEd) ? "" : ed ? `<span class="pm-pilha"><button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(null)">OK</button>${editar ? `<button class="patio-bt pm-bt pm-apagar" onclick="event.stopPropagation();apagarVoo(${v.id})">Apagar</button>` : ""}</span>` : `<button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(${v.id})" aria-label="Editar">${ico("lapis", 14)}</button>`;
+    const acoes = !ed ? "" : `<div class="pm-acoes"><button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(null)">OK</button>${editar ? `<button class="patio-bt pm-bt pm-apagar" onclick="event.stopPropagation();apagarVoo(${v.id})">Apagar</button>` : ""}</div>`;
     const toque = v.box && !ed ? ` data-sel="box:${esc(String(v.box))}" onclick="patioSel(this.dataset.sel,1)"` : "";
-    return `<tr data-voo-id="${v.id}" class="est-${esc(est)}${selId != null && mesmoId(v.id, selId) ? " sel" : ""}${ed ? " pm-editando" : ""}"${toque}>
-    <td class="lado-a">${cheg}</td>
-    <td class="lado-a" data-campo="chegada">${ed && editar ? campo("chegada", "pm-hora", true) : esc(v.chegada || "\u2014")}</td>
-    <td class="lado-b">${sai}</td>
-    <td class="lado-b" data-campo="saida">${ed && editar ? campo("saida", "pm-hora", true) : esc(v.saida || "\u2014")}</td>
-    <td class="mb">${box}</td><td>${esteira}</td><td class="pm-acao">${acao}</td></tr>`;
+    const menu = editar || esteiraEd ? ` oncontextmenu="patioMenuVoo(event,${v.id})"` : "";
+    return `<div role="row" data-voo-id="${v.id}" class="pm-linha est-${esc(est)}${selId != null && mesmoId(v.id, selId) ? " sel" : ""}${ed ? " pm-editando" : ""}"${toque}${menu}>
+    <div class="pm-c lado-a">${cheg}</div>
+    <div class="pm-c lado-a" data-campo="chegada">${ed && editar ? campo("chegada", "pm-hora", true) : esc(v.chegada || "\u2014")}</div>
+    <div class="pm-c lado-b">${sai}</div>
+    <div class="pm-c lado-b" data-campo="saida">${ed && editar ? campo("saida", "pm-hora", true) : esc(v.saida || "\u2014")}</div>
+    <div class="pm-c mb">${box}</div><div class="pm-c">${esteira}</div>${acoes}</div>`;
   }
   var ORDEM_MALHA = {
     chega: (v) => v.voo_chegada,
@@ -14706,10 +14722,10 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const lista = malhaPainelLista();
     if (!lista.length) return `<p class="patio-aviso compacto">${UI.patio.malhaBusca ? "Nenhum voo de hoje com esse n\xFAmero." : "Nenhum voo na malha de hoje."}</p>`;
     const o = UI.patio.malhaOrdem;
-    const th = (col, rot2) => `<th class="pm-ord" onclick="ordenarMalhaPainel('${col}')" aria-sort="${(o == null ? void 0 : o.col) === col ? o.dir > 0 ? "ascending" : "descending" : "none"}">${rot2}${(o == null ? void 0 : o.col) === col ? o.dir > 0 ? " \u25B2" : " \u25BC" : ""}</th>`;
-    return `<table class="patio-malha-tab">
-    <thead><tr>${th("chega", "CHEGA")}${th("sta", "STA")}${th("sai", "SAI")}${th("std", "STD")}${th("box", "BOX")}${th("est", "EST")}<th></th></tr></thead>
-    <tbody>${lista.map((v) => linhaMalhaPainel(v, c, selId)).join("")}</tbody></table>`;
+    const th = (col, rot2) => `<div role="columnheader" class="pm-c pm-th pm-ord" onclick="ordenarMalhaPainel('${col}')" aria-sort="${(o == null ? void 0 : o.col) === col ? o.dir > 0 ? "ascending" : "descending" : "none"}">${rot2}${(o == null ? void 0 : o.col) === col ? o.dir > 0 ? " \u25B2" : " \u25BC" : ""}</div>`;
+    return `<div class="patio-malha-tab pm-grade" role="table">
+    <div role="row" class="pm-linha pm-cabecalho">${th("chega", "CHEGA")}${th("sta", "STA")}${th("sai", "SAI")}${th("std", "STD")}${th("box", "BOX")}${th("est", "EST")}</div>
+    ${lista.map((v) => linhaMalhaPainel(v, c, selId)).join("")}</div>`;
   }
   var malhaUltimo = "";
   function malhaPainel(c) {
@@ -14739,7 +14755,41 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   }
   function patioEditarVoo(id) {
     UI.linhaEditando = id;
+    fecharMenuVoo();
     redesenharMalhaPainel(cena(), true);
+  }
+  function patioMenuVoo(ev, id) {
+    var _a, _b, _c, _d;
+    (_a = ev == null ? void 0 : ev.preventDefault) == null ? void 0 : _a.call(ev);
+    if (typeof document === "undefined") return;
+    let m = document.getElementById("pm-menu");
+    if (!m) {
+      m = document.createElement("div");
+      m.id = "pm-menu";
+      m.className = "pm-menu";
+      (_b = m.setAttribute) == null ? void 0 : _b.call(m, "role", "menu");
+      document.body.appendChild(m);
+    }
+    m.innerHTML = `<button role="menuitem" class="pm-menu-item" onclick="patioEditarVoo(${Number(id)})">Editar</button>`;
+    const W = globalThis.innerWidth || 1e3, H = globalThis.innerHeight || 800;
+    m.style.left = `${Math.min((_c = ev == null ? void 0 : ev.clientX) != null ? _c : 0, W - 140)}px`;
+    m.style.top = `${Math.min((_d = ev == null ? void 0 : ev.clientY) != null ? _d : 0, H - 60)}px`;
+    m.style.display = "block";
+    const fora = (e) => {
+      var _a2;
+      if (e.type === "keydown" && e.key !== "Escape") return;
+      if (e.type === "pointerdown" && ((_a2 = m.contains) == null ? void 0 : _a2.call(m, e.target))) return;
+      fecharMenuVoo();
+    };
+    setTimeout(() => {
+      var _a2, _b2;
+      (_a2 = document.addEventListener) == null ? void 0 : _a2.call(document, "pointerdown", fora, { once: true });
+      (_b2 = document.addEventListener) == null ? void 0 : _b2.call(document, "keydown", fora, { once: true });
+    }, 0);
+  }
+  function fecharMenuVoo() {
+    const m = typeof document !== "undefined" ? document.getElementById("pm-menu") : null;
+    if (m) m.style.display = "none";
   }
   function railLista(c) {
     const sel = UI.patio.sel;
@@ -14961,6 +15011,25 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     );
     if (hora2 === null) return;
     return gravarPouso(vooId, hora2);
+  }
+  async function lancarDecolagem(vooId, atual) {
+    const hora2 = await perguntar(
+      "Hora em que o avi\xE3o realmente saiu, no formato HH:MM.\n\nDepois de lan\xE7ada, a reimporta\xE7\xE3o da malha n\xE3o muda mais este voo.\n\nDeixe em branco para apagar o lan\xE7amento.",
+      atual || "",
+      "Hora de decolagem"
+    );
+    if (hora2 === null) return;
+    return gravarDecolagem(vooId, hora2);
+  }
+  async function gravarDecolagem(vooId, hora2) {
+    try {
+      await lancarDecolagemDb(vooId, String(hora2 || "").trim());
+    } catch (e) {
+      await erro(e);
+      return;
+    }
+    await bus.recarregar();
+    redesenharPatio(true);
   }
   async function gravarPouso(vooId, hora2) {
     try {
@@ -16257,14 +16326,35 @@ Sair mesmo assim?`
       seletor: ".pm-in",
       grupo: "painel",
       arquivo: "screens/telaPatio.js",
-      desc: "Campo pequeno dentro da malha do Painel (BOX, EST, e os da linha aberta pelo l\xE1pis) e o Buscar voo."
+      desc: "Campo pequeno dentro da malha do Painel (os da linha aberta pelo Editar, BOX e EST inclusive) e o Buscar voo."
     },
     {
       nome: "botao-da-malha-do-painel",
       seletor: ".pm-bt",
       grupo: "painel",
       arquivo: "screens/telaPatio.js",
-      desc: "L\xE1pis, OK e Apagar na \xFAltima coluna da malha do Painel."
+      desc: "OK e Apagar, na faixa embaixo da linha aberta da malha do Painel."
+    },
+    {
+      nome: "faixa-ok-apagar-da-malha",
+      seletor: ".pm-acoes",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "Faixa na largura toda da malha, logo abaixo da linha aberta, com OK e Apagar."
+    },
+    {
+      nome: "menu-editar-da-malha",
+      seletor: ".pm-menu",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: 'Menu que abre no bot\xE3o direito (ou toque longo) numa linha da malha do Painel, com "Editar".'
+    },
+    {
+      nome: "celula-da-malha-do-painel",
+      seletor: ".pm-c",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "Uma c\xE9lula da grade da malha do Painel (CSS Grid). A coluna tem a largura do maior conte\xFAdo dela."
     },
     {
       nome: "cabecalho-da-malha-do-painel",
@@ -16278,7 +16368,7 @@ Sair mesmo assim?`
       seletor: ".patio-malha-tab",
       grupo: "painel",
       arquivo: "screens/telaPatio.js",
-      desc: "A malha compacta do Painel: BOX, CHEGA, STA, SAI, STD, EST. Tocar na linha abre o box; a rota\xE7\xE3o aberta fica marcada."
+      desc: "A malha compacta do Painel, em CSS Grid: CHEGA, STA, SAI, STD, BOX, EST. Tocar na linha abre o box; a rota\xE7\xE3o aberta fica marcada; o cabe\xE7alho ordena."
     },
     {
       nome: "coluna-da-malha-do-painel",
@@ -16409,7 +16499,7 @@ Sair mesmo assim?`
       seletor: ".malha-btn-icone",
       grupo: "malha",
       arquivo: "screens/telaVoos.js",
-      desc: "Bot\xE3o (ou selo, quando n\xE3o \xE9 mais clic\xE1vel) do tamanho do(s) \xEDcone(s) que mostra: o l\xE1pis de Editar, ou o cadeado + pouso/decolagem de Destravar chegada/sa\xEDda (cadeado aberto = ainda travado, fechado = j\xE1 destravado)."
+      desc: "Bot\xE3o (ou selo, quando n\xE3o \xE9 mais clic\xE1vel) do tamanho do(s) \xEDcone(s) que mostra: o l\xE1pis de Editar da aba Malha. (O cadeado de Destravar saiu em 01/10/2026.)"
     },
     // ---- basicas ----
     {
@@ -16946,7 +17036,6 @@ Sair mesmo assim?`
     apagarVoo,
     adicionarVoo,
     verLogMalha,
-    destravarLado,
     // solicitacoes
     criarSolTela,
     mudarSol,
@@ -17108,8 +17197,10 @@ Sair mesmo assim?`
     patioPontos,
     buscarMalhaPainel,
     patioEditarVoo,
+    patioMenuVoo,
     ordenarMalhaPainel,
-    lancarPouso
+    lancarPouso,
+    lancarDecolagem
   });
   boot();
   iniciarModoPecas();
