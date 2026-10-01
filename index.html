@@ -1661,9 +1661,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 30/09/2026, 19:46:23
+     Gerado em: 01/10/2026, 07:38:13
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="30/09 19:46";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 07:38";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -3771,11 +3771,14 @@
   init_supabase();
   init_store();
   init_horas();
+  function numeroVooPonto(bruto) {
+    return String(bruto || "").replace(/\s+/g, "").replace(/^G3(?=\d)/i, "");
+  }
   function processarPontoIndia(texto) {
     const linhas = texto.split(/\r?\n/);
     const li = linhas.findIndex((l) => l.trim().length > 0);
     if (li < 0) return { erro: "Arquivo vazio." };
-    const m = linhas[li].trim().match(/^(\d+)\s+([A-Za-z]{2,4})/);
+    const m = linhas[li].trim().match(/^(?:G3)?(\d+)\s+([A-Za-z]{2,4})/i);
     const vooCabecalho = m ? m[1] : null;
     const conexoes = [];
     let siga = false;
@@ -3787,7 +3790,7 @@
       const campos = l.split("|").map((c) => c.trim());
       if (campos.length < 8) continue;
       const [origem, , flightBruto, sta, eta, rct, pax, bag] = campos;
-      const flight = flightBruto.replace(/\s+/g, "");
+      const flight = numeroVooPonto(flightBruto);
       if (!/^[A-Za-z0-9]{1,7}$/.test(flight) || !/\d/.test(flight)) continue;
       conexoes.push({
         origem: origem || null,
@@ -3806,7 +3809,7 @@
     const linhas = texto.split(/\r?\n/);
     const li = linhas.findIndex((l) => l.trim().length > 0);
     if (li < 0) return { erro: "Arquivo vazio." };
-    const m = linhas[li].trim().match(/^(\d+)\s+([A-Za-z]{2,4})/);
+    const m = linhas[li].trim().match(/^(?:G3)?(\d+)\s+([A-Za-z]{2,4})/i);
     const vooCabecalho = m ? m[1] : null;
     const conexoes = [];
     for (const l of linhas.slice(li + 1)) {
@@ -3814,7 +3817,7 @@
       const campos = l.split("|").map((c) => c.trim());
       if (campos.length < 8) continue;
       const [destino, , flightBruto, , , , , bag] = campos;
-      const flight = flightBruto.replace(/\s+/g, "");
+      const flight = numeroVooPonto(flightBruto);
       if (!/^[A-Za-z0-9]{1,7}$/.test(flight) || !/\d/.test(flight)) continue;
       conexoes.push({
         destino: destino || null,
