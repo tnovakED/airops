@@ -1766,6 +1766,23 @@
     font-size:15px; line-height:1.3; box-shadow:0 4px 14px rgba(0,0,0,.25);
     pointer-events:none}
 
+  /* Plano de contingencia (01/10/2026): so a folha vai pro papel/PDF. A
+     fonte e a do Bloco de Notas do Windows (Consolas). */
+  #contingencia{display:none}
+  @page{size:A4 portrait; margin:14mm 12mm}
+  @media print{
+    body.imprimindo > *:not(#contingencia){display:none !important}
+    body.imprimindo{background:#fff !important}
+    body.imprimindo #contingencia{display:block; font-family:Consolas,"Lucida Console","Courier New",monospace; color:#000}
+    #contingencia .cont-folha{break-after:page; page-break-after:always}
+    #contingencia .cont-folha:last-child{break-after:auto; page-break-after:auto}
+    #contingencia .cont-topo{display:flex; justify-content:space-between; gap:12px; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:14px; font-size:11pt}
+    #contingencia .cont-topo b{font-size:13pt}
+    #contingencia .cont-dir{text-align:right; white-space:nowrap}
+    #contingencia h2{font-size:11pt; margin:18px 0 4px; padding:3px 0; border-top:1px solid #000; border-bottom:1px solid #000; font-weight:700}
+    #contingencia pre{margin:0; font:inherit; font-size:10.5pt; line-height:1.35; white-space:pre-wrap; word-break:break-all}
+  }
+
 </style>
 </head>
 <body>
@@ -1776,9 +1793,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 18:15:36
+     Gerado em: 01/10/2026, 20:38:02
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 18:15";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 20:38";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -3965,6 +3982,16 @@
       { p_data: dia, p_voo_id: vooId, p_tipo: tipo, p_conexoes: qtdConexoes | 0 }
     );
   }
+  async function guardarPontoArquivoDb(dia, tipo, numero, texto) {
+    var _a, _b;
+    return sb.from("ponto_arquivo").upsert(
+      { data: dia, tipo, voo_numero: String(numero), texto, enviado_por: (_b = (_a = S.me) == null ? void 0 : _a.id) != null ? _b : null, atualizado_em: (/* @__PURE__ */ new Date()).toISOString() },
+      { onConflict: "data,tipo,voo_numero" }
+    );
+  }
+  async function lerPontoArquivosDb(dia) {
+    return sb.from("ponto_arquivo").select("tipo,voo_numero,texto").eq("data", dia);
+  }
   function casarArquivosComVoos(arquivos, dia) {
     dia = dia || hoje();
     const vistos = /* @__PURE__ */ new Set();
@@ -3991,15 +4018,20 @@
       log.push(msg);
       entradas == null ? void 0 : entradas.push({ vooId: null, tipo: null, texto: msg });
     };
-    const marcarLido = async (alvo2, tipo, qtd, anota) => {
+    const marcarLido = async (alvo2, tipo, qtd, anota, arq) => {
       const { error } = await marcarPontoLidoDb(dia, alvo2.id, tipo, qtd);
       if (error) anota(`Aviso: as conex\xF5es entraram, mas n\xE3o consegui registrar a leitura do arquivo (o \xEDcone n\xE3o vai persistir): ${error.message}
 O sql/atualizacao_45.sql j\xE1 foi aplicado?`);
+      if (arq) {
+        const g = await guardarPontoArquivoDb(dia, tipo, arq.numero, arq.texto);
+        if (g.error) anota(`Aviso: n\xE3o consegui guardar o texto original do arquivo (a folha de conting\xEAncia sair\xE1 remontada): ${g.error.message}
+O sql/atualizacao_58.sql j\xE1 foi aplicado?`);
+      }
     };
-    const vazio = async (alvo2, tipo, rotulo2, anota) => {
+    const vazio = async (alvo2, tipo, rotulo2, anota, arq) => {
       const jaTem = (tipo === "india" ? D.indias : D.deltas).filter((x) => x.voo_id === alvo2.id).length;
       const nome = tipo === "india" ? "\xCDndia" : "Delta";
-      await marcarLido(alvo2, tipo, 0, anota);
+      await marcarLido(alvo2, tipo, 0, anota, arq);
       anota(jaTem ? `${nome} - voo ${rotulo2}
 Arquivo lido: nenhuma conex\xE3o.
 ATEN\xC7\xC3O: este voo j\xE1 tinha ${jaTem} conex\xE3o(\xF5es) de uma importa\xE7\xE3o anterior, e elas foram MANTIDAS. Se o voo perdeu as conex\xF5es de verdade, apague \xE0 m\xE3o; se o arquivo veio truncado, extraia de novo.` : `${nome} - voo ${rotulo2}
@@ -4045,7 +4077,7 @@ Arquivo lido: nenhuma conex\xE3o. Este voo n\xE3o conecta com nenhum outro.`);
           anota(`Aviso: nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho diz ${r.vooCabecalho}. Confira se foi extra\xEDdo certo.`);
         }
         if (!r.conexoes.length) {
-          await vazio(alvo2, "india", rotulo2, anota);
+          await vazio(alvo2, "india", rotulo2, anota, { numero: vooNome, texto });
           continue;
         }
         const { data, error } = await reconciliarPontoIndiaDb(dia, alvo2.id, r.conexoes);
@@ -4053,7 +4085,7 @@ Arquivo lido: nenhuma conex\xE3o. Este voo n\xE3o conecta com nenhum outro.`);
           anota(`Erro ao gravar \xCDndia - voo ${rotulo2}: ${error.message}`);
           continue;
         }
-        await marcarLido(alvo2, "india", data.total, anota);
+        await marcarLido(alvo2, "india", data.total, anota, { numero: vooNome, texto });
         const totalBag = r.conexoes.reduce((a, c) => a + (c.bag_qtd || 0), 0);
         anota(`\xCDndia - voo ${rotulo2}
 Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
@@ -4087,7 +4119,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
           anota(`Aviso: nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho diz ${r.vooCabecalho}. Confira se foi extra\xEDdo certo.`);
         }
         if (!r.conexoes.length) {
-          await vazio(alvo2, "delta", rotulo2, anota);
+          await vazio(alvo2, "delta", rotulo2, anota, { numero: vooNome, texto });
           continue;
         }
         const { data, error } = await reconciliarPontoDeltaDb(dia, alvo2.id, r.conexoes);
@@ -4095,7 +4127,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
           anota(`Erro ao gravar Delta - voo ${rotulo2}: ${error.message}`);
           continue;
         }
-        await marcarLido(alvo2, "delta", data.total, anota);
+        await marcarLido(alvo2, "delta", data.total, anota, { numero: vooNome, texto });
         const totalBag = r.conexoes.reduce((a, c) => a + (c.bag_qtd || 0), 0);
         anota(`Delta - voo ${rotulo2}
 Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
@@ -4516,6 +4548,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     <div class="row" style="margin-top:10px;align-items:center">
       <button class="primary" ${UI.indiaArquivos.length ? "" : "disabled"} onclick="importarPontos()">Importar</button>
       ${iconeLogAnomalias()}
+      <button class="ghost" style="width:auto" onclick="imprimirContingencia()">Plano de conting\xEAncia (PDF)</button>
     </div>
   </div>
   <div class="board-title"><h2>Voos do dia</h2><span class="flip">${voos.length}</span></div>
@@ -4528,6 +4561,61 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId === vooId && e.tipo === tipo);
     if (!entradas.length) return;
     aviso(entradas.map((e) => e.texto).join("\n"), tipo === "delta" ? "Log do Ponto Delta" : "Log do Ponto \xCDndia");
+  }
+  function blocoContingencia(tipo, numero, vooLinha, textos) {
+    const nome = tipo === "delta" ? "DELTA" : "\xCDNDIA";
+    if (!numero) return `<h2>PONTO ${nome} \u2014 sem voo de ${tipo === "delta" ? "chegada" : "sa\xEDda"} nesta linha da malha</h2>`;
+    const arq = `${tipo === "delta" ? "d" : "i"}${numero}.txt`;
+    const cab = `<h2>PONTO ${nome} \u2014 voo ${esc(numero)}  (arquivo ${esc(arq)})</h2>`;
+    const original = textos.get(`${tipo}:${numero}`);
+    if (original != null) return `${cab}<pre>${esc(String(original).replace(/\s+$/, ""))}</pre>`;
+    const linhas = tipo === "delta" ? D.deltas.filter((x) => mesmoId(x.voo_id, vooLinha.id)).map((x) => [x.destino, x.voo_saida_numero, x.bag_qtd]) : D.indias.filter((x) => mesmoId(x.voo_id, vooLinha.id)).map((x) => [x.origem, x.voo_chegada_numero, x.sta, x.eta, x.rct, x.pax, x.bag_qtd]);
+    if (linhas.length) {
+      const colunas = tipo === "delta" ? "DESTINO | VOO | BAG" : "ORIGEM | VOO | STA | ETA | RCT | PAX | BAG";
+      return `${cab}<pre>REMONTADO do que o app guardou \u2014 faltam colunas (MCT, GATE...).
+Reimporte o arquivo para ter o original.
+
+${esc(colunas)}
+${linhas.map((l) => esc(l.map((c) => c != null ? c : "").join(" | "))).join("\n")}</pre>`;
+    }
+    const lido2 = tipo === "delta" ? vooLinha.delta_importado_em : vooLinha.india_importado_em;
+    return `${cab}<pre>${lido2 ? "(arquivo lido: nenhuma conex\xE3o)" : "(arquivo n\xE3o importado \u2014 nada a imprimir)"}</pre>`;
+  }
+  function htmlContingencia(dia, voos, textos, impresso) {
+    const linhas = voos.filter((v) => v.data === dia && (v.voo_chegada || v.numero)).sort((a2, b) => minPlain(a2.chegada || a2.saida) - minPlain(b.chegada || b.saida) || String(a2.voo_chegada || a2.numero).localeCompare(String(b.voo_chegada || b.numero)));
+    const [a, m, d] = String(dia).split("-");
+    return linhas.map((v, i) => `<section class="cont-folha">
+    <div class="cont-topo"><div><b>PLANO DE CONTING\xCANCIA \u2014 RAMPA BSB</b><br>Chegada ${esc(v.voo_chegada || "\u2014")} (${esc(v.origem || "\u2014")}${v.chegada ? ` ${esc(v.chegada)}` : ""})  ->  Sa\xEDda ${esc(v.numero || "\u2014")} (${esc(v.destino || "\u2014")}${v.saida ? ` ${esc(v.saida)}` : ""})${v.box ? `  \xB7  Box ${esc(v.box)}` : ""}</div>
+    <div class="cont-dir">Data ${esc(`${d}/${m}/${a}`)}<br>Impresso ${esc(impresso)}<br>Folha ${i + 1} de ${linhas.length}</div></div>
+    ${blocoContingencia("delta", v.voo_chegada, v, textos)}
+    ${blocoContingencia("india", v.numero, v, textos)}
+  </section>`).join("");
+  }
+  async function imprimirContingencia() {
+    const dia = UI.indiaData || hoje();
+    const { data, error } = await lerPontoArquivosDb(dia);
+    const textos = new Map((data || []).map((r) => [`${r.tipo}:${r.voo_numero}`, r.texto]));
+    const n = /* @__PURE__ */ new Date(), z = (x) => String(x).padStart(2, "0");
+    const html = htmlContingencia(dia, D.voos, textos, `${z(n.getDate())}/${z(n.getMonth() + 1)} ${z(n.getHours())}:${z(n.getMinutes())}`);
+    if (!html) {
+      await aviso(`Nenhum voo na malha de ${esc(dia)}.`);
+      return;
+    }
+    if (error) await aviso(`N\xE3o consegui ler os textos originais dos arquivos \u2014 a folha sai remontada.
+${esc(error.message)}
+O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
+    const caixa2 = document.createElement("div");
+    caixa2.id = "contingencia";
+    caixa2.innerHTML = html;
+    document.body.appendChild(caixa2);
+    document.body.classList.add("imprimindo");
+    const limpar = () => {
+      caixa2.remove();
+      document.body.classList.remove("imprimindo");
+      window.removeEventListener("afterprint", limpar);
+    };
+    window.addEventListener("afterprint", limpar);
+    window.print();
   }
   function verLogAnomalias() {
     const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId == null);
@@ -17334,6 +17422,7 @@ Sair mesmo assim?`
     marcarDescargaDelta,
     abrirSubstituirPonto,
     substituirPonto,
+    imprimirContingencia,
     verLogPonto,
     verLogAnomalias,
     verPontoDelta,
