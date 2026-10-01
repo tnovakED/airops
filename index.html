@@ -1495,10 +1495,16 @@
   .patio-kpi span{font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
   .patio-kpi.atencao b{color:var(--orange)} .patio-kpi.ruim b{color:var(--red)}
 
-  .patio-corpo{display:grid; grid-template-columns:minmax(0,1fr) 380px 340px; flex:1; min-height:0}
-  /* Tela media: tres colunas espremeriam o mapa -- a malha desce pra
-     baixo, na largura toda (01/10/2026). */
-  @media (max-width: 1199px){
+  /* 446px na malha = a tabela com UMA linha aberta pelo lapis (440,
+     medido na vitrine) + borda. Fixo de proposito: abrir a edicao nao
+     muda o tamanho de nada nem liga rolagem de lado (Tiago, 01/10/2026). */
+  .patio-corpo{display:grid; grid-template-columns:minmax(0,1fr) 380px 446px; flex:1; min-height:0}
+  .patio-corpo > .patio-malha-col .patio-malha-tab{width:100%}
+  /* Tela media: tres colunas espremeriam o mapa (abaixo de 1300px ele
+     ficaria com menos de ~470) -- a malha desce pra baixo, na largura
+     toda, e a tabela volta a largura natural. */
+  @media (max-width: 1299px){
+    .patio-corpo > .patio-malha-col .patio-malha-tab{width:auto}
     .patio-corpo{grid-template-columns:minmax(0,1fr) 380px}
     .patio-malha-col{grid-column:1 / -1; border-left:0; border-top:1px solid var(--line); max-height:60vh}
   }
@@ -1564,6 +1570,12 @@
   .patio .pm-apagar{color:var(--red); border-color:var(--red)}
   .pm-acao{display:flex; gap:4px}
   .patio-malha-tab tr.pm-editando td{background:var(--surface2)}
+  /* Linha aberta: cidade e numero (e OK/Apagar) um em cima do outro --
+     e o que deixa a coluna ter a largura da edicao desde o comeco. */
+  .pm-pilha{display:inline-flex; flex-direction:column; gap:2px}
+  /* Alca de arrastar (a mesma da aba Malha) pequena aqui: a linha tem 11px. */
+  .patio-malha-tab .malha-alca{padding:6px; margin:-6px 1px -6px -4px}
+  .patio-malha-tab .malha-alca .ico{width:14px; height:14px}
   /* A menor tabela que ainda se le: 11px, 2px de folga, sem quebra. Numero
      e hora em largura fixa (tabular-nums) pra coluna alinhar. */
   .patio-malha-tab{width:auto; border-collapse:collapse; font-size:11px; font-variant-numeric:tabular-nums}
@@ -1704,9 +1716,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 08:02:05
+     Gerado em: 01/10/2026, 12:05:27
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 08:02";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 12:05";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -12795,7 +12807,7 @@ ${e.message || e}` : e);
   function alca(vooId, lado, pode2, emEdicao) {
     if (!pode2 || emEdicao) return "";
     const rot2 = lado === "chegada" ? "chegada" : "sa\xEDda";
-    return `<span class="malha-alca" onpointerdown="arrastarLadoVoo(event,${vooId},'${lado}')"
+    return `<span class="malha-alca" onpointerdown="arrastarLadoVoo(event,${vooId},'${lado}')" onclick="event.stopPropagation()"
     aria-label="Arraste para trocar o lado ${rot2} com outra linha">${ico("arrastar", 16)}</span>`;
   }
   function blocoOc(v, posicionar, emEdicao) {
@@ -14643,18 +14655,18 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const est = ((_a = c.voos.find((x) => mesmoId(x.id, v.id))) == null ? void 0 : _a.estado) || "";
     const campo = (nome, cls, hora2) => `<input class="pm-in ${cls}" value="${esc(v[nome] || "")}"${hora2 ? ' inputmode="numeric" oninput="this.value=mascaraHora(this.value)"' : ""}
       onclick="event.stopPropagation()" onchange="mudarVoo(${v.id},'${nome}',this.value)">`;
-    const cheg = ed ? campo("origem", "pm-apt") + campo("voo_chegada", "pm-num") : v.voo_chegada ? `<span class="apt">${esc(v.origem || "")}</span>${esc(v.voo_chegada)}` : "\u2014";
-    const sai = ed ? campo("numero", "pm-num") + campo("destino", "pm-apt") : temSaida(v) ? `${esc(v.numero || "")}<span class="apt">${esc(v.destino || "")}</span>` : "\u2014";
+    const cheg = ed ? `<span class="pm-pilha">${campo("origem", "pm-apt")}${campo("voo_chegada", "pm-num")}</span>` : v.voo_chegada ? `${alca(v.id, "chegada", editar, false)}<span class="apt" data-campo="origem">${esc(v.origem || "")}</span><span data-campo="voo_chegada">${esc(v.voo_chegada)}</span>` : "\u2014";
+    const sai = ed ? `<span class="pm-pilha">${campo("numero", "pm-num")}${campo("destino", "pm-apt")}</span>` : temSaida(v) ? `${alca(v.id, "saida", editar, false)}<span data-campo="numero">${esc(v.numero || "")}</span><span class="apt" data-campo="destino">${esc(v.destino || "")}</span>` : "\u2014";
     const box = editar ? campo("box", "pm-box") : esc(v.box || "\u2014");
     const esteira = esteiraEd ? campo("esteira", "pm-est") : esc(v.esteira || "\u2014");
-    const acao = !editar ? "" : ed ? `<button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(null)">OK</button><button class="patio-bt pm-bt pm-apagar" onclick="event.stopPropagation();apagarVoo(${v.id})">Apagar</button>` : `<button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(${v.id})" aria-label="Editar">${ico("lapis", 14)}</button>`;
+    const acao = !editar ? "" : ed ? `<span class="pm-pilha"><button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(null)">OK</button><button class="patio-bt pm-bt pm-apagar" onclick="event.stopPropagation();apagarVoo(${v.id})">Apagar</button></span>` : `<button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(${v.id})" aria-label="Editar">${ico("lapis", 14)}</button>`;
     const toque = v.box && !ed ? ` data-sel="box:${esc(String(v.box))}" onclick="patioSel(this.dataset.sel,1)"` : "";
-    return `<tr class="est-${esc(est)}${selId != null && mesmoId(v.id, selId) ? " sel" : ""}${ed ? " pm-editando" : ""}"${toque}>
-    <td class="mb">${box}</td><td>${cheg}</td>
-    <td>${ed ? campo("chegada", "pm-hora", true) : esc(v.chegada || "\u2014")}</td>
-    <td>${sai}</td>
-    <td>${ed ? campo("saida", "pm-hora", true) : esc(v.saida || "\u2014")}</td>
-    <td>${esteira}</td><td class="pm-acao">${acao}</td></tr>`;
+    return `<tr data-voo-id="${v.id}" class="est-${esc(est)}${selId != null && mesmoId(v.id, selId) ? " sel" : ""}${ed ? " pm-editando" : ""}"${toque}>
+    <td class="lado-a">${cheg}</td>
+    <td class="lado-a" data-campo="chegada">${ed ? campo("chegada", "pm-hora", true) : esc(v.chegada || "\u2014")}</td>
+    <td class="lado-b">${sai}</td>
+    <td class="lado-b" data-campo="saida">${ed ? campo("saida", "pm-hora", true) : esc(v.saida || "\u2014")}</td>
+    <td class="mb">${box}</td><td>${esteira}</td><td class="pm-acao">${acao}</td></tr>`;
   }
   function malhaPainelLista() {
     return D.voos.filter((v) => v.data === hoje() && malhaBateBusca(v, UI.patio.malhaBusca)).sort((a, b) => minPlain(a.chegada || a.saida) - minPlain(b.chegada || b.saida));
@@ -14666,7 +14678,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const lista = malhaPainelLista();
     if (!lista.length) return `<p class="patio-aviso compacto">${UI.patio.malhaBusca ? "Nenhum voo de hoje com esse n\xFAmero." : "Nenhum voo na malha de hoje."}</p>`;
     return `<table class="patio-malha-tab">
-    <thead><tr><th>BOX</th><th>CHEGA</th><th>STA</th><th>SAI</th><th>STD</th><th>EST</th><th></th></tr></thead>
+    <thead><tr><th>CHEGA</th><th>STA</th><th>SAI</th><th>STD</th><th>BOX</th><th>EST</th><th></th></tr></thead>
     <tbody>${lista.map((v) => linhaMalhaPainel(v, c, selId)).join("")}</tbody></table>`;
   }
   var malhaUltimo = "";
@@ -14683,6 +14695,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     if (!el) return;
     const ativo = document.activeElement;
     if (!forcar && ativo && ((_a = el.contains) == null ? void 0 : _a.call(el, ativo))) return;
+    if (UI.malhaArrastando) return;
     const html = malhaPainelCorpo(c);
     if (!forcar && html === malhaUltimo) return;
     const rolou = el.scrollTop;
