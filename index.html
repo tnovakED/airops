@@ -165,8 +165,7 @@
      vem o canto, recortado no mesmo tamanho (23.4% x 24.4% do quadrado) e
      encostado por DENTRO da borda, como no SVG original. Troca o selo
      redondo de canto (.voo-corner), que "as vezes fica baguncado".
-     Ponto Delta / Ponto Indice ficam com a placa antiga (iconeBox:false,
-     telaPontos.js). */
+     So a esteira ("E-5", nao e box) pede a placa antiga (iconeBox:false). */
   :root{--ic-box-chegada:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%2255.36 -905.82 198.53 207.31%22%3E%3Crect x=%2255.36%22 y=%22-905.82%22 width=%22198.53%22 height=%22207.31%22 fill=%22%2300c986%22/%3E%3Cpath transform=%22matrix%280.21914 0 0 0.21939 46.20424 -687.91771%29%22 fill=%22%231f1f1f%22 d=%22m 120,-120 v -66.67 H 840 V -120 Z M 749.33,-326.67 120,-506.33 v -282.34 l 84.67,23.67 49.33,142.33 155.33,44.34 -35.66,-351 103,30 130.66,378.33 179.34,51 q 23,7.33 38.16,26.67 15.17,19.33 15.17,45 0,33 -26.5,57.83 -26.5,24.83 -64.17,13.83 z%22/%3E%3C/svg%3E");
     --ic-box-saida:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%22700.04 -905.82 198.53 207.31%22%3E%3Crect x=%22700.04%22 y=%22-905.82%22 width=%22198.53%22 height=%22207.31%22 fill=%22%23ffff00%22/%3E%3Cpath transform=%22matrix%280.21385 0 0 0.21385 701.14275 -698.49341%29%22 fill=%22%231f1f1f%22 d=%22m 120,-120 v -66.67 H 840 V -120 Z M 187.33,-326.67 42,-568.67 126.67,-592 242,-495.33 l 156.67,-42.34 -211.67,-282 104,-27.66 306.33,257 179.34,-48.67 q 30,-7.67 55.83,7.83 25.83,15.5 34.17,45.5 8.33,29.34 -6.17,55.17 -14.5,25.83 -43.17,34.17 z%22/%3E%3C/svg%3E")}
   .voo-box.voo-box-ic{width:2em; min-width:2em; height:2em; padding:.22em 0 0;
@@ -1769,9 +1768,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 15:17:41
+     Gerado em: 01/10/2026, 15:46:24
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 15:17";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 15:46";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4737,7 +4736,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const abre = editavel ? `<div class="pt-linha delta-conexao${marcado ? " sel" : ""}${classeDuas}"${tituloDuas} onclick="alternarSelecaoDelta(${pd.id},${vooId})">` : `<div class="pt-linha${classeDuas}"${tituloDuas}>`;
     return `
     ${abre}
-      ${vooRotulo(comoSaida(pd.destino, pd.voo_saida_numero, vSaida == null ? void 0 : vSaida.box), "saida", { iconeBox: false })}
+      ${vooRotulo(comoSaida(pd.destino, pd.voo_saida_numero, vSaida == null ? void 0 : vSaida.box), "saida")}
       <span class="grow"></span>
       ${seloPp(vooId, pd, tipo) || (selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : "")}
       ${seloStatus ? `<span class="delta-status ${seloStatus.classe}" title="${esc(seloStatus.titulo)}" aria-label="${seloStatus.texto}">${ico(seloStatus.icone, 18)}</span>` : ""}
@@ -5092,7 +5091,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const e = estadoPp(pd);
     const quem = (em, por) => em ? `<p class="note">${esc(nomeDe(por) || "algu\xE9m")} \xB7 ${hora(em)}</p>` : "";
     abrirModal(`
-    <h3>Bagagem PP \xB7 ${vooRotulo(comoSaida(pd.destino, pd.voo_saida_numero, null), "saida", { iconeBox: false })}</h3>
+    <h3>Bagagem PP \xB7 ${vooRotulo(comoSaida(pd.destino, pd.voo_saida_numero, null), "saida")}</h3>
     <p class="note">Avisa o l\xEDder do voo que vai receber.</p>
     <div class="equip-grid" style="margin-top:10px">
       <button class="${e === "pronta" ? "primary" : ""}" onclick="marcarAvisoPp(${vooId},${pontoDeltaId},'pronta')">Bag pronta no box</button>
@@ -5317,7 +5316,7 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
       (t) => `<button class="equip-pedir" onclick="pedirEquipamentoDelta(${vooId},'${t}')">${esc(ROTULO[t] || t)}</button>`
     ).join("");
     const doVoo = D.sols.filter((s) => mesmoId(s.voo_id, vooId));
-    abrirModal(`<h3>Equipamentos ${vooRotulo(v, "chegada", { iconeBox: false })}</h3>
+    abrirModal(`<h3>Equipamentos ${vooRotulo(v, "chegada")}</h3>
     <p class="note">Um toque pede um. Precisa de dois? Toque duas vezes.</p>
     <div class="equip-grid">${botoes}</div>
     <div class="board-title"><h2>J\xE1 pedido para este voo</h2></div>
@@ -5355,7 +5354,7 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
     const equipamentos = pode("sol_abrir") ? `<button class="small equip-botao" onclick="abrirEquipamentosDelta(${vooId})" aria-label="Equipamentos" title="Pedir equipamento e ver o que j\xE1 foi pedido">Equipamentos</button>` : "";
     abrirModal(`<div class="delta-popup"><div class="delta-cabeca">${substituir}
     <div class="list-line delta-topo">
-      <h3 class="grow">Delta ${vooRotulo(v, "chegada", { iconeBox: false })}${prefixoAeronave(v)}</h3>
+      <h3 class="grow">Delta ${vooRotulo(v, "chegada")}${prefixoAeronave(v)}</h3>
     </div>
     ${novaCarreta || equipamentos || descarga ? `<div class="delta-acoes">${equipamentos}${descarga}<span class="grow"></span>${novaCarreta}</div>` : ""}
     ${barraMoverSelecionadosDelta(vooId, carretasDoVoo, editavel)}
@@ -5536,7 +5535,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     const local = (botaoTriagemLocal(vooId) || tratorTlcDoVoo(vooId)) + chipTlcDoVoo(vooId);
     return `<div class="delta-popup india-popup"><div class="delta-cabeca">${substituir}
     <div class="list-line delta-topo">
-      <h3 class="grow">\xCDndia ${vooRotulo(v, "saida", { iconeBox: false })}${prefixoAeronave(v)}</h3>
+      <h3 class="grow">\xCDndia ${vooRotulo(v, "saida")}${prefixoAeronave(v)}</h3>
     </div>
     ${carga ? `<div class="delta-acoes india-linha-carga">${carga}</div>` : ""}
     ${local ? `<div class="delta-acoes india-linha-local">${local}</div>` : ""}
@@ -15633,7 +15632,7 @@ Sair mesmo assim?`
       seletor: ".voo-corner",
       grupo: "voo",
       arquivo: "components/voo.js",
-      desc: "Bolinha verde (pousando) ou amarela (decolando) presa no canto da placa. Desde 01/10/2026 s\xF3 no Ponto Delta/\xCDndice \u2014 no resto vale o \xEDcone da placa (placa-box-icone)."
+      desc: "Bolinha verde (pousando) ou amarela (decolando) presa no canto da placa. Desde 01/10/2026 s\xF3 onde se pede a placa antiga (iconeBox:false) \u2014 no resto vale o \xEDcone da placa (placa-box-icone)."
     },
     // Antes de .voo-box: a placa com o icone e um .voo-box tambem.
     {
