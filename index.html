@@ -1768,9 +1768,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 15:46:24
+     Gerado em: 01/10/2026, 15:53:20
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 15:46";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 15:53";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4325,8 +4325,13 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   init_modal();
   init_bus();
   init_regras();
-  var comoChegada = (apt, num) => ({ origem: apt, voo_chegada: num });
+  var comoChegada = (apt, num, box) => ({ origem: apt, voo_chegada: num, box });
   var comoSaida = (apt, num, box) => ({ destino: apt, numero: num, box });
+  var BOX_DESCONHECIDO = "?";
+  function boxDaChegada(numero) {
+    const vs = chegadasComNumero(numero);
+    return vs.length === 1 && vs[0].box ? vs[0].box : BOX_DESCONHECIDO;
+  }
   function vooChegadaConexao(numero) {
     return D.voos.find((v) => v.voo_chegada === numero || !v.voo_chegada && v.numero === numero);
   }
@@ -4736,7 +4741,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const abre = editavel ? `<div class="pt-linha delta-conexao${marcado ? " sel" : ""}${classeDuas}"${tituloDuas} onclick="alternarSelecaoDelta(${pd.id},${vooId})">` : `<div class="pt-linha${classeDuas}"${tituloDuas}>`;
     return `
     ${abre}
-      ${vooRotulo(comoSaida(pd.destino, pd.voo_saida_numero, vSaida == null ? void 0 : vSaida.box), "saida")}
+      ${vooRotulo(comoSaida(pd.destino, pd.voo_saida_numero, (vSaida == null ? void 0 : vSaida.box) || BOX_DESCONHECIDO), "saida")}
       <span class="grow"></span>
       ${seloPp(vooId, pd, tipo) || (selo ? `<span class="chip ${selo.classe}" title="${esc(selo.titulo)}">${selo.texto}</span>` : "")}
       ${seloStatus ? `<span class="delta-status ${seloStatus.classe}" title="${esc(seloStatus.titulo)}" aria-label="${seloStatus.texto}">${ico(seloStatus.icone, 18)}</span>` : ""}
@@ -5480,9 +5485,8 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       const nEntregas = entregasDaConexao(pi);
       const marca = nEntregas ? `<span class="india-entregue" title="${nEntregas} entrega${nEntregas === 1 ? "" : "s"} registrada${nEntregas === 1 ? "" : "s"}">${ico("mala-confirmada", 19)}${nEntregas > 1 ? `<i class="india-entregas-n">${nEntregas}</i>` : ""}</span>${trazendo}` : trazendo;
       const lbl = vooRotulo(
-        comoChegada(pi.origem, pi.voo_chegada_numero),
-        "chegada",
-        { box: false }
+        comoChegada(pi.origem, pi.voo_chegada_numero, boxDaChegada(pi.voo_chegada_numero)),
+        "chegada"
       );
       const blBruto = ondeEstaoAsBags(pi, sit.vc);
       const bl = blBruto && (!sit.entregue || blBruto.status !== "no_local") ? blBruto : null;
