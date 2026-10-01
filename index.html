@@ -1495,7 +1495,13 @@
   .patio-kpi span{font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
   .patio-kpi.atencao b{color:var(--orange)} .patio-kpi.ruim b{color:var(--red)}
 
-  .patio-corpo{display:grid; grid-template-columns:minmax(0,1fr) 380px; flex:1; min-height:0}
+  .patio-corpo{display:grid; grid-template-columns:minmax(0,1fr) 380px 340px; flex:1; min-height:0}
+  /* Tela media: tres colunas espremeriam o mapa -- a malha desce pra
+     baixo, na largura toda (01/10/2026). */
+  @media (max-width: 1199px){
+    .patio-corpo{grid-template-columns:minmax(0,1fr) 380px}
+    .patio-malha-col{grid-column:1 / -1; border-left:0; border-top:1px solid var(--line); max-height:60vh}
+  }
   .patio-mapa-wrap{position:relative; min-height:0; overflow:hidden; background:#E6E9E3}
   /* So o MAPA espera. O topo (dados reais/demonstracao, relogio) e os
      numeros do turno ja estao na tela enquanto isto aparece. */
@@ -1535,24 +1541,32 @@
   .patio .patio-abas button[aria-selected="true"]{color:var(--text); border-bottom-color:var(--amber)}
   .patio-abas .n{background:var(--red); color:#fff; border-radius:9px; padding:1px 6px; margin-left:4px; font-size:11px}
   .patio-lista{flex:1; overflow-y:auto; min-height:0}
-  /* Malha em cortina no topo da coluna da direita (01/10/2026). Fechada,
-     so o botao; aberta, a tabela desce ate 45% da altura e rola por
-     dentro. max-height anima a descida; quem pediu menos movimento ve
-     abrir de uma vez (consultado ao vivo pelo navegador). */
-  .patio-malha{flex:none; border-bottom:1px solid var(--line)}
-  .patio .patio-malha-bt{width:100%; min-height:40px; border:0; border-radius:0; background:var(--surface2);
-    display:flex; align-items:center; gap:6px; justify-content:flex-start; font-weight:700}
-  .patio-malha-bt .n{font-weight:400; color:var(--muted)}
-  .patio-malha-bt .seta{margin-left:auto; transition:transform .25s ease}
-  .patio-malha.aberta .patio-malha-bt .seta{transform:rotate(180deg)}
-  .patio-malha-corpo{max-height:0; overflow:hidden; transition:max-height .25s ease}
-  .patio-malha.aberta .patio-malha-corpo{max-height:45vh; overflow-y:auto}
-  @media (prefers-reduced-motion: reduce){
-    .patio-malha-corpo, .patio-malha-bt .seta{transition:none}
-  }
+  /* Malha em coluna propria, a direita do cartao do box (01/10/2026):
+     mapa | cartao | malha. Cabecalho com a busca parado; so a tabela rola,
+     nos dois sentidos (a linha em edicao fica mais larga que a coluna). */
+  .patio-malha-col{background:var(--surface); border-left:1px solid var(--line); display:flex;
+    flex-direction:column; min-height:0; min-width:0}
+  .pm-cab{flex:none; display:flex; align-items:center; gap:8px; padding:6px 8px;
+    background:var(--surface2); border-bottom:1px solid var(--line)}
+  .pm-tit{font-weight:700; font-size:13px; letter-spacing:.05em; text-transform:uppercase}
+  .pm-corpo{flex:1; min-height:0; overflow:auto}
+  /* Campos da malha: 16px de letra (abaixo disso o iOS da zoom ao focar);
+     a compactacao vem da largura e da altura, nao da letra. ".patio" no
+     seletor: "input{min-height:52px}" geral tem que perder aqui. */
+  .patio .pm-in{font-size:16px; min-height:28px; height:28px; padding:0 3px; border-radius:4px}
+  .patio .pm-busca{flex:1; width:auto; min-width:0; min-height:34px; height:34px}
+  /* ".patio" na frente de cada largura: o "input{width:100%}" geral ganhava
+     e o campo BOX tomava a coluna inteira (visto na vitrine, 01/10/2026). */
+  .patio .pm-box{width:42px} .patio .pm-est{width:34px} .patio .pm-num{width:58px}
+  .patio .pm-apt{width:46px} .patio .pm-hora{width:58px}
+  .patio .pm-bt{min-height:28px; height:28px; padding:0 6px; font-size:11px}
+  .patio .pm-bt .ico{margin-right:0}
+  .patio .pm-apagar{color:var(--red); border-color:var(--red)}
+  .pm-acao{display:flex; gap:4px}
+  .patio-malha-tab tr.pm-editando td{background:var(--surface2)}
   /* A menor tabela que ainda se le: 11px, 2px de folga, sem quebra. Numero
      e hora em largura fixa (tabular-nums) pra coluna alinhar. */
-  .patio-malha-tab{width:100%; border-collapse:collapse; font-size:11px; font-variant-numeric:tabular-nums}
+  .patio-malha-tab{width:auto; border-collapse:collapse; font-size:11px; font-variant-numeric:tabular-nums}
   .patio-malha-tab th, .patio-malha-tab td{padding:2px 4px; white-space:nowrap; text-align:left;
     border-bottom:1px solid var(--line)}
   .patio-malha-tab th{position:sticky; top:0; background:var(--surface); font-size:10px; color:var(--muted)}
@@ -1675,6 +1689,8 @@
     .patio-mapa-wrap{height:62vh; min-height:360px}
     .patio-rail{border-left:0; border-top:1px solid var(--line)}
     .patio-lista{overflow:visible}
+    .patio-malha-col{max-height:none}
+    .pm-corpo{max-height:70vh}
     .patio-legenda{max-width:230px}
   }
 
@@ -1688,9 +1704,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 07:43:57
+     Gerado em: 01/10/2026, 08:02:05
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 07:43";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 08:02";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -13588,6 +13604,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
 
   // src/ui/screens/telaPatio.js
   init_store();
+  init_horas();
   init_dom();
   init_bus();
   init_modal();
@@ -14617,29 +14634,69 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     else h.push(linha("GPS", `\xB1${p.prec} m \xB7 atualizado h\xE1 ${p.idade} s`, fonte("posi\xE7\xE3o do celular", true)));
     return h.join("");
   }
-  function malhaCortina(c) {
+  var malhaEditavel = () => pode("malha_editar") && !UI.patio.demo;
+  function linhaMalhaPainel(v, c, selId) {
+    var _a;
+    const editar = malhaEditavel();
+    const ed = editar && UI.linhaEditando === v.id;
+    const esteiraEd = (pode("malha_editar") || pode("malha_ver")) && !UI.patio.demo;
+    const est = ((_a = c.voos.find((x) => mesmoId(x.id, v.id))) == null ? void 0 : _a.estado) || "";
+    const campo = (nome, cls, hora2) => `<input class="pm-in ${cls}" value="${esc(v[nome] || "")}"${hora2 ? ' inputmode="numeric" oninput="this.value=mascaraHora(this.value)"' : ""}
+      onclick="event.stopPropagation()" onchange="mudarVoo(${v.id},'${nome}',this.value)">`;
+    const cheg = ed ? campo("origem", "pm-apt") + campo("voo_chegada", "pm-num") : v.voo_chegada ? `<span class="apt">${esc(v.origem || "")}</span>${esc(v.voo_chegada)}` : "\u2014";
+    const sai = ed ? campo("numero", "pm-num") + campo("destino", "pm-apt") : temSaida(v) ? `${esc(v.numero || "")}<span class="apt">${esc(v.destino || "")}</span>` : "\u2014";
+    const box = editar ? campo("box", "pm-box") : esc(v.box || "\u2014");
+    const esteira = esteiraEd ? campo("esteira", "pm-est") : esc(v.esteira || "\u2014");
+    const acao = !editar ? "" : ed ? `<button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(null)">OK</button><button class="patio-bt pm-bt pm-apagar" onclick="event.stopPropagation();apagarVoo(${v.id})">Apagar</button>` : `<button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(${v.id})" aria-label="Editar">${ico("lapis", 14)}</button>`;
+    const toque = v.box && !ed ? ` data-sel="box:${esc(String(v.box))}" onclick="patioSel(this.dataset.sel,1)"` : "";
+    return `<tr class="est-${esc(est)}${selId != null && mesmoId(v.id, selId) ? " sel" : ""}${ed ? " pm-editando" : ""}"${toque}>
+    <td class="mb">${box}</td><td>${cheg}</td>
+    <td>${ed ? campo("chegada", "pm-hora", true) : esc(v.chegada || "\u2014")}</td>
+    <td>${sai}</td>
+    <td>${ed ? campo("saida", "pm-hora", true) : esc(v.saida || "\u2014")}</td>
+    <td>${esteira}</td><td class="pm-acao">${acao}</td></tr>`;
+  }
+  function malhaPainelLista() {
+    return D.voos.filter((v) => v.data === hoje() && malhaBateBusca(v, UI.patio.malhaBusca)).sort((a, b) => minPlain(a.chegada || a.saida) - minPlain(b.chegada || b.saida));
+  }
+  function malhaPainelCorpo(c) {
     var _a, _b;
     const selBox = ((_a = UI.patio.sel) == null ? void 0 : _a.startsWith("box:")) ? UI.patio.sel.slice(4) : null;
     const selId = selBox ? (_b = c.boxes[selBox]) == null ? void 0 : _b.id : null;
-    const ord = (v) => {
-      var _a2, _b2;
-      return (_b2 = (_a2 = v.cheg) != null ? _a2 : v.sai) != null ? _b2 : 99999;
-    };
-    const linhas = c.voos.slice().sort((a, b) => ord(a) - ord(b)).map((v) => {
-      const box = v.box || "";
-      const toque = box ? ` data-sel="box:${esc(box)}" onclick="patioSel(this.dataset.sel,1)"` : "";
-      return `<tr class="est-${esc(v.estado || "")}${selId != null && v.id === selId ? " sel" : ""}"${toque}>
-      <td class="mb">${esc(box || "\u2014")}</td>
-      <td>${v.vc ? `<span class="apt">${esc(v.org || "")}</span>${esc(v.vc)}` : "\u2014"}</td>
-      <td>${v.cheg != null ? hhmm(v.cheg) : "\u2014"}</td>
-      <td>${v.vs ? `${esc(v.vs)}<span class="apt">${esc(v.dst || "")}</span>` : "\u2014"}</td>
-      <td>${v.sai != null ? hhmm(v.sai) : "\u2014"}</td></tr>`;
-    }).join("");
-    return `<button class="patio-bt patio-malha-bt" aria-expanded="${!!UI.patio.malha}" onclick="patioMalha()">
-      <span>Malha</span> <span class="n">${c.voos.length}</span> <span class="seta" aria-hidden="true">\u25BE</span></button>
-    <div class="patio-malha-corpo">${c.voos.length ? `<table class="patio-malha-tab">
-      <thead><tr><th>BOX</th><th>CHEGA</th><th>STA</th><th>SAI</th><th>STD</th></tr></thead>
-      <tbody>${linhas}</tbody></table>` : `<p class="patio-aviso compacto">Nenhum voo na malha de hoje.</p>`}</div>`;
+    const lista = malhaPainelLista();
+    if (!lista.length) return `<p class="patio-aviso compacto">${UI.patio.malhaBusca ? "Nenhum voo de hoje com esse n\xFAmero." : "Nenhum voo na malha de hoje."}</p>`;
+    return `<table class="patio-malha-tab">
+    <thead><tr><th>BOX</th><th>CHEGA</th><th>STA</th><th>SAI</th><th>STD</th><th>EST</th><th></th></tr></thead>
+    <tbody>${lista.map((v) => linhaMalhaPainel(v, c, selId)).join("")}</tbody></table>`;
+  }
+  var malhaUltimo = "";
+  function malhaPainel(c) {
+    malhaUltimo = malhaPainelCorpo(c);
+    return `<div class="pm-cab"><span class="pm-tit">Malha</span>
+      <input id="pmBusca" class="pm-in pm-busca" type="text" inputmode="numeric" placeholder="Buscar voo"
+        value="${esc(UI.patio.malhaBusca || "")}" oninput="buscarMalhaPainel(this.value)"></div>
+    <div id="pm-corpo" class="pm-corpo">${malhaUltimo}</div>`;
+  }
+  function redesenharMalhaPainel(c, forcar) {
+    var _a;
+    const el = typeof document !== "undefined" ? document.getElementById("pm-corpo") : null;
+    if (!el) return;
+    const ativo = document.activeElement;
+    if (!forcar && ativo && ((_a = el.contains) == null ? void 0 : _a.call(el, ativo))) return;
+    const html = malhaPainelCorpo(c);
+    if (!forcar && html === malhaUltimo) return;
+    const rolou = el.scrollTop;
+    el.innerHTML = html;
+    malhaUltimo = html;
+    if (rolou) el.scrollTop = rolou;
+  }
+  function buscarMalhaPainel(txt2) {
+    UI.patio.malhaBusca = txt2;
+    redesenharMalhaPainel(cena(), true);
+  }
+  function patioEditarVoo(id) {
+    UI.linhaEditando = id;
+    redesenharMalhaPainel(cena(), true);
   }
   function railLista(c) {
     const sel = UI.patio.sel;
@@ -14720,11 +14777,11 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
         </div>`}
       </div>
       <aside class="patio-rail">
-        <div id="patio-malha" class="patio-malha${P3.malha ? " aberta" : ""}">${malhaCortina(c)}</div>
         <div id="patio-railtopo">${railTopo(c)}</div>
         <div class="patio-lista" id="patio-lista">${railLista(c)}</div>
         <p class="patio-nota">${P3.demo ? "Nomes fict\xEDcios. Pessoas e viagens se mexem; o resto fica parado." : "S\xF3 leitura."} Descarga OK continua com o OC; aceitar bag, com o operador.</p>
       </aside>
+      <aside class="patio-malha-col">${malhaPainel(c)}</aside>
     </div>
   </div>`;
   }
@@ -14737,7 +14794,6 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     return temDom() && !!document.getElementById("patio-mapa");
   }
   function redesenharPatio(forcar) {
-    var _a, _b;
     if (!temDom() || !document.getElementById("patio-mapa")) return;
     const c = cena(), s = ppu();
     porId("patio-g-boxes", desenhoBoxes(c, s));
@@ -14750,24 +14806,9 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const rel = document.getElementById("patio-relogio");
     if (rel) rel.textContent = relogioTexto();
     if (forcar || !listaPresa) {
-      const corpo = (_a = document.querySelector) == null ? void 0 : _a.call(document, ".patio-malha-corpo");
-      const rolou = corpo ? corpo.scrollTop : 0;
-      porId("patio-malha", malhaCortina(c));
-      const novo = (_b = document.querySelector) == null ? void 0 : _b.call(document, ".patio-malha-corpo");
-      if (novo && rolou) novo.scrollTop = rolou;
+      redesenharMalhaPainel(c, forcar);
       porId("patio-railtopo", railTopo(c));
       porId("patio-lista", railLista(c));
-    }
-  }
-  function patioMalha() {
-    var _a, _b;
-    UI.patio.malha = !UI.patio.malha;
-    const el = document.getElementById("patio-malha");
-    if (el) {
-      if (UI.patio.malha) el.classList.add("aberta");
-      else el.classList.remove("aberta");
-      const bt = (_a = el.querySelector) == null ? void 0 : _a.call(el, ".patio-malha-bt");
-      if (bt) (_b = bt.setAttribute) == null ? void 0 : _b.call(bt, "aria-expanded", String(UI.patio.malha));
     }
   }
   function redesenharMovimento() {
@@ -14937,7 +14978,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     };
     document.addEventListener("pointerdown", (e) => {
       var _a, _b;
-      if ((_b = (_a = e.target) == null ? void 0 : _a.closest) == null ? void 0 : _b.call(_a, ".patio-rail")) listaPresa = true;
+      if ((_b = (_a = e.target) == null ? void 0 : _a.closest) == null ? void 0 : _b.call(_a, ".patio-rail, .patio-malha-col")) listaPresa = true;
       const svg = noMapa(e);
       if (!svg) return;
       if (pontos().length && Date.now() - ultimoToque > 5e3) patioSoltarArrasto();
@@ -16167,20 +16208,41 @@ Sair mesmo assim?`
       arquivo: "screens/telaPatio.js",
       desc: "Uma linha do cart\xE3o do box: r\xF3tulo curto \xE0 esquerda, o valor \xE0 direita."
     },
-    // Antes de .patio-bt e de button: o botao e a tabela da malha em cortina.
+    // Antes de .patio-bt, input e button: a malha em coluna propria.
     {
-      nome: "botao-malha-do-painel",
-      seletor: ".patio-malha-bt",
+      nome: "campo-da-malha-do-painel",
+      seletor: ".pm-in",
       grupo: "painel",
       arquivo: "screens/telaPatio.js",
-      desc: 'Bot\xE3o "Malha" no topo da coluna da direita: desce (e recolhe) a malha do dia como uma cortina.'
+      desc: "Campo pequeno dentro da malha do Painel (BOX, EST, e os da linha aberta pelo l\xE1pis) e o Buscar voo."
+    },
+    {
+      nome: "botao-da-malha-do-painel",
+      seletor: ".pm-bt",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "L\xE1pis, OK e Apagar na \xFAltima coluna da malha do Painel."
+    },
+    {
+      nome: "cabecalho-da-malha-do-painel",
+      seletor: ".pm-cab",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: 'Faixa do topo da coluna da malha: "MALHA" e o Buscar voo. Fica parada; s\xF3 a tabela rola.'
     },
     {
       nome: "tabela-malha-do-painel",
       seletor: ".patio-malha-tab",
       grupo: "painel",
       arquivo: "screens/telaPatio.js",
-      desc: "A malha compacta dentro da cortina: BOX, CHEGA, STA, SAI, STD. Tocar na linha abre o box; a rota\xE7\xE3o aberta fica marcada."
+      desc: "A malha compacta do Painel: BOX, CHEGA, STA, SAI, STD, EST. Tocar na linha abre o box; a rota\xE7\xE3o aberta fica marcada."
+    },
+    {
+      nome: "coluna-da-malha-do-painel",
+      seletor: ".patio-malha-col",
+      grupo: "painel",
+      arquivo: "screens/telaPatio.js",
+      desc: "A coluna da malha: \xE0 direita do cart\xE3o do box no computador; embaixo do mapa e do cart\xE3o em tela menor."
     },
     // Antes de .patio-bt e de button: sao os botoes D e I do detalhe do box.
     {
@@ -17001,7 +17063,8 @@ Sair mesmo assim?`
     marcarNaoConecta,
     marcarNaoConectaVarios,
     patioPontos,
-    patioMalha,
+    buscarMalhaPainel,
+    patioEditarVoo,
     lancarPouso
   });
   boot();
