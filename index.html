@@ -1776,9 +1776,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 16:43:17
+     Gerado em: 01/10/2026, 18:15:36
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 16:43";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 18:15";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4439,7 +4439,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     const dClasse = d < 0 ? "falta" : d > 0 ? "sobra" : "zero";
     const dTxt = d > 0 ? "+" + d : String(d);
     const op = opDaConexao(pi);
-    const colOp = op != null ? coluna("prd-op", "OP", `${op}/`, "O que foi digitado nas entregas (l\xEDder no Delta ou operador ao entregar) \u2014 s\xF3 ci\xEAncia, n\xE3o soma no P/R/D.") : "";
+    const colOp = op != null ? coluna("prd-op", "OP", `${op}`, "O que foi digitado nas entregas (l\xEDder no Delta ou operador ao entregar) \u2014 s\xF3 ci\xEAncia, n\xE3o soma no P/R/D.") : "";
     return `<div class="prd">
     ${colOp}
     ${coluna("prd-p", "P", p, "Previsto (importado)")}
@@ -12260,7 +12260,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     ${UI.tri.setor === "TCX" ? blocoCardsTcx() : UI.tri.setor === "TLC" ? blocoBaseTlc() + blocoCarreta() : blocoCarreta()}
     ${UI.tri.setor === "BOX" ? `<p class="note">Toque no voo para avisar que as bags dele est\xE3o prontas para coleta.</p>
     ${gradeDestinos(cands, [], [], "sinalizarPronta")}` : ""}
-    ${UI.tri.setor === "TLC" ? "" : `
+    ${UI.tri.setor === "TLC" || UI.tri.setor === "TCX" ? "" : `
     <div class="board-title"><h2>Sinalizadas hoje</h2><span class="flip">${minhas.length}</span></div>
     ${minhas.length ? minhas.map((p) => {
       const v = voo(p.voo_destino_id) || {};
@@ -12544,6 +12544,18 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const eu = (_a = S.me) == null ? void 0 : _a.id;
     return D.prontas.filter((p) => mesmoId(p.ponto_india_id, piId) && p.setor === "TCX" && (p.status === "pronta" || p.status === "ciente") && eu != null && p.criada_por === eu);
   }
+  function sinalizadasAbertas(vooId, piId) {
+    return D.prontas.filter((p) => p.setor === "TCX" && (p.status === "pronta" || p.status === "ciente") && (piId != null ? mesmoId(p.ponto_india_id, piId) : mesmoId(p.voo_destino_id, vooId)));
+  }
+  function sinoSinalizada(abertas) {
+    if (!abertas.length) return "";
+    const aguard = abertas.filter((p) => p.status === "pronta").length;
+    const buscar = abertas.filter((p) => p.status === "ciente");
+    const partes = [];
+    if (aguard) partes.push(`${aguard} aguardando um operador`);
+    if (buscar.length) partes.push(`${[...new Set(buscar.map((p) => nomeDe(p.ciente_por)))].join(", ")} vai buscar`);
+    return ` <span class="pedido-tlc-sino"${sig(`Carreta j\xE1 sinalizada: ${partes.join(" \xB7 ")}`)}>${ico("sinoSolicitado", 18)}</span>`;
+  }
   function resumoCard(linhas) {
     let enviadas = 0, bagsEnv = 0;
     for (const pi of linhas) {
@@ -12577,7 +12589,7 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
         r.pendentes ? `<span class="chip st-a_caminho" title="Salvo neste aparelho, ainda n\xE3o enviado.">salvo \xB7 ${r.pendentes - r.aTirar} linha${r.pendentes - r.aTirar === 1 ? "" : "s"}${r.bags ? ` \xB7 ${r.bags} bag${r.bags === 1 ? "" : "s"}` : ""}${r.semNumero ? ` \xB7 ${r.semNumero} sem contagem` : ""}${r.aTirar ? ` \xB7 ${r.aTirar} a tirar` : ""}</span>` : ""
       ].join("");
       return `<div class="card">
-      <div class="list-line" style="border:none;padding:0 0 6px"><b class="grow">${vooRotulo(c.v, "saida")}</b>
+      <div class="list-line" style="border:none;padding:0 0 6px"><b class="grow">${vooRotulo(c.v, "saida")}${sinoSinalizada(sinalizadasAbertas(c.vooId))}</b>
         <span class="note">box ${esc(c.v.box || "?")}${c.v.saida ? ` \xB7 ${esc(c.v.saida)}` : ""}</span></div>
       <div class="list-line" style="border:none;padding:0 0 8px">${chips || `<span class="note">nada montado</span>`}</div>
       <div class="row">
@@ -12604,13 +12616,11 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
     const sugerido = Math.max(0, faltam2 - av.qtd);
     const mk = lerMarca(rasc[pi.id]);
     const lbl = vooRotulo({ origem: pi.origem, voo_chegada: pi.voo_chegada_numero }, "chegada", { box: false });
-    const enviada = enviadosPor(pi.id).length > 0;
     const chips = [
-      deixaramNaTcx(pi) ? `<span class="chip st-aceita tcx-sinal" title="Um operador registrou que deixou bag desse voo na TCX.">TCX</span>` : "",
-      enviada ? `<span class="chip st-a_caminho" title="Esta linha j\xE1 foi enviada aos operadores. D\xE1 para editar enquanto ningu\xE9m pegou.">enviada</span>` : ""
+      deixaramNaTcx(pi) ? `<span class="chip st-aceita tcx-sinal" title="Um operador registrou que deixou bag desse voo na TCX.">TCX</span>` : ""
     ].join("");
     return `<div class="pt-linha${pi.siga ? " siga" : ""}">
-    <div class="india-id">${lbl}${chips}</div>
+    <div class="india-id">${lbl}${chips}${sinoSinalizada(sinalizadasAbertas(pi.voo_id, pi.id))}</div>
     <div class="india-ctl">
       <span class="tcx-pr" id="tcxPR${pi.id}" title="P previsto \xB7 R real (o mesmo do Ponto \xCDndia do l\xEDder)">${prHtml(pi)}</span>
       <span class="delta-manual-grupo">
