@@ -1596,6 +1596,8 @@
      min-height:52px}" geral tem que perder aqui. */
   .patio .pm-in{font-size:16px; min-height:28px; height:28px; padding:0 3px; border-radius:4px}
   .patio .pm-busca{flex:1; width:auto; min-width:0; min-height:34px; height:34px}
+  /* Janela De/Ate ao lado da busca (01/10/2026): cabe "23:59" a 16px. */
+  .patio .pm-janela{flex:none; width:6.5ch; min-height:34px; height:34px; text-align:center}
   .patio .pm-box{width:4.5ch} .patio .pm-est{width:3.5ch} .patio .pm-num{width:6.5ch}
   .patio .pm-apt{width:4.5ch} .patio .pm-hora{width:6ch}
   .patio .pm-bt{min-height:28px; height:28px; padding:0 10px; font-size:11px}
@@ -1736,9 +1738,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 13:49:10
+     Gerado em: 01/10/2026, 14:09:55
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 13:49";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 14:09";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -14485,7 +14487,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     if (v.pouso == null) {
       if (!podeLancar) return "";
       return linha(
-        "Pousou",
+        "Pouso",
         `<span class="note">ainda n\xE3o lan\xE7ado</span> <span class="grow"></span>
        <button class="patio-bt" onclick="lancarPouso(${v.id},'')">lan\xE7ar</button>`,
         fonte("voos.pouso")
@@ -14496,7 +14498,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const quem = v.pousoFonte && v.pousoFonte !== "manual" ? ` <small>\xB7 ${esc(v.pousoFonte)}</small>` : v.pousoPor ? ` <small>\xB7 por ${esc(v.pousoPor)}</small>` : "";
     const corrigir = !podeLancar ? "" : `<button class="patio-bt" onclick="lancarPouso(${v.id},'${esc(hhmm(v.pouso))}')">corrigir</button>`;
     return linha(
-      "Pousou",
+      "Pouso",
       `<b>${hhmm(v.pouso)}</b>${desvio}${quem} <span class="grow"></span>${corrigir}`,
       fonte("voos.pouso")
     );
@@ -14591,19 +14593,25 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     }).join("");
     return `<div class="patio-conexoes">${itens}</div>`;
   }
+  function rotacaoDoCartao(c, k) {
+    const id = UI.patio.rotSel;
+    const escolhida = id != null ? c.voos.find((x) => mesmoId(x.id, id) && x.box === k) : null;
+    return escolhida || c.boxes[k];
+  }
   function detalheBox(c, k) {
     var _a, _b;
-    const n = c.agora, v = c.boxes[k], e = v ? v.estado : "vazio";
+    const n = c.agora, v = rotacaoDoCartao(c, k), e = v ? v.estado : "vazio";
     const h = [`<div class="patio-det-topo"><div><h2>BOX ${esc(k)}</h2><span class="sub">${v ? esc(`${v.org ? `${v.org} \u2192 ` : ""}BSB \u2192 ${v.dst}`) : ""}</span></div><span class="patio-chip ${e}">${NOME_ESTADO[e]}</span>${fechar2}</div>`];
     if (!v) {
       const prox = c.voos.filter((x) => x.box === k && x.estado === "previsto").sort((a, b) => a.cheg - b.cheg)[0];
       h.push(`<p class="patio-aviso">${prox ? `Nenhuma rota\xE7\xE3o agora. Pr\xF3xima chegada: ${esc(prox.vc || prox.vs)} \xE0s ${hhmm(prox.cheg)}.` : "Nenhuma rota\xE7\xE3o neste box agora."}</p>`);
       return h.join("");
     }
-    if (v.cheg != null) h.push(linha("Chegada", `<b>${esc(v.vc || "\u2014")}</b> de ${esc(v.org)} \xB7 <b>${hhmm(v.cheg)}</b> <small>(${n < v.cheg ? `em ${mins(v.cheg - n)}` : `h\xE1 ${mins(n - v.cheg)}`} min)</small>`, fonte("voos")));
+    if (v.cheg != null) h.push(linha("Chegada", `<b>${esc(`${v.org || "\u2014"}-${v.vc || "\u2014"}`)}</b> \xB7 <b>${hhmm(v.cheg)}</b> <small>(${n < v.cheg ? `em ${mins(v.cheg - n)}` : `h\xE1 ${mins(n - v.cheg)}`} min)</small>`, fonte("voos")));
     h.push(pousoDoBox(c, v));
     const iminente = v.sai != null && v.sai - n > 0 && v.sai - n <= SINO_IMINENTE_MIN ? ` <span class="sino-iminente">DECOLA J\xC1</span>` : "";
-    h.push(linha("Sa\xEDda", v.sai != null ? `<b>${esc(v.vs)}</b> para ${esc(v.dst)} \xB7 <b>${hhmm(v.sai)}</b> ${tempoChip(v.sai - n)}${iminente}` : `<b>${esc(v.vs)}</b> <small>sem hora de sa\xEDda</small>`, fonte("voos")));
+    const rotSai = `${v.dst || "\u2014"}-${v.vs || "\u2014"}`;
+    h.push(linha("Sa\xEDda", v.sai != null ? `<b>${esc(rotSai)}</b> \xB7 <b>${hhmm(v.sai)}</b> ${tempoChip(v.sai - n)}${iminente}` : `<b>${esc(rotSai)}</b> <small>sem hora de sa\xEDda</small>`, fonte("voos")));
     h.push(decolagemDoBox(c, v));
     h.push(linha("OC no box", v.oc ? esc(v.oc) : `<span class="ruim">ningu\xE9m posicionado</span>`, fonte("voos.oc_posicionado_id")));
     if (e === "solo" || e === "descarga")
@@ -14678,7 +14686,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const box = ed && editar ? campo("box", "pm-box") : esc(v.box || "\u2014");
     const esteira = ed && esteiraEd ? campo("esteira", "pm-est") : esc(v.esteira || "\u2014");
     const acoes = !ed ? "" : `<div class="pm-acoes"><button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(null)">OK</button>${editar ? `<button class="patio-bt pm-bt pm-apagar" onclick="event.stopPropagation();apagarVoo(${v.id})">Apagar</button>` : ""}</div>`;
-    const toque = v.box && !ed ? ` data-sel="box:${esc(String(v.box))}" onclick="patioSel(this.dataset.sel,1)"` : "";
+    const toque = v.box && !ed ? ` data-sel="box:${esc(String(v.box))}" onclick="patioSel(this.dataset.sel,1,${v.id})"` : "";
     const menu = editar || esteiraEd ? ` oncontextmenu="patioMenuVoo(event,${v.id})"` : "";
     return `<div role="row" data-voo-id="${v.id}" class="pm-linha est-${esc(est)}${selId != null && mesmoId(v.id, selId) ? " sel" : ""}${ed ? " pm-editando" : ""}"${toque}${menu}>
     <div class="pm-c lado-a">${cheg}</div>
@@ -14696,8 +14704,15 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     est: (v) => v.esteira
   };
   var HORA_MALHA = /* @__PURE__ */ new Set(["sta", "std"]);
+  function malhaNaJanela(v) {
+    const t = minPlain(v.saida || v.chegada);
+    const de = UI.patio.malhaDe, ate = UI.patio.malhaAte;
+    if (de && t !== 99999 && t < minPlain(de)) return false;
+    if (ate && t !== 99999 && t > minPlain(ate)) return false;
+    return true;
+  }
   function malhaPainelLista() {
-    const lista = D.voos.filter((v) => v.data === hoje() && malhaBateBusca(v, UI.patio.malhaBusca));
+    const lista = D.voos.filter((v) => v.data === hoje() && malhaBateBusca(v, UI.patio.malhaBusca) && malhaNaJanela(v));
     const o = UI.patio.malhaOrdem;
     if (!o || !ORDEM_MALHA[o.col])
       return lista.sort((a, b) => minPlain(a.chegada || a.saida) - minPlain(b.chegada || b.saida));
@@ -14718,9 +14733,9 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   function malhaPainelCorpo(c) {
     var _a, _b;
     const selBox = ((_a = UI.patio.sel) == null ? void 0 : _a.startsWith("box:")) ? UI.patio.sel.slice(4) : null;
-    const selId = selBox ? (_b = c.boxes[selBox]) == null ? void 0 : _b.id : null;
+    const selId = selBox ? (_b = rotacaoDoCartao(c, selBox)) == null ? void 0 : _b.id : null;
     const lista = malhaPainelLista();
-    if (!lista.length) return `<p class="patio-aviso compacto">${UI.patio.malhaBusca ? "Nenhum voo de hoje com esse n\xFAmero." : "Nenhum voo na malha de hoje."}</p>`;
+    if (!lista.length) return `<p class="patio-aviso compacto">${UI.patio.malhaBusca ? "Nenhum voo de hoje com esse n\xFAmero." : UI.patio.malhaDe || UI.patio.malhaAte ? "Nenhum voo de hoje nesta janela." : "Nenhum voo na malha de hoje."}</p>`;
     const o = UI.patio.malhaOrdem;
     const th = (col, rot2) => `<div role="columnheader" class="pm-c pm-th pm-ord" onclick="ordenarMalhaPainel('${col}')" aria-sort="${(o == null ? void 0 : o.col) === col ? o.dir > 0 ? "ascending" : "descending" : "none"}">${rot2}${(o == null ? void 0 : o.col) === col ? o.dir > 0 ? " \u25B2" : " \u25BC" : ""}</div>`;
     return `<div class="patio-malha-tab pm-grade" role="table">
@@ -14732,7 +14747,11 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     malhaUltimo = malhaPainelCorpo(c);
     return `<div class="pm-cab"><span class="pm-tit">Malha</span>
       <input id="pmBusca" class="pm-in pm-busca" type="text" inputmode="numeric" placeholder="Buscar voo"
-        value="${esc(UI.patio.malhaBusca || "")}" oninput="buscarMalhaPainel(this.value)"></div>
+        value="${esc(UI.patio.malhaBusca || "")}" oninput="buscarMalhaPainel(this.value)">
+      <input class="pm-in pm-janela" type="text" inputmode="numeric" placeholder="De" aria-label="Janela: de"
+        value="${esc(UI.patio.malhaDe || "")}" oninput="this.value=mascaraHora(this.value)" onchange="janelaMalhaPainel('de',this.value)">
+      <input class="pm-in pm-janela" type="text" inputmode="numeric" placeholder="At\xE9" aria-label="Janela: at\xE9"
+        value="${esc(UI.patio.malhaAte || "")}" oninput="this.value=mascaraHora(this.value)" onchange="janelaMalhaPainel('ate',this.value)"></div>
     <div id="pm-corpo" class="pm-corpo">${malhaUltimo}</div>`;
   }
   function redesenharMalhaPainel(c, forcar) {
@@ -14751,6 +14770,12 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   }
   function buscarMalhaPainel(txt2) {
     UI.patio.malhaBusca = txt2;
+    redesenharMalhaPainel(cena(), true);
+  }
+  function janelaMalhaPainel(lado, valor) {
+    const h = normHora(valor) || "";
+    if (lado === "de") UI.patio.malhaDe = h;
+    else UI.patio.malhaAte = h;
     redesenharMalhaPainel(cena(), true);
   }
   function patioEditarVoo(id) {
@@ -14968,8 +14993,9 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       if (q < 1) requestAnimationFrame(passo);
     })();
   }
-  function patioSel(sel, voar) {
+  function patioSel(sel, voar, rotId) {
     UI.patio.sel = sel || null;
+    UI.patio.rotSel = rotId != null ? rotId : null;
     const lista = temDom() && document.getElementById("patio-lista");
     if (lista) lista.scrollTop = 0;
     if (sel && voar && temDom()) voarPara(sel);
@@ -17198,6 +17224,7 @@ Sair mesmo assim?`
     buscarMalhaPainel,
     patioEditarVoo,
     patioMenuVoo,
+    janelaMalhaPainel,
     ordenarMalhaPainel,
     lancarPouso,
     lancarDecolagem
