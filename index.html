@@ -1573,6 +1573,9 @@
   /* Linha aberta: cidade e numero (e OK/Apagar) um em cima do outro --
      e o que deixa a coluna ter a largura da edicao desde o comeco. */
   .pm-pilha{display:inline-flex; flex-direction:column; gap:2px}
+  /* Cabecalho que ordena (toque = crescente, de novo = decrescente). */
+  .patio-malha-tab th.pm-ord{cursor:pointer; user-select:none}
+  .patio-malha-tab th.pm-ord[aria-sort="ascending"], .patio-malha-tab th.pm-ord[aria-sort="descending"]{color:var(--text)}
   /* Alca de arrastar (a mesma da aba Malha) pequena aqui: a linha tem 11px. */
   .patio-malha-tab .malha-alca{padding:6px; margin:-6px 1px -6px -4px}
   .patio-malha-tab .malha-alca .ico{width:14px; height:14px}
@@ -1716,9 +1719,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 12:05:27
+     Gerado em: 01/10/2026, 12:13:46
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 12:05";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 12:13";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -14650,26 +14653,51 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   function linhaMalhaPainel(v, c, selId) {
     var _a;
     const editar = malhaEditavel();
-    const ed = editar && UI.linhaEditando === v.id;
     const esteiraEd = (pode("malha_editar") || pode("malha_ver")) && !UI.patio.demo;
+    const ed = (editar || esteiraEd) && UI.linhaEditando === v.id;
     const est = ((_a = c.voos.find((x) => mesmoId(x.id, v.id))) == null ? void 0 : _a.estado) || "";
     const campo = (nome, cls, hora2) => `<input class="pm-in ${cls}" value="${esc(v[nome] || "")}"${hora2 ? ' inputmode="numeric" oninput="this.value=mascaraHora(this.value)"' : ""}
       onclick="event.stopPropagation()" onchange="mudarVoo(${v.id},'${nome}',this.value)">`;
-    const cheg = ed ? `<span class="pm-pilha">${campo("origem", "pm-apt")}${campo("voo_chegada", "pm-num")}</span>` : v.voo_chegada ? `${alca(v.id, "chegada", editar, false)}<span class="apt" data-campo="origem">${esc(v.origem || "")}</span><span data-campo="voo_chegada">${esc(v.voo_chegada)}</span>` : "\u2014";
-    const sai = ed ? `<span class="pm-pilha">${campo("numero", "pm-num")}${campo("destino", "pm-apt")}</span>` : temSaida(v) ? `${alca(v.id, "saida", editar, false)}<span data-campo="numero">${esc(v.numero || "")}</span><span class="apt" data-campo="destino">${esc(v.destino || "")}</span>` : "\u2014";
-    const box = editar ? campo("box", "pm-box") : esc(v.box || "\u2014");
-    const esteira = esteiraEd ? campo("esteira", "pm-est") : esc(v.esteira || "\u2014");
-    const acao = !editar ? "" : ed ? `<span class="pm-pilha"><button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(null)">OK</button><button class="patio-bt pm-bt pm-apagar" onclick="event.stopPropagation();apagarVoo(${v.id})">Apagar</button></span>` : `<button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(${v.id})" aria-label="Editar">${ico("lapis", 14)}</button>`;
+    const cheg = ed && editar ? `<span class="pm-pilha">${campo("origem", "pm-apt")}${campo("voo_chegada", "pm-num")}</span>` : v.voo_chegada ? `${alca(v.id, "chegada", editar, false)}<span class="apt" data-campo="origem">${esc(v.origem || "")}</span><span data-campo="voo_chegada">${esc(v.voo_chegada)}</span>` : "\u2014";
+    const sai = ed && editar ? `<span class="pm-pilha">${campo("numero", "pm-num")}${campo("destino", "pm-apt")}</span>` : temSaida(v) ? `${alca(v.id, "saida", editar, false)}<span data-campo="numero">${esc(v.numero || "")}</span><span class="apt" data-campo="destino">${esc(v.destino || "")}</span>` : "\u2014";
+    const box = ed && editar ? campo("box", "pm-box") : esc(v.box || "\u2014");
+    const esteira = ed && esteiraEd ? campo("esteira", "pm-est") : esc(v.esteira || "\u2014");
+    const acao = !(editar || esteiraEd) ? "" : ed ? `<span class="pm-pilha"><button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(null)">OK</button>${editar ? `<button class="patio-bt pm-bt pm-apagar" onclick="event.stopPropagation();apagarVoo(${v.id})">Apagar</button>` : ""}</span>` : `<button class="patio-bt pm-bt" onclick="event.stopPropagation();patioEditarVoo(${v.id})" aria-label="Editar">${ico("lapis", 14)}</button>`;
     const toque = v.box && !ed ? ` data-sel="box:${esc(String(v.box))}" onclick="patioSel(this.dataset.sel,1)"` : "";
     return `<tr data-voo-id="${v.id}" class="est-${esc(est)}${selId != null && mesmoId(v.id, selId) ? " sel" : ""}${ed ? " pm-editando" : ""}"${toque}>
     <td class="lado-a">${cheg}</td>
-    <td class="lado-a" data-campo="chegada">${ed ? campo("chegada", "pm-hora", true) : esc(v.chegada || "\u2014")}</td>
+    <td class="lado-a" data-campo="chegada">${ed && editar ? campo("chegada", "pm-hora", true) : esc(v.chegada || "\u2014")}</td>
     <td class="lado-b">${sai}</td>
-    <td class="lado-b" data-campo="saida">${ed ? campo("saida", "pm-hora", true) : esc(v.saida || "\u2014")}</td>
+    <td class="lado-b" data-campo="saida">${ed && editar ? campo("saida", "pm-hora", true) : esc(v.saida || "\u2014")}</td>
     <td class="mb">${box}</td><td>${esteira}</td><td class="pm-acao">${acao}</td></tr>`;
   }
+  var ORDEM_MALHA = {
+    chega: (v) => v.voo_chegada,
+    sta: (v) => v.chegada,
+    sai: (v) => temSaida(v) ? v.numero : "",
+    std: (v) => v.saida,
+    box: (v) => v.box,
+    est: (v) => v.esteira
+  };
+  var HORA_MALHA = /* @__PURE__ */ new Set(["sta", "std"]);
   function malhaPainelLista() {
-    return D.voos.filter((v) => v.data === hoje() && malhaBateBusca(v, UI.patio.malhaBusca)).sort((a, b) => minPlain(a.chegada || a.saida) - minPlain(b.chegada || b.saida));
+    const lista = D.voos.filter((v) => v.data === hoje() && malhaBateBusca(v, UI.patio.malhaBusca));
+    const o = UI.patio.malhaOrdem;
+    if (!o || !ORDEM_MALHA[o.col])
+      return lista.sort((a, b) => minPlain(a.chegada || a.saida) - minPlain(b.chegada || b.saida));
+    const val = ORDEM_MALHA[o.col];
+    return lista.sort((a, b) => {
+      const x = val(a), y = val(b);
+      const vx = x == null || x === "", vy = y == null || y === "";
+      if (vx || vy) return vx === vy ? 0 : vx ? 1 : -1;
+      const d = HORA_MALHA.has(o.col) ? minPlain(x) - minPlain(y) : String(x).localeCompare(String(y), "pt-BR", { numeric: true, sensitivity: "base" });
+      return d * o.dir;
+    });
+  }
+  function ordenarMalhaPainel(col) {
+    const o = UI.patio.malhaOrdem;
+    UI.patio.malhaOrdem = o && o.col === col ? { col, dir: -o.dir } : { col, dir: 1 };
+    redesenharMalhaPainel(cena(), true);
   }
   function malhaPainelCorpo(c) {
     var _a, _b;
@@ -14677,8 +14705,10 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const selId = selBox ? (_b = c.boxes[selBox]) == null ? void 0 : _b.id : null;
     const lista = malhaPainelLista();
     if (!lista.length) return `<p class="patio-aviso compacto">${UI.patio.malhaBusca ? "Nenhum voo de hoje com esse n\xFAmero." : "Nenhum voo na malha de hoje."}</p>`;
+    const o = UI.patio.malhaOrdem;
+    const th = (col, rot2) => `<th class="pm-ord" onclick="ordenarMalhaPainel('${col}')" aria-sort="${(o == null ? void 0 : o.col) === col ? o.dir > 0 ? "ascending" : "descending" : "none"}">${rot2}${(o == null ? void 0 : o.col) === col ? o.dir > 0 ? " \u25B2" : " \u25BC" : ""}</th>`;
     return `<table class="patio-malha-tab">
-    <thead><tr><th>CHEGA</th><th>STA</th><th>SAI</th><th>STD</th><th>BOX</th><th>EST</th><th></th></tr></thead>
+    <thead><tr>${th("chega", "CHEGA")}${th("sta", "STA")}${th("sai", "SAI")}${th("std", "STD")}${th("box", "BOX")}${th("est", "EST")}<th></th></tr></thead>
     <tbody>${lista.map((v) => linhaMalhaPainel(v, c, selId)).join("")}</tbody></table>`;
   }
   var malhaUltimo = "";
@@ -17078,6 +17108,7 @@ Sair mesmo assim?`
     patioPontos,
     buscarMalhaPainel,
     patioEditarVoo,
+    ordenarMalhaPainel,
     lancarPouso
   });
   boot();
