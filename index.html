@@ -1783,6 +1783,10 @@
     #contingencia pre{margin:0; font:inherit; font-size:10.5pt; line-height:1.35; white-space:pre-wrap; word-break:break-all}
   }
 
+  /* PDF do par: embaixo do Delta (a tabela ja passa da largura do celular,
+     uma coluna nova ficaria fora da tela). */
+  .pdf-par{display:block; width:auto; min-height:36px; margin-top:6px; padding:0 14px; font-size:14px}
+
 </style>
 </head>
 <body>
@@ -1793,9 +1797,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 01/10/2026, 20:38:02
+     Gerado em: 02/10/2026, 11:23:35
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="01/10 20:38";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="02/10 11:23";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4523,6 +4527,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     <td>
       <button class="small" style="width:auto" onclick="verPontoDelta(${v.id})">Delta</button>
       ${iconeLogPonto(v, "delta")}
+      <button class="small ghost pdf-par" onclick="imprimirContingencia(${v.id})" aria-label="Plano de conting\xEAncia s\xF3 deste par de voos" title="Plano de conting\xEAncia s\xF3 deste par (Delta + \xCDndia)">PDF</button>
     </td>
     <td class="mono">${esc(v.voo_chegada || "\u2014")}</td>
     <td>${esc(v.origem || "\u2014")}</td>
@@ -4591,12 +4596,13 @@ ${linhas.map((l) => esc(l.map((c) => c != null ? c : "").join(" | "))).join("\n"
     ${blocoContingencia("india", v.numero, v, textos)}
   </section>`).join("");
   }
-  async function imprimirContingencia() {
+  async function imprimirContingencia(vooId) {
     const dia = UI.indiaData || hoje();
     const { data, error } = await lerPontoArquivosDb(dia);
     const textos = new Map((data || []).map((r) => [`${r.tipo}:${r.voo_numero}`, r.texto]));
     const n = /* @__PURE__ */ new Date(), z = (x) => String(x).padStart(2, "0");
-    const html = htmlContingencia(dia, D.voos, textos, `${z(n.getDate())}/${z(n.getMonth() + 1)} ${z(n.getHours())}:${z(n.getMinutes())}`);
+    const voos = vooId == null ? D.voos : D.voos.filter((v) => mesmoId(v.id, vooId));
+    const html = htmlContingencia(dia, voos, textos, `${z(n.getDate())}/${z(n.getMonth() + 1)} ${z(n.getHours())}:${z(n.getMinutes())}`);
     if (!html) {
       await aviso(`Nenhum voo na malha de ${esc(dia)}.`);
       return;
