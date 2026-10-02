@@ -1783,9 +1783,31 @@
     #contingencia pre{margin:0; font:inherit; font-size:10.5pt; line-height:1.35; white-space:pre-wrap; word-break:break-all}
   }
 
-  /* PDF do par: embaixo do Delta (a tabela ja passa da largura do celular,
-     uma coluna nova ficaria fora da tela). */
-  .pdf-par{display:block; width:auto; min-height:36px; margin-top:6px; padding:0 14px; font-size:14px}
+  /* "Voos do dia" do Subir Pontos (02/10/2026): grade de fracoes -- cada
+     coluna cresce com a tela, tudo numa linha, botoes pequenos. A coluna
+     do PDF tem largura FIXA: com "auto" cada linha tinha uma largura
+     diferente e as colunas desalinhavam do cabecalho. */
+  .pv-grade{display:grid; max-width:860px}
+  .pv-linha{display:grid; align-items:center; column-gap:8px;
+    grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,1.5fr) 46px;
+    padding:5px 4px; border-bottom:1px solid var(--line); font-size:15px}
+  .pv-cab{padding:2px 4px 6px; color:var(--muted); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em}
+  .pv-linha .mono{color:var(--amber); font-weight:600}
+  .pv-bt{display:inline-flex; align-items:center; gap:4px; min-width:0}
+  .pv-bt:last-of-type{justify-content:flex-end}
+  .pv-linha button{width:auto; min-height:32px; padding:0 10px; font-size:13px; letter-spacing:0; border-radius:8px}
+  .pv-linha [data-l]::before{display:none}
+  /* Celular: nao cabe tudo numa linha (4 textos + 3 botoes em ~300px). Vira
+     duas: em cima os 4 dados, com o rotulo de cada um; embaixo os botoes. */
+  @media (max-width:560px){
+    .pv-cab{display:none}
+    .pv-linha{grid-template-columns:repeat(12,minmax(0,1fr)); row-gap:6px; padding:8px 4px}
+    .pv-linha [data-l]{grid-column:span 3; order:1}
+    .pv-linha > .pv-bt, .pv-linha > button{order:2}
+    .pv-linha [data-l]::before{display:block; content:attr(data-l); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; font-weight:600}
+    .pv-linha > .pv-bt{grid-column:span 4}
+    .pv-linha > button{grid-column:span 4; justify-self:end}
+  }
 
 </style>
 </head>
@@ -1797,9 +1819,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 02/10/2026, 11:23:35
+     Gerado em: 02/10/2026, 11:27:53
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="02/10 11:23";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="02/10 11:27";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4523,21 +4545,21 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     return `<span class="log-ponto" title="${esc(resumo)}" onclick="verLogAnomalias()">${ico("exclamacao", 16)}</span>`;
   }
   function linhaPontoVoo(v) {
-    return `<tr>
-    <td>
-      <button class="small" style="width:auto" onclick="verPontoDelta(${v.id})">Delta</button>
+    return `<div class="pv-linha">
+    <span class="pv-bt">
+      <button class="small" onclick="verPontoDelta(${v.id})">Delta</button>
       ${iconeLogPonto(v, "delta")}
-      <button class="small ghost pdf-par" onclick="imprimirContingencia(${v.id})" aria-label="Plano de conting\xEAncia s\xF3 deste par de voos" title="Plano de conting\xEAncia s\xF3 deste par (Delta + \xCDndia)">PDF</button>
-    </td>
-    <td class="mono">${esc(v.voo_chegada || "\u2014")}</td>
-    <td>${esc(v.origem || "\u2014")}</td>
-    <td class="mono" style="color:var(--amber)">${esc(v.numero || "\u2014")}</td>
-    <td>${esc(v.destino || "\u2014")}</td>
-    <td>
+    </span>
+    <span class="mono" data-l="Cheg.">${esc(v.voo_chegada || "\u2014")}</span>
+    <span data-l="ARR">${esc(v.origem || "\u2014")}</span>
+    <span class="mono" data-l="Sa\xEDda">${esc(v.numero || "\u2014")}</span>
+    <span data-l="TO">${esc(v.destino || "\u2014")}</span>
+    <span class="pv-bt">
       ${iconeLogPonto(v, "india")}
-      <button class="small primary" style="width:auto" onclick="verPontoIndia(${v.id})">\xCDndia</button>
-    </td>
-  </tr>`;
+      <button class="small primary" onclick="verPontoIndia(${v.id})">\xCDndia</button>
+    </span>
+    <button class="small ghost" onclick="imprimirContingencia(${v.id})" aria-label="Plano de conting\xEAncia s\xF3 deste par de voos" title="Plano de conting\xEAncia s\xF3 deste par (Delta + \xCDndia)">PDF</button>
+  </div>`;
   }
   function telaPontosImport() {
     const voos = D.voos.slice().sort((a, b) => minPlain(a.saida) - minPlain(b.saida));
@@ -4557,9 +4579,11 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     </div>
   </div>
   <div class="board-title"><h2>Voos do dia</h2><span class="flip">${voos.length}</span></div>
-  <div class="card tbl-wrap">${voos.length ? `
-    <table><tr><th></th><th>Cheg.</th><th>ARR</th><th>Sa\xEDda</th><th>TO</th><th></th></tr>
-    ${voos.map(linhaPontoVoo).join("")}</table>` : `<p class="note">Nenhum voo na malha de hoje.</p>`}
+  <div class="card">${voos.length ? `
+    <div class="pv-grade">
+      <div class="pv-linha pv-cab"><span></span><span>Cheg.</span><span>ARR</span><span>Sa\xEDda</span><span>TO</span><span></span><span></span></div>
+      ${voos.map(linhaPontoVoo).join("")}
+    </div>` : `<p class="note">Nenhum voo na malha de hoje.</p>`}
   </div>`;
   }
   function verLogPonto(vooId, tipo) {
