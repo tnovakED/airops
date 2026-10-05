@@ -1827,9 +1827,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 05/10/2026, 10:12:23
+     Gerado em: 05/10/2026, 10:55:13
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="05/10 10:12";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="05/10 10:55";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -10652,6 +10652,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
 
   // src/ui/screens/telaOperador.js
   init_areasOp();
+  init_areas();
   init_regras();
   var viagemAtiva = () => D.viagens.find((v) => v.operador_id === S.me.id && v.status === "a_caminho");
   function contarMarcados(st) {
@@ -12628,11 +12629,12 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       if (!porSecao.has(nome)) porSecao.set(nome, []);
       porSecao.get(nome).push(s);
     }
-    const conhecidas = nomesDasSecoes().map((nome) => {
+    const soMinhaArea = !!areasEfetivas();
+    const conhecidas = soMinhaArea ? [] : nomesDasSecoes().map((nome) => {
       const subs = porSecao.get(nome) || [];
       return { nome, subs, urg: subs.length ? subs[0].urg : Infinity };
     });
-    const orfaos = porSecao.get(null);
+    const orfaos = soMinhaArea ? null : porSecao.get(null);
     const secoes = orfaos ? [...conhecidas, { nome: "OUTROS", subs: orfaos, urg: orfaos[0].urg }] : [...conhecidas];
     const carga = g.carga || [];
     if (carga.length)
@@ -12642,7 +12644,8 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
         carga,
         urg: Math.min(...carga.map(urgenciaDaPronta))
       });
-    if (secoes.length <= 1) return { abas: "", corpo: g.sub.map(linhas).join("") };
+    if (!secoes.length || !soMinhaArea && secoes.length <= 1)
+      return { abas: "", corpo: g.sub.map(linhas).join("") };
     secoes.sort((a, b) => a.urg - b.urg);
     const ativa = secoes.some((s) => s.nome === UI.alertaSecao) ? UI.alertaSecao : null;
     const abas = `<div class="deg-linha">${secoes.map((sec) => {
@@ -12653,7 +12656,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     }).join("")}</div>`;
     if (ativa === "CARGA") return { abas, corpo: secaoCarga(carga) };
     const visiveis = ativa ? secoes.filter((s) => s.nome === ativa) : secoes;
-    const subVisivel = visiveis.flatMap((s) => s.subs);
+    const subVisivel = soMinhaArea ? g.sub : visiveis.flatMap((s) => s.subs);
     const corpo = subVisivel.length ? subVisivel.map(linhas).join("") : `<p class="note">Nada pendente aqui agora.</p>`;
     return { abas, corpo };
   }
@@ -16532,7 +16535,7 @@ Sair mesmo assim?`
       seletor: ".lugar-linha",
       grupo: "alerta",
       arquivo: "screens/telaOperador.js",
-      desc: "A faixa de cima do cart\xE3o: abas de se\xE7\xE3o \xE0 esquerda, sino e lugar \xE0 direita."
+      desc: "A faixa de cima do cart\xE3o: abas de se\xE7\xE3o \xE0 esquerda (s\xF3 para quem recebe todas as \xE1reas; com \xE1rea escolhida, s\xF3 CARGA), sino e lugar \xE0 direita."
     },
     {
       nome: "secao-carga",
