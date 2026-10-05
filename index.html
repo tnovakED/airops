@@ -957,6 +957,14 @@
   .deg.on{border-color:var(--amber); background:var(--accent-light); color:var(--text)}
   /* Numero de carreta: estreito, senao a linha do equipamento nao cabe
      em 390px e o ultimo cai sozinho na linha de baixo. */
+  /* Faixa da area de trabalho no alto da tela do operador (02/10/2026):
+     onde ele esta, o que espera fora da area dele e o "Ver 5 min". Usa
+     os mesmos tokens da folha; so quebra de linha, sem cor nova. */
+  .op-area{display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px;
+    margin:0 0 10px; padding:8px 10px; background:var(--surface);
+    border:1px solid var(--line); border-radius:10px; font-size:15px}
+  .op-area-lin{display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; width:100%}
+  .op-area-pedido{padding:2px 8px; border-radius:8px; background:var(--accent-light); color:var(--text)}
   .deg-n{min-width:38px; padding:0}
   .deg-x{color:var(--muted); font-size:15px}
   /* Quantidade marcada ao lado de PP/TCX/TLC na trilha (15/09/2026,
@@ -1819,9 +1827,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 02/10/2026, 11:27:53
+     Gerado em: 05/10/2026, 10:12:23
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="02/10 11:27";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="05/10 10:12";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1981,6 +1989,20 @@
         // servidor. Nao e animacao: se parar em 7/11, sao 4 consultas presas.
         // Quem desenha: skeletonArranque() e a tela do Painel.
         carga: { carregando: false, feitas: 0, total: 0 },
+        // tempo real conectado agora? (core/realtime.js). Decide se a recarga
+        // depois de uma acao pode ser leve (main.js).
+        rtOk: false,
+        // area de trabalho do operador (utils/areas.js): null = ainda nao
+        // escolheu neste turno; ["TODAS"] ou lista de TCX/TLC/secoes de box.
+        areas: null,
+        espiarAte: 0,
+        // epoch ms: ate la o aparelho recebe TODAS as areas (olhadinha)
+        outrasAreas: [],
+        // [{area, n}] bags esperando fora da area (consulta barata, sem tempo real)
+        areasEscolha: null,
+        // escolha em andamento na folha "Onde voce vai trabalhar?"
+        areasPrimeira: false,
+        // true = pergunta obrigatoria do inicio do turno (sem cancelar)
         // mapa do patio (ui/screens/telaPatio.js). vb = recorte do mapa (zoom);
         // null = decidir pelo tamanho da tela na primeira vez que abrir.
         patio: {
@@ -2056,7 +2078,8 @@
         },
         renderSeguro: () => {
         },
-        recarregar: async () => {
+        // opts.completa: baixa tudo mesmo com o tempo real conectado (ver main.js)
+        recarregar: async (_opts) => {
         }
       };
     }
@@ -2123,15 +2146,157 @@
     }
   });
 
+  // src/utils/medidor.js
+  function vazio() {
+    return { desde: Date.now(), http: {}, rt: {}, cargas: 0, redesenhos: 0 };
+  }
+  function agendarSalvar() {
+    if (salvarTimer) return;
+    salvarTimer = setTimeout(() => {
+      salvarTimer = null;
+      try {
+        localStorage.setItem(CHAVE, JSON.stringify(M));
+      } catch {
+      }
+    }, 1500);
+  }
+  function somar(grupo, rotulo2, bytes) {
+    if (!grupo[rotulo2]) grupo[rotulo2] = { n: 0, bytes: 0 };
+    const l = grupo[rotulo2];
+    l.n++;
+    l.bytes += bytes || 0;
+    agendarSalvar();
+  }
+  function rotuloDe(url, metodo) {
+    let p = String(url || "");
+    try {
+      p = new URL(p, "http://x").pathname;
+    } catch {
+    }
+    const m = String(metodo || "GET").toUpperCase();
+    const rpc = /\/rest\/v1\/rpc\/([^/?]+)/.exec(p);
+    if (rpc) return `rpc ${rpc[1]}`;
+    const tab = /\/rest\/v1\/([^/?]+)/.exec(p);
+    if (tab) return `${tab[1]} ${m}`;
+    if (/\/auth\/v1\//.test(p)) return "login (auth)";
+    return "outro";
+  }
+  function medirFetch(fetchReal) {
+    return async (input, init4) => {
+      var _a, _b;
+      const res = await fetchReal(input, init4);
+      try {
+        const url = typeof input === "string" ? input : (input == null ? void 0 : input.url) || String(input);
+        const metodo = (init4 == null ? void 0 : init4.method) || (input == null ? void 0 : input.method) || "GET";
+        const rotulo2 = rotuloDe(url, metodo);
+        const cl = Number((_b = (_a = res.headers) == null ? void 0 : _a.get) == null ? void 0 : _b.call(_a, "content-length"));
+        const subida = typeof (init4 == null ? void 0 : init4.body) === "string" ? init4.body.length : 0;
+        if (cl > 0) {
+          M.viaCabecalho = (M.viaCabecalho || 0) + 1;
+          somar(M.http, rotulo2, cl + subida);
+        } else if (res.clone) {
+          const c = res.clone();
+          somar(M.http, rotulo2, subida);
+          c.arrayBuffer().then((b) => {
+            const l = M.http[rotulo2];
+            if (!l) return;
+            let fio = 0;
+            try {
+              const es = performance.getEntriesByName(url);
+              fio = es.length ? es[es.length - 1].encodedBodySize || 0 : 0;
+            } catch {
+            }
+            l.bytes += fio > 0 ? fio : b.byteLength;
+            if (fio > 0) M.viaFio = (M.viaFio || 0) + 1;
+            else M.viaCorpo = (M.viaCorpo || 0) + 1;
+            agendarSalvar();
+          }).catch(() => {
+          });
+        } else {
+          somar(M.http, rotulo2, subida);
+        }
+      } catch {
+      }
+      return res;
+    };
+  }
+  function contarAviso(tabela2, p) {
+    let bytes = 0;
+    try {
+      bytes = JSON.stringify((p == null ? void 0 : p.new) || (p == null ? void 0 : p.old) || {}).length;
+    } catch {
+    }
+    somar(M.rt, tabela2, bytes);
+  }
+  function contarCarga(completa) {
+    if (completa) M.cargasCompletas = (M.cargasCompletas || 0) + 1;
+    M.cargas++;
+    agendarSalvar();
+  }
+  function contarRedesenho() {
+    M.redesenhos++;
+    agendarSalvar();
+  }
+  function zerarMedidor() {
+    M = vazio();
+    try {
+      localStorage.removeItem(CHAVE);
+    } catch {
+    }
+  }
+  function resumoMedidor(agora) {
+    const ms = Math.max(0, (agora == null ? Date.now() : agora) - M.desde);
+    const h = ms / 36e5;
+    const bytes = soma(M.http, "bytes"), pedidos = soma(M.http, "n");
+    const avisos = soma(M.rt, "n");
+    const lista2 = (g) => Object.entries(g).map(([rotulo2, l]) => ({ rotulo: rotulo2, n: l.n, bytes: l.bytes })).sort((a, b) => b.bytes - a.bytes || b.n - a.n);
+    return {
+      desde: M.desde,
+      minutos: ms / 6e4,
+      bytes,
+      pedidos,
+      cargas: M.cargas,
+      cargasCompletas: M.cargasCompletas || 0,
+      // de onde veio cada tamanho: cabecalho/fio = o que andou no 4G;
+      // corpo = texto aberto, maior que o real (resposta comprimida)
+      origemTamanho: { cabecalho: M.viaCabecalho || 0, fio: M.viaFio || 0, corpo: M.viaCorpo || 0 },
+      http: lista2(M.http),
+      avisos,
+      avisosBytes: soma(M.rt, "bytes"),
+      rt: lista2(M.rt),
+      redesenhos: M.redesenhos,
+      // Ritmo por hora so depois de 5 min: antes disso uma carga inicial
+      // sozinha viraria "300 MB por hora" e enganaria.
+      ritmo: ms >= 5 * 6e4 ? { bytesHora: bytes / h, avisosHora: avisos / h, cargasHora: M.cargas / h } : null
+    };
+  }
+  var CHAVE, M, salvarTimer, soma;
+  var init_medidor = __esm({
+    "src/utils/medidor.js"() {
+      CHAVE = "rampa_medidor_v1";
+      M = vazio();
+      try {
+        const g = JSON.parse(localStorage.getItem(CHAVE) || "null");
+        if ((g == null ? void 0 : g.http) && g.rt) M = g;
+      } catch {
+      }
+      salvarTimer = null;
+      soma = (g, c) => Object.values(g).reduce((s, l) => s + l[c], 0);
+    }
+  });
+
   // src/config/supabase.js
   var cfg, SUPABASE_URL, SUPABASE_ANON_KEY, configurado, sb;
   var init_supabase = __esm({
     "src/config/supabase.js"() {
+      init_medidor();
       cfg = typeof window !== "undefined" && window.RAMPA_CFG || {};
       SUPABASE_URL = cfg.url || "";
       SUPABASE_ANON_KEY = cfg.key || "";
       configurado = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
-      sb = configurado ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+      sb = configurado ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { fetch: medirFetch((...a) => window.fetch(...a)) }
+      }) : null;
     }
   });
 
@@ -2337,7 +2502,7 @@
         if (movimentoReduzido()) remover();
         else setTimeout(remover, DURACAO_SAIDA);
       };
-      idsOrdenados = (lista) => lista.map((f) => f.id).sort().join(",");
+      idsOrdenados = (lista2) => lista2.map((f) => f.id).sort().join(",");
     }
   });
 
@@ -2771,13 +2936,13 @@
   }
   function gravar() {
     try {
-      localStorage.setItem(CHAVE, JSON.stringify(UI.filaOffline));
+      localStorage.setItem(CHAVE2, JSON.stringify(UI.filaOffline));
     } catch {
     }
   }
   function carregarFilaOffline() {
     try {
-      const bruto = localStorage.getItem(CHAVE);
+      const bruto = localStorage.getItem(CHAVE2);
       const valor = bruto ? JSON.parse(bruto) : [];
       UI.filaOffline = Array.isArray(valor) ? valor : [];
     } catch {
@@ -2830,7 +2995,7 @@
         }
       }
       bus.renderSeguro();
-      if (tinhaAlgo && !UI.filaOffline.length) bus.recarregar();
+      if (tinhaAlgo && !UI.filaOffline.length) bus.recarregar({ completa: true });
     } finally {
       rodando = false;
     }
@@ -2846,13 +3011,13 @@
       if (UI.filaOffline.length) processarFilaOffline();
     }, 3e4);
   }
-  var CHAVE, PADROES_REDE, executores, rodando;
+  var CHAVE2, PADROES_REDE, executores, rodando;
   var init_offline_sync = __esm({
     "src/core/offline-sync.js"() {
       init_store();
       init_bus();
       init_modal();
-      CHAVE = "rampa_fila_offline";
+      CHAVE2 = "rampa_fila_offline";
       PADROES_REDE = [
         "failed to fetch",
         "networkerror",
@@ -2864,11 +3029,210 @@
     }
   });
 
+  // src/data/viagens.js
+  async function abrirViagem(dados) {
+    return sb.from("viagens").insert({ operador_id: S.me.id, ...dados }).select().single();
+  }
+  async function adicionarDestinos(linhas) {
+    return sb.from("viagens_destinos").insert(linhas);
+  }
+  function subirErro(res) {
+    if (res == null ? void 0 : res.error) throw res.error;
+    return res;
+  }
+  async function entregarDestino(destId, vgId, qtd) {
+    try {
+      subirErro(await sb.from("viagens_destinos").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), qtd_entregue: qtd != null ? qtd : null }).eq("id", destId));
+      await fecharSeAcabou(vgId);
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("entregar_destino", { destId, vgId, qtd });
+        return { error: null, fila: true };
+      }
+      throw e;
+    }
+  }
+  async function entregarDestinos(ids, vgId) {
+    if (!(ids == null ? void 0 : ids.length)) return;
+    try {
+      subirErro(await sb.from("viagens_destinos").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString() }).in("id", ids));
+      await fecharSeAcabou(vgId);
+    } catch (e) {
+      if (erroDeRede(e)) {
+        enfileirarAcao("entregar_destinos", { ids, vgId });
+        return { error: null, fila: true };
+      }
+      throw e;
+    }
+  }
+  async function fecharSeAcabou(vgId) {
+    const { data: resto, error } = await sb.from("viagens_destinos").select("id").eq("viagem_id", vgId).eq("status", "a_caminho");
+    if (error) throw error;
+    if (!(resto == null ? void 0 : resto.length)) {
+      subirErro(await sb.from("viagens").update({ status: "concluida", concluida_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", vgId));
+    }
+  }
+  async function cancelarViagemDb(id) {
+    return sb.from("viagens").update({ status: "cancelada" }).eq("id", id);
+  }
+  async function viagemEhMinha(viagemId) {
+    const { data, error } = await sb.from("viagens").select("id").eq("id", viagemId).eq("operador_id", S.me.id).limit(1);
+    if (error) return true;
+    return !!(data == null ? void 0 : data.length);
+  }
+  var init_viagens = __esm({
+    "src/data/viagens.js"() {
+      init_supabase();
+      init_store();
+      init_offline_sync();
+    }
+  });
+
+  // src/utils/areas.js
+  function usaFiltroArea() {
+    return pode("levar") && !pode("viagens_cco") && !pode("patio_ver") && !pode("oc_chegando") && !pode("oc_pontos") && !pode("triagem_sinalizar");
+  }
+  function rotuloArea(a) {
+    if (a === AREA_TODAS) return "Todas";
+    return AREAS_ESCOLHA.indexOf(a) > 1 ? `Box ${a}` : a;
+  }
+  function lerGuardado() {
+    try {
+      const g = JSON.parse(localStorage.getItem(CHAVE_AREAS) || "null");
+      if (!g || !Array.isArray(g.areas) || !g.areas.length) return null;
+      if (Date.now() - Number(g.em) > VALE_MS) return null;
+      const ok = g.areas.filter((a) => a === AREA_TODAS || AREAS_ESCOLHA.indexOf(a) >= 0);
+      return ok.length ? ok : null;
+    } catch {
+      return null;
+    }
+  }
+  function carregarAreasGuardadas() {
+    UI.areas = lerGuardado();
+    return UI.areas;
+  }
+  function guardarAreas(areas) {
+    UI.areas = (areas == null ? void 0 : areas.length) ? [...areas] : null;
+    if (UI.areas) guardarJanela(CHAVE_AREAS, JSON.stringify({ areas: UI.areas, em: Date.now() }));
+  }
+  function areasEfetivas() {
+    if (!usaFiltroArea()) return null;
+    if (espiando()) return null;
+    const a = UI.areas;
+    if (!(a == null ? void 0 : a.length) || a.indexOf(AREA_TODAS) >= 0) return null;
+    return [...a, AREA_GERAL];
+  }
+  function filtroAreaRealtime() {
+    const a = areasEfetivas();
+    return a ? `area=in.(${a.join(",")})` : null;
+  }
+  function alternarArea(atual, area) {
+    const s = new Set(atual || []);
+    if (area === AREA_TODAS) {
+      return s.has(AREA_TODAS) ? [] : [AREA_TODAS];
+    }
+    s.delete(AREA_TODAS);
+    if (s.has(area)) s.delete(area);
+    else s.add(area);
+    return AREAS_ESCOLHA.filter((x) => s.has(x));
+  }
+  function precisaEscolherArea() {
+    return !!S.me && usaFiltroArea() && !UI.areas;
+  }
+  function outrasAreasComPedido(contagens) {
+    const minhas = areasEfetivas();
+    return (contagens || []).filter((c) => c.n > 0 && c.area !== AREA_GERAL && (!minhas || minhas.indexOf(c.area) < 0)).sort((a, b) => AREAS_ESCOLHA.indexOf(a.area) - AREAS_ESCOLHA.indexOf(b.area));
+  }
+  var AREA_TODAS, AREA_GERAL, CHAVE_AREAS, VALE_MS, ESPIAR_MS, AREAS_ESCOLHA, espiando;
+  var init_areas = __esm({
+    "src/utils/areas.js"() {
+      init_store();
+      init_patio();
+      AREA_TODAS = "TODAS";
+      AREA_GERAL = "GERAL";
+      CHAVE_AREAS = "rampa_op_areas";
+      VALE_MS = 12 * 3600 * 1e3;
+      ESPIAR_MS = 5 * 60 * 1e3;
+      AREAS_ESCOLHA = ["TCX", "TLC", ...nomesDasSecoes()];
+      espiando = () => !!UI.espiarAte && Date.now() < UI.espiarAte;
+    }
+  });
+
+  // src/ui/components/areasOp.js
+  function faixaAreas() {
+    if (!usaFiltroArea() || !UI.areas) return "";
+    if (espiando()) {
+      return `<div class="op-area">
+      <span class="deg-rot">Vendo todas as \xE1reas at\xE9 ${esc(horaDe(UI.espiarAte))}</span>
+      <button class="small ghost" onclick="areasVoltar()">Voltar \xE0 minha</button>
+    </div>`;
+    }
+    const outras = (UI.outrasAreas || []).map((o) => `<span class="op-area-pedido"><b>${esc(rotuloArea(o.area))}</b> ${o.n}</span>`).join("");
+    return `<div class="op-area">
+    <span class="deg-rot">Minha \xE1rea</span>
+    <b>${esc(UI.areas.indexOf(AREA_TODAS) >= 0 ? "Todas" : lista(UI.areas))}</b>
+    <button class="small ghost" onclick="areasAbrir()">Trocar</button>
+    ${outras ? `<span class="op-area-lin"><span class="deg-rot">Esperando em outras \xE1reas</span>${outras}
+         <button class="small" onclick="areasEspiar()">Ver 5 min</button></span>` : ""}
+  </div>`;
+  }
+  function htmlEscolhaAreas() {
+    const sel = UI.areasEscolha || [];
+    const chip = (a, rot2) => `<button class="deg${sel.indexOf(a) >= 0 ? " on" : ""}" onclick="areasMarcar('${esc(a)}')">${esc(rot2 || rotuloArea(a))}</button>`;
+    const secoes = AREAS_ESCOLHA.slice(2);
+    return `<h3>Onde voc\xEA vai trabalhar?</h3>
+    <p class="note">Voc\xEA s\xF3 recebe aviso de pedido da sua \xE1rea. D\xE1 para marcar mais de uma e trocar depois.</p>
+    <div class="deg-linha"><span class="deg-rot">Triagem</span>${chip("TCX")}${chip("TLC")}</div>
+    <div class="deg-linha"><span class="deg-rot">Box</span>${secoes.map((s) => chip(s, s)).join("")}</div>
+    <div class="deg-linha">${chip(AREA_TODAS, "Todas as \xE1reas")}</div>
+    <div class="modal-acoes">
+      ${UI.areasPrimeira ? "" : `<button onclick="areasCancelar()">Cancelar</button>`}
+      <button class="primary" ${sel.length ? "" : "disabled"} onclick="areasConfirmar()">Confirmar</button>
+    </div>`;
+  }
+  var lista, horaDe;
+  var init_areasOp = __esm({
+    "src/ui/components/areasOp.js"() {
+      init_store();
+      init_dom();
+      init_areas();
+      lista = (areas) => areas.map(rotuloArea).join(" \xB7 ");
+      horaDe = (ms) => {
+        const d = new Date(ms);
+        return `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+      };
+    }
+  });
+
+  // src/data/posicoes.js
+  async function registrarPosicaoDb(lat, lng, precisao) {
+    const { error } = await sb.rpc("registrar_posicao", {
+      p_lat: lat,
+      p_lng: lng,
+      p_precisao: precisao == null ? null : Math.round(precisao)
+    });
+    if (error) throw error;
+  }
+  async function carregarPosicoes() {
+    const desde = new Date(Date.now() - PATIO_POSICAO_VALIDA_H * 3600 * 1e3).toISOString();
+    const { data, error } = await sb.from("posicoes").select("*").gte("atualizada_em", desde);
+    if (error) return null;
+    return data || [];
+  }
+  var init_posicoes = __esm({
+    "src/data/posicoes.js"() {
+      init_supabase();
+      init_regras();
+    }
+  });
+
   // src/core/realtime.js
   var realtime_exports = {};
   __export(realtime_exports, {
     aplicarMudanca: () => aplicarMudanca,
-    escutarTempoReal: () => escutarTempoReal
+    escutarTempoReal: () => escutarTempoReal,
+    opcoesDaTabela: () => opcoesDaTabela,
+    reassinarTempoReal: () => reassinarTempoReal
   });
   function tabelasQueUso() {
     const t = ["voos"];
@@ -2882,8 +3246,6 @@
       t.push("prontas", "bags_local");
     if (vejoIndia || vejoTudo)
       t.push("ponto_india");
-    if (pode("patio_gps"))
-      t.push("posicoes");
     if (vejoIndia || vejoTudo || pode("levar") || pode("triagem_sinalizar"))
       t.push("ponto_delta");
     if (pode("oc_pontos") || pode("levar"))
@@ -2899,26 +3261,90 @@
     }
     return row;
   }
-  function escutarTempoReal() {
-    const tabelas = tabelasQueUso();
-    const ch = sb.channel("rampa-" + S.me.id);
-    for (const t of tabelas) {
-      const opts = { event: "*", schema: "public", table: t };
-      if (t === "viagens" && pode("levar") && !pode("viagens_cco") && !pode("oc_chegando"))
-        opts.filter = "operador_id=eq." + S.me.id;
-      ch.on("postgres_changes", opts, (p) => aplicarMudanca(t, p));
+  function opcoesDaTabela(t) {
+    const opts = { event: "*", schema: "public", table: t };
+    if (t === "viagens" && pode("levar") && !pode("viagens_cco") && !pode("oc_chegando"))
+      opts.filter = "operador_id=eq." + S.me.id;
+    if (t === "prontas") {
+      const f = filtroAreaRealtime();
+      if (f) opts.filter = f;
     }
+    return opts;
+  }
+  function abrirCanal() {
+    const ch = sb.channel(`rampa-${S.me.id}-${++numCanal}`);
+    for (const t of tabelasQueUso())
+      ch.on("postgres_changes", opcoesDaTabela(t), (p) => {
+        if (ch === canal) aplicarMudanca(t, p);
+      });
+    canal = ch;
     ch.subscribe((status) => {
+      if (ch !== canal) return;
+      UI.rtOk = status === "SUBSCRIBED";
       if (status === "SUBSCRIBED") {
         processarFilaOffline();
         clearTimeout(UI.refreshTimer);
-        UI.refreshTimer = setTimeout(() => bus.recarregar(), 200);
+        const completa = !reassinando;
+        reassinando = false;
+        UI.refreshTimer = setTimeout(() => bus.recarregar(completa ? { completa: true } : void 0), 200);
       }
     });
-    setInterval(() => bus.recarregar(), 5 * 60 * 1e3);
+  }
+  function reassinarTempoReal() {
+    if (!canal) return;
+    reassinando = true;
+    UI.rtOk = false;
+    try {
+      Promise.resolve(sb.removeChannel(canal)).catch(() => {
+      });
+    } catch {
+    }
+    abrirCanal();
+  }
+  function escutarTempoReal() {
+    abrirCanal();
+    setInterval(() => {
+      if (!document.hidden) bus.recarregar({ completa: true });
+    }, 30 * 60 * 1e3);
+    let ocultoDesde = 0;
     document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) bus.recarregar();
+      if (document.hidden) {
+        ocultoDesde = Date.now();
+        return;
+      }
+      if (ocultoDesde) {
+        const fora = Date.now() - ocultoDesde;
+        if (fora > VOLTA_COMPLETA_MS) bus.recarregar({ completa: true });
+        else if (fora > VOLTA_RECARGA_MS) bus.recarregar();
+      }
+      ocultoDesde = 0;
     });
+    instalarDedoNaTela();
+  }
+  function instalarDedoNaTela() {
+    if (typeof document === "undefined" || !document.addEventListener) return;
+    const desce = () => {
+      dedoDesde = Date.now();
+    };
+    const sobe = () => {
+      dedoDesde = 0;
+    };
+    document.addEventListener("touchstart", desce, { passive: true });
+    document.addEventListener("touchend", sobe, { passive: true });
+    document.addEventListener("touchcancel", sobe, { passive: true });
+  }
+  function renderAgrupado() {
+    if (renderTimer) return;
+    const tentar = () => {
+      if (dedoDesde && Date.now() - dedoDesde < TETO_DEDO_MS) {
+        renderTimer = setTimeout(tentar, FOLGA_RENDER_MS);
+        return;
+      }
+      renderTimer = null;
+      contarRedesenho();
+      bus.renderSeguro();
+    };
+    renderTimer = setTimeout(tentar, FOLGA_RENDER_MS);
   }
   function recarregarComFolga() {
     if (recargaMarcada) return;
@@ -2926,6 +3352,22 @@
       recargaMarcada = null;
       bus.recarregar();
     }, 400);
+  }
+  function conferirDestinoSolto(row) {
+    const vg = row.viagem_id;
+    if (viagensConferindo.has(vg)) return;
+    viagensConferindo.add(vg);
+    setTimeout(async () => {
+      try {
+        if (D.viagens.some((v) => mesmoId(v.id, vg))) {
+          recarregarComFolga();
+        } else if (await viagemEhMinha(vg)) {
+          recarregarComFolga();
+        }
+      } finally {
+        viagensConferindo.delete(vg);
+      }
+    }, 2e3);
   }
   function repeteLoteRecente(lote) {
     if (lote == null) return false;
@@ -2936,20 +3378,21 @@
     }
     return repetiu;
   }
-  function aplicarMudanca(tabela, p) {
-    const chave = CHAVE2[tabela];
-    const idDe = (row2) => row2 && (tabela === "posicoes" ? row2.usuario_id : row2.id);
-    const mesmaChave = (a, b) => tabela === "posicoes" ? String(a) === String(b) : mesmoId(a, b);
+  function aplicarMudanca(tabela2, p) {
+    const chave = CHAVE3[tabela2];
+    contarAviso(tabela2, p);
+    const idDe = (row2) => row2 && (tabela2 === "posicoes" ? row2.usuario_id : row2.id);
+    const mesmaChave = (a, b) => tabela2 === "posicoes" ? String(a) === String(b) : mesmoId(a, b);
     if (p.eventType === "DELETE") {
       const id = idDe(p.old);
       if (id != null) D[chave] = D[chave].filter((x) => !mesmaChave(idDe(x), id));
-      bus.renderSeguro();
+      renderAgrupado();
       return;
     }
     const row = normalizarIds(p.new);
-    if ((tabela === "voos" || tabela === "ponto_india" || tabela === "ponto_delta" || tabela === "carretas_delta" || tabela === "bags_despachadas") && row.data !== hoje()) return;
-    if (tabela === "viagens_destinos" && !D.viagens.some((v) => mesmoId(v.id, row.viagem_id)) && pode("levar") && !pode("viagens_cco")) {
-      if (row.operador_id === S.me.id || p.eventType === "INSERT") recarregarComFolga();
+    if ((tabela2 === "voos" || tabela2 === "ponto_india" || tabela2 === "ponto_delta" || tabela2 === "carretas_delta" || tabela2 === "bags_despachadas") && row.data !== hoje()) return;
+    if (tabela2 === "viagens_destinos" && !D.viagens.some((v) => mesmoId(v.id, row.viagem_id)) && pode("levar") && !pode("viagens_cco")) {
+      if (p.eventType === "INSERT") conferirDestinoSolto(row);
       return;
     }
     const arr = D[chave];
@@ -2957,33 +3400,36 @@
     const novo = i < 0;
     if (novo) arr.push(row);
     else arr[i] = row;
-    if (tabela === "voos") arr.sort((a, b) => minPlain(a.chegada) - minPlain(b.chegada));
-    if (tabela === "viagens") arr.sort((a, b) => String(b.saiu_em).localeCompare(String(a.saiu_em)));
-    if (tabela === "solicitacoes" || tabela === "prontas")
+    if (tabela2 === "voos") arr.sort((a, b) => minPlain(a.chegada) - minPlain(b.chegada));
+    if (tabela2 === "viagens") arr.sort((a, b) => String(b.saiu_em).localeCompare(String(a.saiu_em)));
+    if (tabela2 === "solicitacoes" || tabela2 === "prontas")
       arr.sort((a, b) => String(b.criada_em).localeCompare(String(a.criada_em)));
     if (novo && p.eventType === "INSERT") {
       const meu = row.solicitante_id === S.me.id || row.operador_id === S.me.id || row.criada_por === S.me.id;
-      const somSol = tabela === "solicitacoes" && !meu && (pode("sol_atender") || pode("viagens_cco"));
-      const somTlc = tabela === "solicitacoes" && row.tipo === "BAG_TLC" && row.status === "solicitada" && pode("triagem_sinalizar");
-      const somVg = tabela === "viagens" && !meu && (pode("viagens_cco") || pode("oc_chegando"));
-      const somPr = tabela === "prontas" && !meu && pode("levar") && !repeteLoteRecente(row.lote);
+      const somSol = tabela2 === "solicitacoes" && !meu && (pode("sol_atender") || pode("viagens_cco"));
+      const somTlc = tabela2 === "solicitacoes" && row.tipo === "BAG_TLC" && row.status === "solicitada" && pode("triagem_sinalizar");
+      const somVg = tabela2 === "viagens" && !meu && (pode("viagens_cco") || pode("oc_chegando"));
+      const somPr = tabela2 === "prontas" && !meu && pode("levar") && !repeteLoteRecente(row.lote);
       if (somSol || somTlc || somVg || somPr) {
         beep();
         if (navigator.vibrate) navigator.vibrate(250);
       }
     }
-    bus.renderSeguro();
+    renderAgrupado();
   }
-  var CHAVE2, recargaMarcada, ultimoLotePr, ultimoLotePrAte;
+  var CHAVE3, canal, reassinando, numCanal, VOLTA_RECARGA_MS, VOLTA_COMPLETA_MS, FOLGA_RENDER_MS, TETO_DEDO_MS, renderTimer, dedoDesde, recargaMarcada, viagensConferindo, ultimoLotePr, ultimoLotePrAte;
   var init_realtime = __esm({
     "src/core/realtime.js"() {
       init_supabase();
       init_store();
       init_dom();
       init_horas();
+      init_medidor();
+      init_viagens();
+      init_areas();
       init_bus();
       init_offline_sync();
-      CHAVE2 = {
+      CHAVE3 = {
         voos: "voos",
         viagens: "viagens",
         viagens_destinos: "destinos",
@@ -2996,24 +3442,144 @@
         posicoes: "posicoes",
         bags_despachadas: "bagsDespachadas"
       };
+      canal = null;
+      reassinando = false;
+      numCanal = 0;
+      VOLTA_RECARGA_MS = 60 * 1e3;
+      VOLTA_COMPLETA_MS = 5 * 60 * 1e3;
+      FOLGA_RENDER_MS = 250;
+      TETO_DEDO_MS = 8e3;
+      renderTimer = null;
+      dedoDesde = 0;
       recargaMarcada = null;
+      viagensConferindo = /* @__PURE__ */ new Set();
       ultimoLotePr = null;
       ultimoLotePrAte = 0;
     }
   });
 
-  // src/data/posicoes.js
-  async function registrarPosicaoDb(lat, lng, precisao) {
-    const { error } = await sb.rpc("registrar_posicao", {
-      p_lat: lat,
-      p_lng: lng,
-      p_precisao: precisao == null ? null : Math.round(precisao)
-    });
+  // src/data/areas.js
+  async function definirAreasTrabalhoDb(areas) {
+    const { error } = await sb.rpc("definir_areas_trabalho", { p_areas: areas });
     if (error) throw error;
   }
-  var init_posicoes = __esm({
-    "src/data/posicoes.js"() {
+  async function contarProntasPorAreaDb() {
+    const { data, error } = await sb.rpc("contar_prontas_por_area");
+    if (error) return null;
+    return (data || []).map((r) => ({ area: r.area, n: Number(r.n) }));
+  }
+  var init_areas2 = __esm({
+    "src/data/areas.js"() {
       init_supabase();
+    }
+  });
+
+  // src/core/areas.js
+  var areas_exports = {};
+  __export(areas_exports, {
+    abrirEscolhaAreas: () => abrirEscolhaAreas,
+    cancelarEscolhaAreas: () => cancelarEscolhaAreas,
+    confirmarEscolhaAreas: () => confirmarEscolhaAreas,
+    consultarOutrasAreas: () => consultarOutrasAreas,
+    encerrarEspiar: () => encerrarEspiar,
+    enviarSinalArea: () => enviarSinalArea,
+    espiarOutrasAreas: () => espiarOutrasAreas,
+    iniciarAreas: () => iniciarAreas,
+    ligarAreas: () => ligarAreas,
+    marcarAreaEscolha: () => marcarAreaEscolha
+  });
+  async function enviarSinalArea() {
+    if (!usaFiltroArea() || !UI.areas) return;
+    try {
+      await definirAreasTrabalhoDb(UI.areas);
+    } catch {
+    }
+  }
+  async function consultarOutrasAreas() {
+    if (!usaFiltroArea() || !UI.areas || espiando()) return;
+    if (typeof document !== "undefined" && document.hidden) return;
+    if (UI.tab !== "levar") return;
+    const r = await contarProntasPorAreaDb();
+    if (!r) return;
+    const novas = outrasAreasComPedido(r);
+    const mudou = JSON.stringify(novas) !== JSON.stringify(UI.outrasAreas);
+    UI.outrasAreas = novas;
+    if (mudou) bus.renderSeguro();
+  }
+  function iniciarAreas() {
+    if (!usaFiltroArea()) return;
+    carregarAreasGuardadas();
+  }
+  function ligarAreas() {
+    if (!usaFiltroArea() || ligado) return;
+    ligado = true;
+    setInterval(() => {
+      if (!document.hidden) enviarSinalArea();
+    }, SINAL_MS);
+    setInterval(consultarOutrasAreas, CONTAGEM_MS);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) enviarSinalArea();
+    });
+    if (precisaEscolherArea()) abrirEscolhaAreas(true);
+    else {
+      enviarSinalArea();
+      consultarOutrasAreas();
+    }
+  }
+  function abrirEscolhaAreas(primeira) {
+    UI.areasEscolha = UI.areas ? [...UI.areas] : [];
+    UI.areasPrimeira = !!primeira;
+    abrirModal(htmlEscolhaAreas(), { travado: !!primeira });
+  }
+  function marcarAreaEscolha(area) {
+    UI.areasEscolha = alternarArea(UI.areasEscolha, area);
+    abrirModal(htmlEscolhaAreas(), { travado: !!UI.areasPrimeira });
+  }
+  function cancelarEscolhaAreas() {
+    UI.areasEscolha = null;
+    fecharModal();
+  }
+  async function confirmarEscolhaAreas() {
+    const areas = UI.areasEscolha;
+    if (!(areas == null ? void 0 : areas.length)) return;
+    UI.areasEscolha = null;
+    fecharModal();
+    guardarAreas(areas);
+    UI.outrasAreas = [];
+    await enviarSinalArea();
+    reassinarTempoReal();
+    consultarOutrasAreas();
+  }
+  function espiarOutrasAreas() {
+    if (!usaFiltroArea() || !UI.areas) return;
+    UI.espiarAte = Date.now() + ESPIAR_MS;
+    clearTimeout(fimEspiar);
+    fimEspiar = setTimeout(encerrarEspiar, ESPIAR_MS + 500);
+    reassinarTempoReal();
+    bus.renderSeguro();
+  }
+  function encerrarEspiar() {
+    clearTimeout(fimEspiar);
+    if (!UI.espiarAte) return;
+    UI.espiarAte = 0;
+    reassinarTempoReal();
+    bus.renderSeguro();
+    consultarOutrasAreas();
+  }
+  var SINAL_MS, CONTAGEM_MS, ligado, fimEspiar;
+  var init_areas3 = __esm({
+    "src/core/areas.js"() {
+      init_store();
+      init_bus();
+      init_realtime();
+      init_areas2();
+      init_modal();
+      init_areasOp();
+      init_areas();
+      SINAL_MS = 4 * 60 * 1e3;
+      CONTAGEM_MS = 60 * 1e3;
+      ligado = false;
+      fimEspiar = null;
     }
   });
 
@@ -3365,14 +3931,14 @@
   init_store();
   init_dom();
   function telaInicial() {
-    const lista = S.ferramentas.filter((f) => FERRAMENTA_ABA[f.id]);
-    if (!lista.length) {
+    const lista2 = S.ferramentas.filter((f) => FERRAMENTA_ABA[f.id]);
+    if (!lista2.length) {
       return `<div class="card">
       <h2>Sem ferramentas liberadas</h2>
       <p class="note">Pe\xE7a ao CCO ou ao coordenador para liberar seu acesso.</p>
     </div>`;
     }
-    const cartoes = lista.map((f) => `
+    const cartoes = lista2.map((f) => `
     <button class="cartao-ferramenta" onclick="irPara('${esc(FERRAMENTA_ABA[f.id])}')">
       <span class="cf-nome">${esc(f.nome)}</span>
       ${f.descricao ? `<span class="cf-desc">${esc(f.descricao)}</span>` : ""}
@@ -3648,8 +4214,8 @@
     if (!validos.length) return "";
     const porCarreta = validos.map((q) => `${ico("carretaOk", 16)} ${q}`).join(" ");
     if (validos.length === 1) return porCarreta;
-    const soma = validos.reduce((a, b) => a + (Number(b) || 0), 0);
-    return `${porCarreta} ${ico("pacote", 16)} ${soma}`;
+    const soma2 = validos.reduce((a, b) => a + (Number(b) || 0), 0);
+    return `${porCarreta} ${ico("pacote", 16)} ${soma2}`;
   }
 
   // src/ui/components/grades.js
@@ -3671,8 +4237,8 @@
       via: d.entrega_via || "PP"
     };
   }
-  function gradeBoxes(selecionado, fn, lista, opcoes) {
-    const solo = lista || voosEmSolo();
+  function gradeBoxes(selecionado, fn, lista2, opcoes) {
+    const solo = lista2 || voosEmSolo();
     const compacta = !!(opcoes && opcoes.compacta);
     const porBox = /* @__PURE__ */ new Map();
     for (const v of solo) {
@@ -3711,8 +4277,8 @@
     </div>`;
     };
     const txtVazio = (opcoes == null ? void 0 : opcoes.vazio) || "Nenhum voo no p\xE1tio nesta janela.";
-    const vazio = `<div class="card note">${esc(txtVazio)}</div>`;
-    if (!boxes.length) return vazio;
+    const vazio2 = `<div class="card note">${esc(txtVazio)}</div>`;
+    if (!boxes.length) return vazio2;
     const legenda = compacta ? `<p class="note bxq-legenda">\xE2mbar = ainda vai pousar \xB7 azul = descarregando \xB7 verde = descarga OK \xB7 ponto = bag em curso \xB7 n\xFAmero = minutos para pousar</p>` : "";
     return `<div class="${compacta ? "bxq-grid" : "voo-grid"}">${boxes.map(btn).join("")}</div>${legenda}`;
   }
@@ -4054,7 +4620,7 @@ O sql/atualizacao_45.sql j\xE1 foi aplicado?`);
 O sql/atualizacao_58.sql j\xE1 foi aplicado?`);
       }
     };
-    const vazio = async (alvo2, tipo, rotulo2, anota, arq) => {
+    const vazio2 = async (alvo2, tipo, rotulo2, anota, arq) => {
       const jaTem = (tipo === "india" ? D.indias : D.deltas).filter((x) => x.voo_id === alvo2.id).length;
       const nome = tipo === "india" ? "\xCDndia" : "Delta";
       await marcarLido(alvo2, tipo, 0, anota, arq);
@@ -4103,7 +4669,7 @@ Arquivo lido: nenhuma conex\xE3o. Este voo n\xE3o conecta com nenhum outro.`);
           anota(`Aviso: nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho diz ${r.vooCabecalho}. Confira se foi extra\xEDdo certo.`);
         }
         if (!r.conexoes.length) {
-          await vazio(alvo2, "india", rotulo2, anota, { numero: vooNome, texto });
+          await vazio2(alvo2, "india", rotulo2, anota, { numero: vooNome, texto });
           continue;
         }
         const { data, error } = await reconciliarPontoIndiaDb(dia, alvo2.id, r.conexoes);
@@ -4145,7 +4711,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
           anota(`Aviso: nome do arquivo indica voo ${vooNome}, mas o cabe\xE7alho diz ${r.vooCabecalho}. Confira se foi extra\xEDdo certo.`);
         }
         if (!r.conexoes.length) {
-          await vazio(alvo2, "delta", rotulo2, anota, { numero: vooNome, texto });
+          await vazio2(alvo2, "delta", rotulo2, anota, { numero: vooNome, texto });
           continue;
         }
         const { data, error } = await reconciliarPontoDeltaDb(dia, alvo2.id, r.conexoes);
@@ -4169,8 +4735,8 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
     );
   }
   async function marcarIndiaEntregueDb(id, qtd, previsto) {
-    const soma = Number.isFinite(qtd) && qtd !== 0 ? qtd : null;
-    const { data: novoR, error } = await creditarBagIndiaDb(id, soma, false);
+    const soma2 = Number.isFinite(qtd) && qtd !== 0 ? qtd : null;
+    const { data: novoR, error } = await creditarBagIndiaDb(id, soma2, false);
     if (error) return { error };
     if (previsto == null || (novoR || 0) < previsto) return { entregue: false };
     const r = await sb.from("ponto_india").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), entregue_por: S.me.id }).eq("id", id);
@@ -4395,8 +4961,8 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   init_modal();
   init_bus();
   init_regras();
-  var comoChegada = (apt, num, box) => ({ origem: apt, voo_chegada: num, box });
-  var comoSaida = (apt, num, box) => ({ destino: apt, numero: num, box });
+  var comoChegada = (apt, num2, box) => ({ origem: apt, voo_chegada: num2, box });
+  var comoSaida = (apt, num2, box) => ({ destino: apt, numero: num2, box });
   var BOX_DESCONHECIDO = "?";
   function boxDaChegada(numero) {
     const vs = chegadasComNumero(numero);
@@ -4462,12 +5028,12 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   }
   function opDaConexao(pi) {
     const vc = vooChegadaConexao(pi.voo_chegada_numero);
-    let soma = null;
+    let soma2 = null;
     for (const d of D.destinos) {
       if (!entregaBateComConexao(d, pi, vc)) continue;
-      if (d.qtd_entregue != null) soma = (soma || 0) + d.qtd_entregue;
+      if (d.qtd_entregue != null) soma2 = (soma2 || 0) + d.qtd_entregue;
     }
-    return soma;
+    return soma2;
   }
   function situacaoConexao(pi) {
     const vc = vooChegadaConexao(pi.voo_chegada_numero);
@@ -4667,7 +5233,7 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
     UI.indiaProcessando = [];
     UI.indiaArquivos = [];
     tirarFoco();
-    await bus.recarregar();
+    await bus.recarregar({ completa: true });
   }
   function semConexao(v, tipo) {
     const imp = pontoImportado(v, tipo);
@@ -4680,8 +5246,8 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
   function verPontoIndia(vooId) {
     UI.modalVivo = null;
     const v = voo(vooId) || {};
-    const lista = D.indias.filter((pi) => pi.voo_id === vooId);
-    const linhas = lista.length ? lista.map((pi) => `<tr>
+    const lista2 = D.indias.filter((pi) => pi.voo_id === vooId);
+    const linhas = lista2.length ? lista2.map((pi) => `<tr>
       <td>${esc(pi.origem || "\u2014")}</td>
       <td class="mono">${esc(pi.voo_chegada_numero || "\u2014")}</td>
       <td>${esc(pi.sta || "\u2014")}</td>
@@ -4700,8 +5266,8 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
   function verPontoDelta(vooId) {
     UI.modalVivo = null;
     const v = voo(vooId) || {};
-    const lista = D.deltas.filter((pd) => pd.voo_id === vooId);
-    const linhas = lista.length ? lista.map((pd) => `<tr>
+    const lista2 = D.deltas.filter((pd) => pd.voo_id === vooId);
+    const linhas = lista2.length ? lista2.map((pd) => `<tr>
       <td>${esc(pd.destino || "\u2014")}</td>
       <td class="mono">${esc(pd.voo_saida_numero || "\u2014")}</td>
       <td class="mono" style="color:var(--amber)">${pd.bag_qtd || 0}</td>
@@ -4784,7 +5350,7 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
     });
   }
   var ORDEM_BALDES_AUTO_DELTA = BALDES_AUTO_DELTA.map((b) => b.id);
-  function agruparEmBaldesDelta(v, lista, carretasDoVoo) {
+  function agruparEmBaldesDelta(v, lista2, carretasDoVoo) {
     const fixos = baldesFixosDelta(carretasDoVoo);
     const idsFixos = new Set(fixos.filter((b) => b.real).map((b) => b.real.id));
     const baldesRct = fixos.map((b) => ({ ...b, itens: [] }));
@@ -4797,7 +5363,7 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
     }
     baldes.push(baldeNc);
     baldes.push({ chave: BALDE_BASE_LOCAL.id, nome: BALDE_BASE_LOCAL.nome, real: null, itens: [], base: true });
-    for (const pd of lista) {
+    for (const pd of lista2) {
       if (naoConectaDelta(pd)) {
         baldeNc.itens.push(pd);
       } else if (pd.carreta_id != null) {
@@ -5169,8 +5735,8 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
   }
   function abrirBagDeOutroVoo(vooId) {
     const v = voo(vooId) || {};
-    const lista = voosParaBagDeOutro(vooId);
-    if (!lista.length) {
+    const lista2 = voosParaBagDeOutro(vooId);
+    if (!lista2.length) {
       return abrirModal(`<h3>Bag de outro voo</h3>
       <p class="note">Nenhum outro voo com sa\xEDda pela frente hoje.</p>
       <div style="margin-top:12px"><button class="ghost" onclick="abrirPontoIndiaOC(${vooId})">Voltar</button></div>`);
@@ -5181,7 +5747,7 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
       Avise, e ela vira um pedido para algu\xE9m buscar.</p>
     <label style="display:block;margin-top:10px">De qual voo \xE9 a bagagem?</label>
     <select id="bagOutroVoo">
-      ${lista.map((x) => `<option value="${x.id}">${esc(`${x.destino || "\u2014"}-${x.numero}`)} \xB7 sai ${esc(x.saida)}${x.box ? ` \xB7 box ${esc(x.box)}` : ""}</option>`).join("")}
+      ${lista2.map((x) => `<option value="${x.id}">${esc(`${x.destino || "\u2014"}-${x.numero}`)} \xB7 sai ${esc(x.saida)}${x.box ? ` \xB7 box ${esc(x.box)}` : ""}</option>`).join("")}
     </select>
     <label style="display:block;margin-top:10px">Quantas bags?</label>
     <input id="bagOutroQtd" type="number" min="1" inputmode="numeric"
@@ -5480,9 +6046,9 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
   function desenharPontoDelta(vooId) {
     const v = voo(vooId) || {};
     const editavel = pode("delta_carretas");
-    const lista = D.deltas.filter((pd) => pd.voo_id === vooId);
+    const lista2 = D.deltas.filter((pd) => pd.voo_id === vooId);
     const carretasDoVoo = D.carretasDelta.filter((c) => mesmoId(c.voo_id, vooId)).sort((a, b) => a.ordem - b.ordem || String(a.criada_em).localeCompare(String(b.criada_em)));
-    const linhas = lista.length ? agruparEmBaldesDelta(v, lista, carretasDoVoo).map((b) => blocoBaldeDelta(vooId, v, b, editavel)).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
+    const linhas = lista2.length ? agruparEmBaldesDelta(v, lista2, carretasDoVoo).map((b) => blocoBaldeDelta(vooId, v, b, editavel)).join("") : `<p class="note">Nada importado do Delta pra esse voo.</p>`;
     const descarga = !pode("descarga_ok") ? "" : v.descarga_ok_em ? `<button class="small ghost equip-botao" disabled aria-label="Descarga j\xE1 confirmada" title="Descarga confirmada ${hora(v.descarga_ok_em)} por ${esc(nomeDe(v.descarga_ok_por))}">Descarrega OK</button>` : `<button class="small ok equip-botao" onclick="marcarDescargaDelta(${vooId})" aria-label="Confirmar descarga" title="Confirma que o voo foi descarregado \u2014 fica registrado quem e quando. N\xE3o tira o voo da grade de boxes dos operadores (pode ainda ter bag parada ali).">Descarrega OK</button>`;
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost" style="width:auto;margin-bottom:8px" onclick="abrirSubstituirPonto('delta',${vooId})">Substituir</button>`;
     const novaCarreta = editavel ? `<button class="small ghost delta-icone" onclick="abrirCriarCarretaDelta(${vooId},null)" aria-label="Nova carreta" title="Nova carreta">+${ico("reboque", 34)}${ico("malha", 34)}</button>` : "";
@@ -5601,7 +6167,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   }
   function conteudoPontoIndiaOC(vooId) {
     const v = voo(vooId) || {};
-    const lista = D.indias.filter((pi) => pi.voo_id === vooId).slice().sort(
+    const lista2 = D.indias.filter((pi) => pi.voo_id === vooId).slice().sort(
       (a, b) => numeroVooOrd(a.voo_chegada_numero) - numeroVooOrd(b.voo_chegada_numero)
     );
     const linhaIndiaOC = (pi) => {
@@ -5656,13 +6222,13 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
       </div>
     </div>`;
     };
-    const normais = lista.filter((pi) => !pi.siga);
-    const sigaLista = lista.filter((pi) => pi.siga);
+    const normais = lista2.filter((pi) => !pi.siga);
+    const sigaLista = lista2.filter((pi) => pi.siga);
     const acordeao = (titulo, itens, classeExtra) => itens.length ? `<details class="india-acordeao${classeExtra ? ` ${classeExtra}` : ""}" open>
       <summary>${titulo} (${itens.length})</summary>
       <div class="india-lista">${itens.map(linhaIndiaOC).join("")}</div>
     </details>` : "";
-    const corpo = lista.length ? acordeao("Conectando neste voo", normais) + acordeao("SIGA \u2014 segue na 2\xAA perna", sigaLista, "india-siga") : `<p class="note">Nada importado do \xCDndia pra esse voo.</p>`;
+    const corpo = lista2.length ? acordeao("Conectando neste voo", normais) + acordeao("SIGA \u2014 segue na 2\xAA perna", sigaLista, "india-siga") : `<p class="note">Nada importado do \xCDndia pra esse voo.</p>`;
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost india-substituir" onclick="abrirSubstituirPonto('india',${vooId})">Substituir</button>`;
     const bagDeOutro = pode("oc_pontos") ? `<button class="ghost india-rodape-botao" onclick="abrirBagDeOutroVoo(${vooId})">Bag de outro voo</button>` : "";
     const carga = botaoCarga(vooId);
@@ -5714,7 +6280,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
   async function substituirPonto(tipo, vooId, file) {
     if (!file) return;
     const log = await importarArquivosPontos([file], UI.indiaData || hoje());
-    await bus.recarregar();
+    await bus.recarregar({ completa: true });
     await aviso(log);
     tipo === "delta" ? abrirPontoDelta(vooId) : abrirPontoIndiaOC(vooId);
   }
@@ -5789,58 +6355,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
   init_store();
   init_dom();
   init_horas();
-
-  // src/data/viagens.js
-  init_supabase();
-  init_store();
-  init_offline_sync();
-  async function abrirViagem(dados) {
-    return sb.from("viagens").insert({ operador_id: S.me.id, ...dados }).select().single();
-  }
-  async function adicionarDestinos(linhas) {
-    return sb.from("viagens_destinos").insert(linhas);
-  }
-  function subirErro(res) {
-    if (res == null ? void 0 : res.error) throw res.error;
-    return res;
-  }
-  async function entregarDestino(destId, vgId, qtd) {
-    try {
-      subirErro(await sb.from("viagens_destinos").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString(), qtd_entregue: qtd != null ? qtd : null }).eq("id", destId));
-      await fecharSeAcabou(vgId);
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("entregar_destino", { destId, vgId, qtd });
-        return { error: null, fila: true };
-      }
-      throw e;
-    }
-  }
-  async function entregarDestinos(ids, vgId) {
-    if (!(ids == null ? void 0 : ids.length)) return;
-    try {
-      subirErro(await sb.from("viagens_destinos").update({ status: "entregue", entregue_em: (/* @__PURE__ */ new Date()).toISOString() }).in("id", ids));
-      await fecharSeAcabou(vgId);
-    } catch (e) {
-      if (erroDeRede(e)) {
-        enfileirarAcao("entregar_destinos", { ids, vgId });
-        return { error: null, fila: true };
-      }
-      throw e;
-    }
-  }
-  async function fecharSeAcabou(vgId) {
-    const { data: resto, error } = await sb.from("viagens_destinos").select("id").eq("viagem_id", vgId).eq("status", "a_caminho");
-    if (error) throw error;
-    if (!(resto == null ? void 0 : resto.length)) {
-      subirErro(await sb.from("viagens").update({ status: "concluida", concluida_em: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", vgId));
-    }
-  }
-  async function cancelarViagemDb(id) {
-    return sb.from("viagens").update({ status: "cancelada" }).eq("id", id);
-  }
-
-  // src/ui/screens/telaOperador.js
+  init_viagens();
   init_conexoes();
   init_regras();
   init_patio();
@@ -10136,6 +10651,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
   }
 
   // src/ui/screens/telaOperador.js
+  init_areasOp();
   init_regras();
   var viagemAtiva = () => D.viagens.find((v) => v.operador_id === S.me.id && v.status === "a_caminho");
   function contarMarcados(st) {
@@ -10355,7 +10871,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const ativa = viagemAtiva();
     const n = ativa ? 0 : marcadosOp();
     const retomar = n ? `<p class="note" style="margin-top:10px">Saindo de <b style="color:var(--text)">${esc(UI.op.origem)}</b> \xB7 ${n} destino${n === 1 ? "" : "s"} marcado${n === 1 ? "" : "s"} \u2014 toque em + para continuar.</p>` : "";
-    return (ativa ? painelReduzido(ativa) : "") + retomar + alertas;
+    return faixaAreas() + (ativa ? painelReduzido(ativa) : "") + retomar + alertas;
   }
   async function escolherCarga(v) {
     if (UI.op.carga !== v) {
@@ -10598,7 +11114,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const c = D.carretasDelta.find((x) => mesmoId(x.id, chave));
     return c ? c.nome : "Mais de 1h";
   }
-  function carretasDaLista(lista, semMalha, vooOrigemId) {
+  function carretasDaLista(lista2, semMalha, vooOrigemId) {
     const mapaAuto = mapaAutoDoVoo(vooOrigemId);
     const porChave = /* @__PURE__ */ new Map();
     const grupo = (chave) => {
@@ -10612,7 +11128,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
         });
       return porChave.get(chave);
     };
-    for (const v of lista) grupo(chaveCarreta(v, mapaAuto)).vs.push(v);
+    for (const v of lista2) grupo(chaveCarreta(v, mapaAuto)).vs.push(v);
     for (const s of semMalha || []) {
       const chave = chaveCarreta(s, mapaAuto);
       if (porChave.has(chave)) porChave.get(chave).fora.push(s.numero);
@@ -10655,12 +11171,12 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const outros = todos.filter((v) => !idsConex.has(v.id));
     const escondidos = candidatosDestinoJanela([vooOrigem]).length - todos.length;
     const tagEsteira = via === "ESTEIRA" ? `<span class="destino-est">EST<span class="esteira-quad">${esc(vo.esteira || "?")}</span></span>` : "";
-    const grade = (lista) => listaDestinos(lista, g[via], pre === "op" ? "togDest" : "togDestPU", tagEsteira);
+    const grade = (lista2) => listaDestinos(lista2, g[via], pre === "op" ? "togDest" : "togDestPU", tagEsteira);
     const rotOrigem = esc((vo.origem || "") + "-" + (vo.voo_chegada || vo.numero || "?"));
     const legenda = via === "PP" ? "Voos direto para o BOX" : via === "ESTEIRA" ? `do ${rotOrigem} para a esteira local` : `do ${rotOrigem} para ${via}`;
-    const linhaTodos = (lista, rotulo2) => {
-      if (lista.length < 2) return "";
-      const marcados = lista.every((v) => g[via].includes(v.id));
+    const linhaTodos = (lista2, rotulo2) => {
+      if (lista2.length < 2) return "";
+      const marcados = lista2.every((v) => g[via].includes(v.id));
       return `<div class="list-line" style="cursor:pointer" onclick="${pre}TodosDaVia()">
       <span style="flex:0 0 auto;color:${marcados ? "var(--amber)" : "var(--muted)"}">${ico(marcados ? "quadradoMarcado" : "quadrado", 22)}</span>
       <span class="grow" style="padding-left:8px">${marcados ? "Desmarcar" : "Marcar"} ${rotulo2}</span>
@@ -10713,11 +11229,11 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     return passoCab(titulo, legenda, botaoSaindo(totalDestinos(st), acaoConfirmar)) + linhaEsteira + corpo + rodape;
   }
   function alternarTodosDaVia(st) {
-    const lista = conexoesDaVia(st).map((v) => v.id);
-    if (!lista.length) return;
+    const lista2 = conexoesDaVia(st).map((v) => v.id);
+    if (!lista2.length) return;
     const alvo2 = grupos(st)[st.via];
-    const todos = lista.every((id) => alvo2.includes(id));
-    for (const id of lista) {
+    const todos = lista2.every((id) => alvo2.includes(id));
+    for (const id of lista2) {
       const i = alvo2.indexOf(id);
       if (todos) {
         if (i >= 0) alvo2.splice(i, 1);
@@ -10752,11 +11268,11 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
   }
   function alternarTodosDaCarreta(st, chave) {
     const mapaAuto = mapaAutoDoVoo(st.vooOrigemId);
-    const lista = conexoesDaVia(st).filter((v) => chaveCarreta(v, mapaAuto) === chave).map((v) => v.id);
-    if (!lista.length) return;
+    const lista2 = conexoesDaVia(st).filter((v) => chaveCarreta(v, mapaAuto) === chave).map((v) => v.id);
+    if (!lista2.length) return;
     const alvo2 = grupos(st)[st.via];
-    const todos = lista.every((id) => alvo2.includes(id));
-    for (const id of lista) {
+    const todos = lista2.every((id) => alvo2.includes(id));
+    for (const id of lista2) {
       const i = alvo2.indexOf(id);
       if (todos) {
         if (i >= 0) alvo2.splice(i, 1);
@@ -10839,10 +11355,10 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     UI.op.vooOrigemId = id;
     bus.render();
   }
-  function alternar(lista, id) {
-    const i = lista.indexOf(id);
-    if (i >= 0) lista.splice(i, 1);
-    else lista.push(id);
+  function alternar(lista2, id) {
+    const i = lista2.indexOf(id);
+    if (i >= 0) lista2.splice(i, 1);
+    else lista2.push(id);
   }
   function togDest(id) {
     if (UI.op.via) alternar(grupos(UI.op)[UI.op.via], id);
@@ -11254,8 +11770,8 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
   }
   function vooConfirma(v, lado, box) {
     const cid = lado === "chegada" ? v.origem : v.destino;
-    const num = lado === "chegada" ? v.voo_chegada || v.numero : v.numero;
-    return `${esc(cid ? `${cid}-` : "")}${esc(num || "?")}${box ? ` [${esc(box)}]` : ""}`;
+    const num2 = lado === "chegada" ? v.voo_chegada || v.numero : v.numero;
+    return `${esc(cid ? `${cid}-` : "")}${esc(num2 || "?")}${box ? ` [${esc(box)}]` : ""}`;
   }
   function destinoConfirma(d) {
     if (d.setor_destino) return esc(destinoInfo(d).sub || d.setor_destino);
@@ -12175,11 +12691,11 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     return desloc;
   }
   function arrastarCartaoAlerta(ev, tipo) {
-    const lista = document.getElementById("alertas-lista");
-    const cartao = lista && lista.querySelector(`.card.alerta[data-tipo="${tipo}"]`);
-    if (!lista || !cartao) return;
+    const lista2 = document.getElementById("alertas-lista");
+    const cartao = lista2 && lista2.querySelector(`.card.alerta[data-tipo="${tipo}"]`);
+    if (!lista2 || !cartao) return;
     ev.preventDefault();
-    const cartoes = [...lista.querySelectorAll(".card.alerta")];
+    const cartoes = [...lista2.querySelectorAll(".card.alerta")];
     const alturas = {};
     for (const c of cartoes) alturas[c.dataset.tipo] = { top: c.offsetTop, alt: c.offsetHeight };
     const ordemInicial = ordemAlertaAtual();
@@ -12465,12 +12981,12 @@ Os operadores recebem UM aviso para vir buscar a carreta inteira.`);
   function conteudoCarretasBaseTlc(vooId) {
     const v = voo(vooId) || {};
     const carretas = carretasBaseDoVoo(vooId);
-    const soma = carretas.reduce((a, p) => a + (Number(p.qtd) || 0), 0);
+    const soma2 = carretas.reduce((a, p) => a + (Number(p.qtd) || 0), 0);
     return `<h3>Carretas ${vooRotulo(v, "saida")}</h3>
     <div class="alerta-carretas">
       ${carretas.length ? carretas.map(linhaCarretaBaseTlc).join("") : `<p class="note">Nenhuma carreta sinalizada.</p>`}
       <div class="list-line" style="border:none">
-        <b class="grow">Total j\xE1 montado</b><b>${soma} bag${soma === 1 ? "" : "s"}</b>
+        <b class="grow">Total j\xE1 montado</b><b>${soma2} bag${soma2 === 1 ? "" : "s"}</b>
       </div>
     </div>
     <div class="modal-acoes"><button onclick="fecharModal()">Fechar</button></div>`;
@@ -12850,8 +13366,8 @@ Os operadores e a coordena\xE7\xE3o ser\xE3o avisados.`);
       return { piId: pi.id, vooId, on: m.on, qtd: m.qtd };
     });
     const plano = planoDeMarcasTcx(marcas, D.prontas, "TCX", (_a = S.me) == null ? void 0 : _a.id);
-    const limpar = (lista) => {
-      for (const m of lista) delete marcasTcx()[m.piId];
+    const limpar = (lista2) => {
+      for (const m of lista2) delete marcasTcx()[m.piId];
       guardarMarcas();
     };
     const rotulo2 = (piId) => {
@@ -12928,7 +13444,7 @@ ${e.message || e}` : e);
 
   // src/ui/screens/telaVoos.js
   function telaVoos() {
-    const lista = D.voos.filter((v) => v.data === hoje()).filter(passaVista).filter((v) => malhaBateBusca(v, UI.malhaBusca));
+    const lista2 = D.voos.filter((v) => v.data === hoje()).filter(passaVista).filter((v) => malhaBateBusca(v, UI.malhaBusca));
     const editar = pode("malha_editar");
     const posicionar = pode("oc_posicionar");
     const cartaoImportar = !editar ? "" : `
@@ -12950,7 +13466,7 @@ ${e.message || e}` : e);
   ${cartaoImportar}
   <div class="board-title">
     <h2>Malha de hoje</h2>
-    <span class="flip">${lista.length}</span>
+    <span class="flip">${lista2.length}</span>
     <span class="malha-ajuda" onclick="abrirAjudaMalha()" aria-label="Como usar a malha">${ico("notificacao", 18)}</span>
   </div>
   <div class="card" style="padding:10px 12px">
@@ -12967,7 +13483,7 @@ ${e.message || e}` : e);
   ${editar ? `<div style="margin-bottom:10px"><button class="small" style="width:auto"
       onclick="adicionarVoo()">+ Adicionar voo</button></div>` : ""}
   <div style="display:flex;justify-content:flex-end;margin:-2px 2px 6px"><span class="note">${dm(hoje())}</span></div>
-  <div class="card tbl-wrap malha-tbl-wrap">${lista.length ? `
+  <div class="card tbl-wrap malha-tbl-wrap">${lista2.length ? `
     <table class="malha-tabela"><tr>
       <th>VAR</th><th>Arr.</th>
       <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('chegada')">STA ${UI.malhaOrdem.col === "chegada" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
@@ -12975,7 +13491,7 @@ ${e.message || e}` : e);
       <th>VDP</th><th>DEP</th>
       <th style="cursor:pointer;user-select:none" onclick="ordenarMalha('saida')">STD ${UI.malhaOrdem.col === "saida" ? UI.malhaOrdem.dir > 0 ? "\u25B2" : "\u25BC" : ""}</th>
       <th>Box</th><th>EST</th><th></th></tr>
-    ${ordenar(lista).map((v) => linhaVoo(v, editar, posicionar)).join("")}</table>` : `<p class="note">Nenhum voo nesta janela${UI.malhaBusca ? " com esse n\xFAmero" : ""}.</p>`}
+    ${ordenar(lista2).map((v) => linhaVoo(v, editar, posicionar)).join("")}</table>` : `<p class="note">Nenhum voo nesta janela${UI.malhaBusca ? " com esse n\xFAmero" : ""}.</p>`}
   </div>`;
   }
   function malhaBateBusca(v, busca) {
@@ -12987,8 +13503,8 @@ ${e.message || e}` : e);
     UI.malhaBusca = txt2;
     redesenharMantendoFoco("malhaBusca");
   }
-  function ordenar(lista) {
-    return lista.sort((a, b) => {
+  function ordenar(lista2) {
+    return lista2.sort((a, b) => {
       const col = UI.malhaOrdem.col || "chegada";
       const dir = UI.malhaOrdem.col ? UI.malhaOrdem.dir : 1;
       return (minPlain(a[col]) - minPlain(b[col])) * dir;
@@ -13293,18 +13809,18 @@ Apagar deixaria esse hist\xF3rico \xF3rf\xE3o. Se ele n\xE3o vai mais operar, li
     await bus.recarregar();
   }
   async function adicionarVoo() {
-    const num = await perguntar("N\xFAmero do voo de sa\xEDda (deixe vazio se for s\xF3 chegada)", "", "Adicionar voo");
-    if (num === null) return;
+    const num2 = await perguntar("N\xFAmero do voo de sa\xEDda (deixe vazio se for s\xF3 chegada)", "", "Adicionar voo");
+    if (num2 === null) return;
     const cheg = await perguntar("N\xFAmero do voo de chegada (opcional)", "", "Adicionar voo");
     if (cheg === null) return;
-    if (!num.trim() && !cheg.trim()) {
+    if (!num2.trim() && !cheg.trim()) {
       await aviso("Informe ao menos um dos dois n\xFAmeros.");
       return;
     }
     const dia = UI.malhaData || hoje();
     const { error } = await criarVoo({
       data: dia,
-      numero: num.trim() || cheg.trim(),
+      numero: num2.trim() || cheg.trim(),
       voo_chegada: cheg.trim() || null
     });
     if (error) {
@@ -13331,7 +13847,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const log = $("mlog");
     if (log) log.textContent = "Limpando...";
     const { error } = await apagarMalhaDoDia(dia);
-    await bus.recarregar();
+    await bus.recarregar({ completa: true });
     const log2 = $("mlog");
     if (log2) log2.textContent = error ? "Erro ao limpar: " + error.message : `Malha de ${dia} limpa. Agora importe o arquivo correto.`;
   }
@@ -13422,7 +13938,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       return;
     }
     UI.malhaArquivo = null;
-    await bus.recarregar();
+    await bus.recarregar({ completa: true });
     const log2 = $("mlog");
     const madrugada = rowsFinal.filter((r) => r.data === diaAmanha).length;
     const ignorados = ((_a = data == null ? void 0 : data.ignorados) == null ? void 0 : _a.length) || 0;
@@ -13531,7 +14047,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   }
   function telaViagensCCO() {
     const comMov = new Set(D.destinos.map((d) => d.voo_destino_id).filter(Boolean));
-    const lista = D.voos.filter((v) => {
+    const lista2 = D.voos.filter((v) => {
       if (!v.saida && !v.destino) return false;
       const min = faltam(v);
       const pend = destinosDe_doVoo(v.id).some((d) => d.status === "a_caminho");
@@ -13539,8 +14055,8 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       if (min === null) return false;
       return min > -CCO_JANELA_ATRAS_MIN && min < CCO_JANELA_FRENTE_MIN;
     });
-    const abertos = lista.filter((v) => destinosDe_doVoo(v.id).some((d) => d.status === "a_caminho") || paradoEmTriagem(v.id) || !comMov.has(v.id));
-    const fechados = lista.filter((v) => !abertos.includes(v));
+    const abertos = lista2.filter((v) => destinosDe_doVoo(v.id).some((d) => d.status === "a_caminho") || paradoEmTriagem(v.id) || !comMov.has(v.id));
+    const fechados = lista2.filter((v) => !abertos.includes(v));
     abertos.sort((a, b) => {
       const ma = faltam(a), mb = faltam(b);
       return (ma === null ? 99999 : ma) - (mb === null ? 99999 : mb);
@@ -13815,6 +14331,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   init_dom();
   init_bus();
   init_modal();
+  init_posicoes();
 
   // src/config/mapaPatio.js
   var PROJ = { "LON0": -47.9301, "LAT1": -15.865208, "COS": 0.9618871161168996, "K": 69197.48614860298 };
@@ -14034,12 +14551,12 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
         if (b.local !== k || b.status !== "no_local" && b.status !== "na_carreta") continue;
         if (!ids.some((id) => mesmoId(id, b.voo_destino_id))) ids.push(b.voo_destino_id);
       }
-      const lista = ids.map((id) => voos.find((v) => mesmoId(v.id, id))).filter(Boolean).sort((a, b) => {
+      const lista2 = ids.map((id) => voos.find((v) => mesmoId(v.id, id))).filter(Boolean).sort((a, b) => {
         var _a, _b;
         return ((_a = a.sai) != null ? _a : 99999) - ((_b = b.sai) != null ? _b : 99999);
       });
       const semDono = D.prontas.filter((p) => p.status === "pronta" && p.setor === k).map((p) => minutosDoIso(p.criada_em)).filter((x) => x != null);
-      estacoes[k] = { voos: lista, semDono };
+      estacoes[k] = { voos: lista2, semDono };
     }
     estacoes.ESTEIRA = {
       aCaminho: D.destinos.filter((d) => d.status === "a_caminho" && lugarDeDestino(d) === "ESTEIRA").length,
@@ -14367,7 +14884,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       const v = boxes[p.box];
       return v && v.estado !== "saiu";
     });
-    const lista = pessoas.map((p) => {
+    const lista2 = pessoas.map((p) => {
       const pos = posicao(p);
       const idade = p.estado === "semsinal" ? t - p.semSinalDesde : Math.floor((t + p.seed * 3) % 12);
       const cobertura = p.tipo === "aux" || p.lugar === "TCX" || p.lugar === "TLC";
@@ -14380,7 +14897,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
         paradoMin: p.paradoDesde != null ? (t - p.paradoDesde) / 60 : 0
       });
     });
-    const viagens = lista.filter((p) => p.v).map((p) => ({
+    const viagens = lista2.filter((p) => p.v).map((p) => ({
       sel: `p:${p.id}`,
       quem: p.nome,
       de: p.v.de,
@@ -14392,7 +14909,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       estado: p.estado,
       prog: p.prog
     }));
-    return { agora: n, demo: true, gps: true, voos, boxes, estacoes, aceitas, pedidos, viagens, pessoas: lista };
+    return { agora: n, demo: true, gps: true, voos, boxes, estacoes, aceitas, pedidos, viagens, pessoas: lista2 };
   }
 
   // src/ui/screens/telaPatio.js
@@ -14555,8 +15072,8 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       if (p.tipo === "oc") forma = `<path d="M${x},${y - r * 1.2}L${x + r * 1.2},${y}L${x},${y + r * 1.2}L${x - r * 1.2},${y}Z"`;
       else if (p.tipo === "aux") forma = `<path d="M${x},${y - r * 1.2}L${x + r * 1.1},${y + r * 0.8}L${x - r * 1.1},${y + r * 0.8}Z"`;
       else forma = `<circle cx="${x}" cy="${y}" r="${r}"`;
-      const vazio = p.estado === "semsinal";
-      h.push(`<g data-sel="p:${esc(p.id)}">` + (halo * s > r * s + 2 ? `<circle cx="${x}" cy="${y}" r="${halo}" fill="${cor}" fill-opacity=".12" stroke="${cor}" stroke-opacity=".3" stroke-width="1" vector-effect="non-scaling-stroke"/>` : "") + `<circle cx="${x}" cy="${y}" r="${22 / s}" fill="transparent"/>${forma} fill="${vazio ? "#fff" : cor}" stroke="${vazio ? cor : "#fff"}" stroke-width="${vazio ? 2.5 : 2}" vector-effect="non-scaling-stroke"/></g>`);
+      const vazio2 = p.estado === "semsinal";
+      h.push(`<g data-sel="p:${esc(p.id)}">` + (halo * s > r * s + 2 ? `<circle cx="${x}" cy="${y}" r="${halo}" fill="${cor}" fill-opacity=".12" stroke="${cor}" stroke-opacity=".3" stroke-width="1" vector-effect="non-scaling-stroke"/>` : "") + `<circle cx="${x}" cy="${y}" r="${22 / s}" fill="transparent"/>${forma} fill="${vazio2 ? "#fff" : cor}" stroke="${vazio2 ? cor : "#fff"}" stroke-width="${vazio2 ? 2.5 : 2}" vector-effect="non-scaling-stroke"/></g>`);
       if (UI.patio.cam.nomes && (s > 1.25 || sel))
         nomes.push(txt(x, y - (r * s + 9) / s, p.nome + (p.v && p.estado !== "livre" ? ` \xB7 ${p.v.qtd}` : ""), 11.5, s, `font-weight="700" fill="#16425B" stroke="#fff" stroke-width="${(3.5 / s).toFixed(2)}" paint-order="stroke"`));
     }
@@ -14730,11 +15247,11 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const P3 = UI.patio.pontos;
     const aberto = P3 && P3.box === k ? P3.qual : null;
     const cx = v.conexoes || [], rc = v.recebe || [];
-    const conta = (lista) => lista.filter((x) => x.ncEm != null).length;
-    const bt = (q, lista, titulo) => {
-      const nc = conta(lista);
+    const conta = (lista2) => lista2.filter((x) => x.ncEm != null).length;
+    const bt = (q, lista2, titulo) => {
+      const nc = conta(lista2);
       return `<button class="patio-bt patio-ponto" aria-pressed="${aberto === q}" title="${titulo}"
-      onclick="patioPontos('${esc(k)}','${q}')"><b>${q}</b> <span>${lista.length}</span>${nc ? ` <span class="patio-ponto-nc">${nc} n\xE3o conecta</span>` : ""}</button>`;
+      onclick="patioPontos('${esc(k)}','${q}')"><b>${q}</b> <span>${lista2.length}</span>${nc ? ` <span class="patio-ponto-nc">${nc} n\xE3o conecta</span>` : ""}</button>`;
     };
     const corpo = aberto === "D" ? conexoesDoBox(c, v) : aberto === "I" ? recebeDoBox(c, v) : "";
     return `<div class="patio-linha lista"><span class="rot">Pontos${fonte("ponto_delta \xB7 ponto_india")}</span>
@@ -14914,12 +15431,12 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     return true;
   }
   function malhaPainelLista() {
-    const lista = D.voos.filter((v) => v.data === hoje() && malhaBateBusca(v, UI.patio.malhaBusca) && malhaNaJanela(v));
+    const lista2 = D.voos.filter((v) => v.data === hoje() && malhaBateBusca(v, UI.patio.malhaBusca) && malhaNaJanela(v));
     const o = UI.patio.malhaOrdem;
     if (!o || !ORDEM_MALHA[o.col])
-      return lista.sort((a, b) => minPlain(a.chegada || a.saida) - minPlain(b.chegada || b.saida));
+      return lista2.sort((a, b) => minPlain(a.chegada || a.saida) - minPlain(b.chegada || b.saida));
     const val = ORDEM_MALHA[o.col];
-    return lista.sort((a, b) => {
+    return lista2.sort((a, b) => {
       const x = val(a), y = val(b);
       const vx = x == null || x === "", vy = y == null || y === "";
       if (vx || vy) return vx === vy ? 0 : vx ? 1 : -1;
@@ -14936,13 +15453,13 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     var _a, _b;
     const selBox = ((_a = UI.patio.sel) == null ? void 0 : _a.startsWith("box:")) ? UI.patio.sel.slice(4) : null;
     const selId = selBox ? (_b = rotacaoDoCartao(c, selBox)) == null ? void 0 : _b.id : null;
-    const lista = malhaPainelLista();
-    if (!lista.length) return `<p class="patio-aviso compacto">${UI.patio.malhaBusca ? "Nenhum voo de hoje com esse n\xFAmero." : UI.patio.malhaDe || UI.patio.malhaAte ? "Nenhum voo de hoje nesta janela." : "Nenhum voo na malha de hoje."}</p>`;
+    const lista2 = malhaPainelLista();
+    if (!lista2.length) return `<p class="patio-aviso compacto">${UI.patio.malhaBusca ? "Nenhum voo de hoje com esse n\xFAmero." : UI.patio.malhaDe || UI.patio.malhaAte ? "Nenhum voo de hoje nesta janela." : "Nenhum voo na malha de hoje."}</p>`;
     const o = UI.patio.malhaOrdem;
     const th = (col, rot2) => `<div role="columnheader" class="pm-c pm-th pm-ord" onclick="ordenarMalhaPainel('${col}')" aria-sort="${(o == null ? void 0 : o.col) === col ? o.dir > 0 ? "ascending" : "descending" : "none"}">${rot2}${(o == null ? void 0 : o.col) === col ? o.dir > 0 ? " \u25B2" : " \u25BC" : ""}</div>`;
     return `<div class="patio-malha-tab pm-grade" role="table">
     <div role="row" class="pm-linha pm-cabecalho">${th("chega", "CHEGA")}${th("sta", "STA")}${th("sai", "SAI")}${th("std", "STD")}${th("box", "BOX")}${th("est", "EST")}</div>
-    ${lista.map((v) => linhaMalhaPainel(v, c, selId)).join("")}</div>`;
+    ${lista2.map((v) => linhaMalhaPainel(v, c, selId)).join("")}</div>`;
   }
   var malhaUltimo = "";
   function malhaPainel(c) {
@@ -15198,8 +15715,8 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   function patioSel(sel, voar, rotId) {
     UI.patio.sel = sel || null;
     UI.patio.rotSel = rotId != null ? rotId : null;
-    const lista = temDom() && document.getElementById("patio-lista");
-    if (lista) lista.scrollTop = 0;
+    const lista2 = temDom() && document.getElementById("patio-lista");
+    if (lista2) lista2.scrollTop = 0;
     if (sel && voar && temDom()) voarPara(sel);
     redesenharPatio(true);
   }
@@ -15397,9 +15914,25 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     setInterval(() => {
       if (UI.tab === "patio" && !document.hidden) redesenharPatio(false);
     }, 1e3);
+    setInterval(atualizarPosicoes, POSICOES_CADA_MS);
     setInterval(() => {
       if (UI.tab === "patio" && UI.patio.demo && !document.hidden && !UI.patio.arrastando) redesenharMovimento();
     }, 250);
+  }
+  var POSICOES_CADA_MS = 2e4;
+  var posicoesBuscando = false;
+  async function atualizarPosicoes() {
+    if (posicoesBuscando || UI.tab !== "patio" || document.hidden || !pode("patio_gps")) return;
+    posicoesBuscando = true;
+    try {
+      const linhas = await carregarPosicoes();
+      if (linhas) {
+        D.posicoes = linhas;
+        if (patioNaTela() && !UI.patio.arrastando) redesenharPatio(false);
+      }
+    } finally {
+      posicoesBuscando = false;
+    }
   }
   function patioMontado() {
     if (!temDom()) return;
@@ -15412,6 +15945,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       UI.patio.vb = largura < 700 ? { x: 470, y: 170, w: 510, h: 510 * RAZ } : Object.assign({}, INTEIRO);
     }
     aplicarVB();
+    atualizarPosicoes();
   }
 
   // src/core/render.js
@@ -15510,7 +16044,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       ${botaoAbrirMenu()}
       <h1>AIROPS-Modulo_Rampa</h1>
       ${UI.filaOffline.length ? `<span class="fila-offline">Fila offline: ${UI.filaOffline.length} pendente${UI.filaOffline.length === 1 ? "" : "s"}</span>` : ""}
-      <div class="who"><b>${esc(S.me.nome)}</b><span>${esc(S.me.perfil)} \xB7 v${esc(window.RAMPA_BUILD || "dev")}</span></div>
+      <div class="who"><b>${esc(S.me.nome)}</b><span onclick="medidorToque()">${esc(S.me.perfil)} \xB7 v${esc(window.RAMPA_BUILD || "dev")}</span></div>
       <button class="small ghost" style="width:auto" onclick="sair()">Sair</button>`);
     aplicarNav(naOperador ? barraOperador() : naTriagemComJanela ? barraJanela() : "");
     document.getElementById("main").classList.toggle("largo", UI.tab === "patio");
@@ -15591,12 +16125,102 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     }
   });
 
+  // src/main.js
+  init_medidor();
+
+  // src/ui/components/medidor.js
+  init_dom();
+  init_modal();
+  init_medidor();
+  var TOQUES = 5;
+  var JANELA_MS = 3e3;
+  var toques = [];
+  function medidorToque() {
+    const agora = Date.now();
+    toques = toques.filter((t) => agora - t < JANELA_MS);
+    toques.push(agora);
+    if (toques.length >= TOQUES) {
+      toques = [];
+      abrirMedidor();
+    }
+  }
+  var num = (n) => Math.round(n).toLocaleString("pt-BR");
+  function tamanho(b) {
+    if (b < 1024) return `${Math.round(b)} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`;
+    return `${(b / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+  }
+  var duracao = (min) => min < 1 ? "menos de 1 min" : min < 120 ? `${Math.round(min)} min` : `${(min / 60).toFixed(1).replace(".", ",")} h`;
+  function tabela(linhas, vazio2) {
+    if (!linhas.length) return `<p style="opacity:.7">${vazio2}</p>`;
+    return `<table style="width:100%;font-size:13px;border-collapse:collapse">` + linhas.slice(0, 12).map((l) => `<tr><td style="padding:2px 0">${esc(l.rotulo)}</td>
+        <td style="text-align:right">${num(l.n)}x</td>
+        <td style="text-align:right;padding-left:8px">${tamanho(l.bytes)}</td></tr>`).join("") + `</table>`;
+  }
+  function textoMedidor(r) {
+    const l = [
+      `Medidor AIROPS \u2014 ${duracao(r.minutos)} medidos (desde ${new Date(r.desde).toLocaleString("pt-BR")})`,
+      `Baixado: ${tamanho(r.bytes)} em ${num(r.pedidos)} pedidos, ${num(r.cargas)} cargas (${num(r.cargasCompletas)} completas)`,
+      ...r.http.slice(0, 12).map((x) => `  ${x.rotulo}: ${x.n}x ${tamanho(x.bytes)}`),
+      `Tempo real: ${num(r.avisos)} avisos (${tamanho(r.avisosBytes)})`,
+      ...r.rt.map((x) => `  ${x.rotulo}: ${x.n}x`),
+      `Tamanho medido: ${r.origemTamanho.cabecalho + r.origemTamanho.fio} no tr\xE1fego real, ${r.origemTamanho.corpo} pelo texto aberto`,
+      `Telas redesenhadas: ${num(r.redesenhos)}`
+    ];
+    if (r.ritmo) l.push(`Ritmo: ${tamanho(r.ritmo.bytesHora)}/h, ${num(r.ritmo.avisosHora)} avisos/h, ${num(r.ritmo.cargasHora)} cargas/h`);
+    return l.join("\n");
+  }
+  function htmlMedidor(r) {
+    const proj = r.ritmo ? `<p><b>Se os 40 aparelhos fossem como este, num turno de 12 h:</b><br>
+        dados baixados: <b>${tamanho(r.ritmo.bytesHora * 12 * 40)}</b> (limite do Free: 5 GB/m\xEAs)<br>
+        mensagens de tempo real: <b>${num(r.ritmo.avisosHora * 12 * 40)}</b> por turno (limite do Free: 2 milh\xF5es/m\xEAs)</p>` : `<p style="opacity:.7">Proje\xE7\xE3o aparece depois de 5 minutos medindo.</p>`;
+    return `<h3>Medidor de tr\xE1fego</h3>
+    <p style="opacity:.8">Este aparelho, ${duracao(r.minutos)} medidos.</p>
+    <p><b>Baixado do banco:</b> ${tamanho(r.bytes)} em ${num(r.pedidos)} pedidos<br>
+       <b>Cargas:</b> ${num(r.cargas)} (${num(r.cargasCompletas)} completas, ${num(r.cargas - r.cargasCompletas)} leves)</p>
+    ${tabela(r.http, "Nenhum pedido ainda.")}
+    <p style="margin-top:12px"><b>Tempo real recebido:</b> ${num(r.avisos)} avisos (${tamanho(r.avisosBytes)})<br>
+       <b>Telas redesenhadas:</b> ${num(r.redesenhos)}</p>
+    ${tabela(r.rt, "Nenhum aviso ainda.")}
+    ${proj}
+    <p style="font-size:12px;opacity:.7">Tamanho dos pedidos: ${num(r.origemTamanho.cabecalho + r.origemTamanho.fio)} medidos no tr\xE1fego real (comprimido), ${num(r.origemTamanho.corpo)} pelo texto aberto. ${r.origemTamanho.corpo > r.origemTamanho.cabecalho + r.origemTamanho.fio ? "A maioria \xE9 texto aberto: o tr\xE1fego real no 4G \xE9 MENOR que o mostrado." : ""}</p>
+    <div class="modal-acoes">
+      <button onclick="medidorZerar()">Zerar</button>
+      <button onclick="medidorCopiar()">Copiar</button>
+      <button class="primary" onclick="fecharModal()">Fechar</button>
+    </div>`;
+  }
+  function abrirMedidor() {
+    abrirModal(htmlMedidor(resumoMedidor()));
+  }
+  function medidorZerar() {
+    zerarMedidor();
+    abrirMedidor();
+  }
+  async function medidorCopiar() {
+    const t = textoMedidor(resumoMedidor());
+    try {
+      await navigator.clipboard.writeText(t);
+      fecharModal();
+      aviso("N\xFAmeros copiados. \xC9 s\xF3 colar na conversa.", "Copiado");
+    } catch {
+      fecharModal();
+      aviso(esc(t), "N\xFAmeros do medidor");
+    }
+  }
+
+  // src/main.js
+  init_areas3();
+
   // src/data/carga.js
   init_supabase();
   init_store();
   init_horas();
   init_regras();
-  async function carregarTudo() {
+  init_areas();
+  var PULOU = { data: null, pulou: true };
+  async function carregarTudo(opts) {
+    const leve = !!(opts == null ? void 0 : opts.leve);
     const dia = hoje();
     const ini2 = dia + "T00:00:00";
     const vejoTudo = pode("viagens_cco") || pode("patio_ver");
@@ -15611,6 +16235,9 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const posicaoDesde = new Date(Date.now() - PATIO_POSICAO_VALIDA_H * 3600 * 1e3).toISOString();
     let qv = sb.from("viagens").select("*").gte("saiu_em", ini2).order("saiu_em", { ascending: false });
     if (pode("levar") && !vejoTudo && !pode("oc_chegando")) qv = qv.eq("operador_id", S.me.id);
+    let qp = sb.from("prontas").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false });
+    const areas = areasEfetivas();
+    if (areas) qp = qp.or(`area.in.(${areas.join(",")}),ciente_por.eq.${S.me.id}`);
     const pegaLocal = pegaProntas;
     const PASSOS = 12;
     UI.carga.carregando = true;
@@ -15630,29 +16257,33 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     );
     try {
       const [v, g, s, u, pr, pi, pd, bl, cd, po, bd] = await Promise.all([
-        marcar(sb.from("voos").select("*").eq("data", dia).order("chegada", { ascending: true, nullsFirst: false })),
+        marcar(leve ? PULOU : sb.from("voos").select("*").eq("data", dia).order("chegada", { ascending: true, nullsFirst: false })),
         marcar(pegaViagens ? qv : Promise.resolve({ data: [] })),
         marcar(pegaSols ? sb.from("solicitacoes").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] })),
-        marcar(sb.from("usuarios").select("id,nome,nome_de_guerra,perfil")),
-        marcar(pegaProntas ? sb.from("prontas").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] })),
-        marcar(pegaIndia ? sb.from("ponto_india").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
-        marcar(pegaDelta ? sb.from("ponto_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
+        marcar(leve ? PULOU : sb.from("usuarios").select("id,nome,nome_de_guerra,perfil")),
+        marcar(pegaProntas ? qp : Promise.resolve({ data: [] })),
+        marcar(leve ? PULOU : pegaIndia ? sb.from("ponto_india").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
+        marcar(leve ? PULOU : pegaDelta ? sb.from("ponto_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
         marcar(pegaLocal ? sb.from("bags_local").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
-        marcar(pegaCarretas ? sb.from("carretas_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
-        marcar(pegaPosicoes ? sb.from("posicoes").select("*").gte("atualizada_em", posicaoDesde) : Promise.resolve({ data: [] })),
-        marcar(pegaBaseTlc ? sb.from("bags_despachadas").select("*").eq("data", dia) : Promise.resolve({ data: [] }))
+        marcar(leve ? PULOU : pegaCarretas ? sb.from("carretas_delta").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
+        marcar(leve ? PULOU : pegaPosicoes ? sb.from("posicoes").select("*").gte("atualizada_em", posicaoDesde) : Promise.resolve({ data: [] })),
+        marcar(leve ? PULOU : pegaBaseTlc ? sb.from("bags_despachadas").select("*").eq("data", dia) : Promise.resolve({ data: [] }))
       ]);
-      D.users = (u.data || []).map((x) => ({ ...x, nome: x.nome_de_guerra || x.nome }));
-      D.voos = v.data || [];
+      if (!u.pulou) D.users = (u.data || []).map((x) => ({ ...x, nome: x.nome_de_guerra || x.nome }));
+      if (!v.pulou) D.voos = v.data || [];
       D.viagens = g.data || [];
       D.sols = s.data || [];
-      D.prontas = pr.data || [];
-      D.indias = pi.data || [];
-      D.deltas = pd.data || [];
+      let prr = pr;
+      if (areas && pr.error) {
+        prr = await sb.from("prontas").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false });
+      }
+      D.prontas = prr.data || [];
+      if (!pi.pulou) D.indias = pi.data || [];
+      if (!pd.pulou) D.deltas = pd.data || [];
       D.bagsLocal = bl.data || [];
-      D.carretasDelta = cd.data || [];
-      D.posicoes = po.data || [];
-      D.bagsDespachadas = bd.data || [];
+      if (!cd.pulou) D.carretasDelta = cd.data || [];
+      if (!po.pulou) D.posicoes = po.data || [];
+      if (!bd.pulou) D.bagsDespachadas = bd.data || [];
       const ids = D.viagens.map((x) => x.id);
       if (ids.length) {
         D.destinos = (await marcar(sb.from("viagens_destinos").select("*").in("viagem_id", ids))).data || [];
@@ -15726,12 +16357,15 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const antigas = ABAS_ANTIGAS[S.me.perfil] || [];
     const padrao = S.ferramentas.length ? "inicio" : antigas[0] || null;
     UI.tab = abaGuardada() || padrao;
+    const { iniciarAreas: iniciarAreas2, ligarAreas: ligarAreas2 } = await Promise.resolve().then(() => (init_areas3(), areas_exports));
+    iniciarAreas2();
     const { escutarTempoReal: escutarTempoReal2 } = await Promise.resolve().then(() => (init_realtime(), realtime_exports));
     escutarTempoReal2();
     const { iniciarPosicao: iniciarPosicao2, ligarPosicaoNaVisibilidade: ligarPosicaoNaVisibilidade2 } = await Promise.resolve().then(() => (init_posicao(), posicao_exports));
     iniciarPosicao2();
     ligarPosicaoNaVisibilidade2();
-    await bus.recarregar();
+    await bus.recarregar({ completa: true });
+    ligarAreas2();
   }
   async function entrar() {
     const err = $("lerr");
@@ -17017,7 +17651,7 @@ Sair mesmo assim?`
     }
     return h.toLowerCase() === "#pecas" || h.toLowerCase() === "#pe\xE7as";
   };
-  var ligado = false;
+  var ligado2 = false;
   var interceptar = true;
   var alvo = null;
   var casa = (el, sel) => el.nodeType === 1 && typeof el.matches === "function" && el.matches(sel);
@@ -17059,15 +17693,15 @@ Sair mesmo assim?`
     return `${t}px ${r}px ${b}px ${l}px  (cima, direita, baixo, esquerda)`;
   }
   function cadeia(el) {
-    const lista = [];
+    const lista2 = [];
     for (let e = el; e && e.nodeType === 1 && e !== document.body; e = e.parentElement) {
       const p = pecaDe(e, casa);
       if (!p) continue;
-      if (lista.length && lista[lista.length - 1].p === p) continue;
-      lista.push({ el: e, p });
-      if (lista.length >= 6) break;
+      if (lista2.length && lista2[lista2.length - 1].p === p) continue;
+      lista2.push({ el: e, p });
+      if (lista2.length >= 6) break;
     }
-    return lista;
+    return lista2;
   }
   function painel() {
     let p = document.getElementById("pecas-painel");
@@ -17174,8 +17808,8 @@ Sair mesmo assim?`
     e.stopPropagation();
   }
   function ligar() {
-    if (ligado) return;
-    ligado = true;
+    if (ligado2) return;
+    ligado2 = true;
     interceptar = true;
     document.documentElement.classList.add("modo-pecas");
     const s = document.createElement("style");
@@ -17190,8 +17824,8 @@ Sair mesmo assim?`
   }
   function desligar() {
     var _a;
-    if (!ligado) return;
-    ligado = false;
+    if (!ligado2) return;
+    ligado2 = false;
     alvo = null;
     document.documentElement.classList.remove("modo-pecas");
     window.removeEventListener("click", aoTocar, true);
@@ -17261,9 +17895,12 @@ Sair mesmo assim?`
   // src/main.js
   init_horas();
   init_modal();
+  init_viagens();
   init_offline_sync();
-  async function recarregar() {
-    await carregarTudo();
+  async function recarregar(opts) {
+    const completa = !!(opts == null ? void 0 : opts.completa);
+    contarCarga(completa);
+    await carregarTudo({ leve: !completa && UI.rtOk });
     renderSeguro();
   }
   bus.render = render3;
@@ -17311,7 +17948,7 @@ Sair mesmo assim?`
     render: render3,
     renderSeguro,
     irPara,
-    recarregar,
+    recarregar: () => recarregar({ completa: true }),
     entrar,
     sair,
     toggleMenu,
@@ -17321,6 +17958,17 @@ Sair mesmo assim?`
     // modais
     abrirModal,
     fecharModal,
+    // medidor de trafego (5 toques na versao do cabecalho)
+    medidorToque,
+    medidorZerar,
+    medidorCopiar,
+    // area de trabalho do operador (faixa no alto da tela e folha de escolha)
+    areasAbrir: () => abrirEscolhaAreas(false),
+    areasMarcar: marcarAreaEscolha,
+    areasConfirmar: confirmarEscolhaAreas,
+    areasCancelar: cancelarEscolhaAreas,
+    areasEspiar: espiarOutrasAreas,
+    areasVoltar: encerrarEspiar,
     // malha (CCO)
     mudarVoo,
     ordenarMalha,
