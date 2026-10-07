@@ -411,6 +411,10 @@
   .alerta-origem{background:rgba(58,124,165,.18); border-left:5px solid var(--blue); padding-left:10px}
   .alerta-destino{background:rgba(31,138,76,.18); border-left:5px solid var(--green)}
   .alerta-destino.sel{background:var(--accent-light)}
+  /* pedido de equipamento dentro do box (atualizacao_61) */
+  .alerta-equip{padding-left:10px; border-left:5px solid var(--orange)}
+  .alerta-equip.minha{background:rgba(193,91,31,.14)}
+  .equip-tipo{font-size:20px}
   /* Botao largo e no fim da carreta aberta: e a acao que termina o
      passo, e alvo de dedo de luva (48px, acima do minimo).
      Ja foi sticky (bottom:0) pra nao cair fora da area que rola. Durou
@@ -1834,9 +1838,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 07/10/2026, 08:36:37
+     Gerado em: 07/10/2026, 08:43:34
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 08:36";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 08:43";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2924,6 +2928,38 @@
     }
   });
 
+  // src/utils/rotulos.js
+  var TIPOS_EQUIPAMENTO, ROTULO;
+  var init_rotulos = __esm({
+    "src/utils/rotulos.js"() {
+      TIPOS_EQUIPAMENTO = ["QTU", "QTA", "ESTEIRA", "ESCADA", "CARRETA_VAZIA"];
+      ROTULO = {
+        TCX: "Triagem Conex\xE3o",
+        TLC: "Triagem Local",
+        BPP: "Porta a Porta",
+        BOX: "Box",
+        ESTEIRA: "Esteira",
+        CARGA: "Carga",
+        QTU: "QTU",
+        QTA: "QTA",
+        OC_BAG: "Bag faltante (OC)",
+        // Equipamento pedido do Ponto Delta (17/09/2026). ESTEIRA ja existia
+        // aqui como VIA de entrega ("largou na esteira") e serve para os dois
+        // -- o nome na tela e o mesmo. Ver sql/atualizacao_39.sql.
+        ESCADA: "Escada",
+        CARRETA_VAZIA: "Carreta vazia",
+        BAG_TLC: "Bags da TLC (OC)",
+        BAG_TCX: "Bags da TCX (OC)",
+        solicitada: "Solicitada",
+        aceita: "Aceita",
+        a_caminho: "A caminho",
+        entregue: "Entregue",
+        concluida: "Conclu\xEDda",
+        cancelada: "Cancelada"
+      };
+    }
+  });
+
   // src/core/offline-sync.js
   function erroDeRede(e) {
     if (!e) return false;
@@ -3237,7 +3273,7 @@
     const vejoTudo = pode("viagens_cco") || pode("patio_ver");
     if (vejoTudo || pode("levar") || pode("oc_chegando") || pode("triagem_sinalizar") || pode("oc_pontos"))
       t.push("viagens", "viagens_destinos");
-    if (vejoTudo || pode("sol_abrir") || pode("sol_atender") || pode("triagem_sinalizar"))
+    if (vejoTudo || pode("sol_abrir") || pode("sol_atender") || pode("triagem_sinalizar") || pode("levar"))
       t.push("solicitacoes");
     const vejoIndia = pode("oc_pontos") || pode("pontos_import") || pode("levar");
     if (vejoTudo || pode("levar") || pode("triagem_sinalizar") || vejoIndia)
@@ -3263,7 +3299,7 @@
     const opts = { event: "*", schema: "public", table: t };
     if (t === "viagens" && pode("levar") && !pode("viagens_cco") && !pode("oc_chegando"))
       opts.filter = "operador_id=eq." + S.me.id;
-    if (t === "prontas") {
+    if (t === "prontas" || t === "solicitacoes") {
       const f = filtroAreaRealtime();
       if (f) opts.filter = f;
     }
@@ -3388,6 +3424,7 @@
       return;
     }
     const row = normalizarIds(p.new);
+    if (tabela2 === "solicitacoes" && usaFiltroArea() && TIPOS_EQUIPAMENTO.indexOf(row.tipo) < 0) return;
     if ((tabela2 === "voos" || tabela2 === "ponto_india" || tabela2 === "ponto_delta" || tabela2 === "carretas_delta" || tabela2 === "bags_despachadas") && row.data !== hoje()) return;
     if (tabela2 === "viagens_destinos" && !D.viagens.some((v) => mesmoId(v.id, row.viagem_id)) && pode("levar") && !pode("viagens_cco")) {
       if (p.eventType === "INSERT") conferirDestinoSolto(row);
@@ -3406,9 +3443,10 @@
       const meu = row.solicitante_id === S.me.id || row.operador_id === S.me.id || row.criada_por === S.me.id;
       const somSol = tabela2 === "solicitacoes" && !meu && (pode("sol_atender") || pode("viagens_cco"));
       const somTlc = tabela2 === "solicitacoes" && row.tipo === "BAG_TLC" && row.status === "solicitada" && pode("triagem_sinalizar");
+      const somEq = tabela2 === "solicitacoes" && !meu && pode("levar") && row.status === "solicitada" && TIPOS_EQUIPAMENTO.indexOf(row.tipo) >= 0;
       const somVg = tabela2 === "viagens" && !meu && (pode("viagens_cco") || pode("oc_chegando"));
       const somPr = tabela2 === "prontas" && !meu && pode("levar") && !repeteLoteRecente(row.lote);
-      if (somSol || somTlc || somVg || somPr) {
+      if (somSol || somTlc || somVg || somPr || somEq) {
         beep();
         if (navigator.vibrate) navigator.vibrate(250);
       }
@@ -3425,6 +3463,7 @@
       init_medidor();
       init_viagens();
       init_areas();
+      init_rotulos();
       init_bus();
       init_offline_sync();
       CHAVE3 = {
@@ -4134,34 +4173,7 @@
   // src/ui/screens/telaTriagem.js
   init_store();
   init_dom();
-
-  // src/utils/rotulos.js
-  var ROTULO = {
-    TCX: "Triagem Conex\xE3o",
-    TLC: "Triagem Local",
-    BPP: "Porta a Porta",
-    BOX: "Box",
-    ESTEIRA: "Esteira",
-    CARGA: "Carga",
-    QTU: "QTU",
-    QTA: "QTA",
-    OC_BAG: "Bag faltante (OC)",
-    // Equipamento pedido do Ponto Delta (17/09/2026). ESTEIRA ja existia
-    // aqui como VIA de entrega ("largou na esteira") e serve para os dois
-    // -- o nome na tela e o mesmo. Ver sql/atualizacao_39.sql.
-    ESCADA: "Escada",
-    CARRETA_VAZIA: "Carreta vazia",
-    BAG_TLC: "Bags da TLC (OC)",
-    BAG_TCX: "Bags da TCX (OC)",
-    solicitada: "Solicitada",
-    aceita: "Aceita",
-    a_caminho: "A caminho",
-    entregue: "Entregue",
-    concluida: "Conclu\xEDda",
-    cancelada: "Cancelada"
-  };
-
-  // src/ui/screens/telaTriagem.js
+  init_rotulos();
   init_horas();
 
   // src/ui/components/grades.js
@@ -4217,6 +4229,7 @@
   }
 
   // src/ui/components/grades.js
+  init_rotulos();
   init_horas();
   function destinoInfo(d) {
     if (d.setor_destino) {
@@ -4898,10 +4911,14 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   async function fecharPedidosTlcDoVoo(vooId) {
     return sb.rpc("fechar_pedidos_tlc_do_voo", { p_voo_id: vooId });
   }
+  var aceitarEquipamentoDb = (id) => sb.rpc("aceitar_equipamento", { p_id: id });
+  var soltarEquipamentoDb = (id) => sb.rpc("soltar_equipamento", { p_id: id });
+  var concluirEquipamentoDb = (id) => sb.rpc("concluir_equipamento", { p_id: id });
 
   // src/ui/screens/telaSolicitacoes.js
   init_store();
   init_dom();
+  init_rotulos();
   function listaSolicitacoes(sols, mostraTudo, opcoes) {
     if (!sols.length) return `<div class="card note">Nenhuma solicita\xE7\xE3o hoje.</div>`;
     const semAtender = !!(opcoes == null ? void 0 : opcoes.semAtender);
@@ -4957,6 +4974,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   }
 
   // src/ui/screens/telaPontos.js
+  init_rotulos();
   init_patio();
   init_conexoes();
   init_modal();
@@ -6364,6 +6382,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
   // src/ui/screens/telaOperador.js
   init_store();
   init_dom();
+  init_rotulos();
   init_horas();
   init_viagens();
   init_conexoes();
@@ -11982,6 +12001,14 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     } catch (e) {
     }
   }
+  function equipNotificaveis() {
+    if (!pode("levar")) return [];
+    return D.sols.filter((s) => TIPOS_EQUIPAMENTO.indexOf(s.tipo) >= 0 && (s.status === "solicitada" || (s.status === "aceita" || s.status === "a_caminho") && s.atendente_id === S.me.id)).sort((a, b) => urgenciaDoVoo(a.voo_id) - urgenciaDoVoo(b.voo_id));
+  }
+  var boxDoEquip = (e) => {
+    var _a;
+    return e.box || (e.voo_id != null ? (_a = voo(e.voo_id)) == null ? void 0 : _a.box : null) || null;
+  };
   function gruposDeAlerta() {
     const porTipo = /* @__PURE__ */ new Map();
     for (const p of prontasNotificaveis()) {
@@ -12000,7 +12027,20 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
         if (!porLugar.has(lugar)) porLugar.set(lugar, []);
         porLugar.get(lugar).push(p);
       }
-      const sub = [...porLugar.values()].map((sps) => ({ lugar: lugarDaPronta(sps[0]), box: sps[0].box, ps: sps, urg: urgenciaDaPronta(sps[0]) }));
+      const sub = [...porLugar.values()].map((sps) => ({ lugar: lugarDaPronta(sps[0]), box: sps[0].box, ps: sps, equip: [], urg: urgenciaDaPronta(sps[0]) }));
+      if (tipo === "BOX") {
+        for (const e of equipNotificaveis()) {
+          const box = boxDoEquip(e);
+          const lugar = `BOX ${box || "?"}`;
+          let s = sub.find((x) => x.lugar === lugar);
+          if (!s) {
+            s = { lugar, box, ps: [], equip: [], urg: Infinity };
+            sub.push(s);
+          }
+          s.equip.push(e);
+          s.urg = Math.min(s.urg, urgenciaDoVoo(e.voo_id));
+        }
+      }
       sub.sort((a, b) => a.urg - b.urg);
       gs.push({ tipo, sub, carga });
     }
@@ -12464,6 +12504,35 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     UI.modalVivo = { tipo: "viagem" };
     bus.recarregar();
   }
+  function linhasEquip(s) {
+    return (s.equip || []).map((e) => {
+      const minha = e.status !== "solicitada" && e.atendente_id === S.me.id;
+      const v = e.voo_id != null ? voo(e.voo_id) : null;
+      const desde = e.criada_em ? Math.max(0, Math.round((Date.now() - new Date(e.criada_em).getTime()) / 6e4)) : null;
+      const acoes = minha ? `<button class="alerta-acao ghost" onclick="soltarEquipamento(${e.id})" aria-label="Desfazer aceite">${ico("cancelar", 20)}</button>
+         <button class="alerta-acao ok" onclick="concluirEquipamento(${e.id})" aria-label="Concluir">${ico("check", 20)}</button>` : `<button class="alerta-acao primary" onclick="aceitarEquipamento(${e.id})" aria-label="Aceitar">${ico("thumb_up", 20)}</button>`;
+      return `<div class="list-line alerta-linha alerta-equip${minha ? " minha" : ""}">
+      <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <b class="equip-tipo">${esc(ROTULO[e.tipo] || e.tipo)}</b>
+        ${v ? vooRotulo(v, "saida", { box: false }) : ""}
+        ${desde != null ? `<span class="note">h\xE1 ${desde} min</span>` : ""}
+      </span>
+      ${acoes}
+    </div>`;
+    }).join("");
+  }
+  async function mudarEquipamento(fn, id, msgPerdeu) {
+    const { data, error } = await fn(id);
+    if (error) {
+      await erro(error);
+      return;
+    }
+    if (data === false) await aviso(msgPerdeu);
+    await bus.recarregar();
+  }
+  var aceitarEquipamento = (id) => mudarEquipamento(aceitarEquipamentoDb, id, "Outro operador j\xE1 aceitou este pedido.");
+  var soltarEquipamento = (id) => mudarEquipamento(soltarEquipamentoDb, id, "Este pedido j\xE1 n\xE3o est\xE1 com voc\xEA.");
+  var concluirEquipamento = (id) => mudarEquipamento(concluirEquipamentoDb, id, "Este pedido j\xE1 n\xE3o est\xE1 com voc\xEA.");
   function linhaLugar(tipo, s) {
     const pendentes = s.ps.filter((p) => p.status === "pronta");
     const meusCientes = s.ps.filter((p) => p.status === "ciente" && p.ciente_por === S.me.id);
@@ -12476,11 +12545,11 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     return `<div class="list-line alerta-linha${tipo === "BOX" && s.box ? " alerta-origem" : ""}">
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       ${s.box ? `Chamando no ${placaBox(s.box, "saida")}` : `<span${sig("Bags prontas para buscar neste lugar")}>${ico("pousando", 20)}</span>`}
-      <span class="alerta-contagem">${totalVoos} voo${totalVoos === 1 ? "" : "s"}</span>
+      ${totalVoos > 0 ? `<span class="alerta-contagem">${totalVoos} voo${totalVoos === 1 ? "" : "s"}</span>` : ""}
       ${urgentes > 0 ? `<span class="alerta-urgentes"${sig(`${urgentes} voo${urgentes === 1 ? "" : "s"} com sa\xEDda em menos de 15 min (timer vermelho)`)}>${ico("alerta", 16)} ${urgentes}</span>` : ""}
     </span>
     ${cancelar}${olho}
-  </div>${aberto ? carretasDoAlerta(tipo, s) : ""}`;
+  </div>${tipo === "BOX" ? linhasEquip(s) : ""}${aberto ? carretasDoAlerta(tipo, s) : ""}`;
   }
   function carretasDoAlerta(tipo, s) {
     const grupos2 = carretasDoLugar(s.ps);
@@ -13962,6 +14031,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   // src/ui/screens/telaViagensCCO.js
   init_store();
   init_dom();
+  init_rotulos();
   init_horas();
   init_regras();
   var nomeVia = (via) => via === "ESTEIRA" ? "Esteira" : via;
@@ -14091,6 +14161,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   // src/ui/screens/telaOC.js
   init_store();
   init_dom();
+  init_rotulos();
   init_modal();
   init_horas();
   init_bus();
@@ -14355,6 +14426,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   init_store();
   init_conexoes();
   init_horas();
+  init_rotulos();
   init_regras();
   var nb = (v) => v == null || String(v).trim() === "" ? null : String(v).trim().toUpperCase().replace(/^0+(?=\d)/, "");
   var mins = (x) => Math.max(0, Math.round(x));
@@ -16232,6 +16304,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   init_horas();
   init_regras();
   init_areas();
+  init_rotulos();
   var PULOU = { data: null, pulou: true };
   async function carregarTudo(opts) {
     const leve = !!(opts == null ? void 0 : opts.leve);
@@ -16239,7 +16312,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const ini2 = dia + "T00:00:00";
     const vejoTudo = pode("viagens_cco") || pode("patio_ver");
     const pegaViagens = vejoTudo || pode("levar") || pode("oc_chegando") || pode("triagem_sinalizar") || pode("oc_pontos");
-    const pegaSols = pode("sol_abrir") || pode("sol_atender") || pode("triagem_sinalizar") || pode("delta_carretas") || vejoTudo;
+    const pegaSols = pode("sol_abrir") || pode("sol_atender") || pode("triagem_sinalizar") || pode("delta_carretas") || pode("levar") || vejoTudo;
     const pegaIndia = pode("oc_pontos") || pode("pontos_import") || pode("levar") || vejoTudo;
     const pegaProntas = vejoTudo || pode("levar") || pode("triagem_sinalizar") || pegaIndia;
     const pegaDelta = pegaIndia || vejoTudo || pode("levar") || pode("triagem_sinalizar");
@@ -16252,6 +16325,13 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     let qp = sb.from("prontas").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false });
     const areas = areasEfetivas();
     if (areas) qp = qp.or(`area.in.(${areas.join(",")}),ciente_por.eq.${S.me.id}`);
+    const qsBase = () => sb.from("solicitacoes").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false });
+    const soEquip = usaFiltroArea();
+    let qs = qsBase();
+    if (soEquip) {
+      qs = qs.in("tipo", TIPOS_EQUIPAMENTO).in("status", ["solicitada", "aceita", "a_caminho"]);
+      if (areas) qs = qs.or(`area.in.(${areas.join(",")}),atendente_id.eq.${S.me.id}`);
+    }
     const pegaLocal = pegaProntas;
     const PASSOS = 12;
     UI.carga.carregando = true;
@@ -16273,7 +16353,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       const [v, g, s, u, pr, pi, pd, bl, cd, po, bd] = await Promise.all([
         marcar(leve ? PULOU : sb.from("voos").select("*").eq("data", dia).order("chegada", { ascending: true, nullsFirst: false })),
         marcar(pegaViagens ? qv : Promise.resolve({ data: [] })),
-        marcar(pegaSols ? sb.from("solicitacoes").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false }) : Promise.resolve({ data: [] })),
+        marcar(pegaSols ? qs : Promise.resolve({ data: [] })),
         marcar(leve ? PULOU : sb.from("usuarios").select("id,nome,nome_de_guerra,perfil")),
         marcar(pegaProntas ? qp : Promise.resolve({ data: [] })),
         marcar(leve ? PULOU : pegaIndia ? sb.from("ponto_india").select("*").eq("data", dia) : Promise.resolve({ data: [] })),
@@ -16287,6 +16367,10 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       if (!v.pulou) D.voos = v.data || [];
       D.viagens = g.data || [];
       D.sols = s.data || [];
+      if (soEquip && areas && s.error) {
+        const r2 = await qsBase().in("tipo", TIPOS_EQUIPAMENTO).in("status", ["solicitada", "aceita", "a_caminho"]);
+        D.sols = r2.data || [];
+      }
       let prr = pr;
       if (areas && pr.error) {
         prr = await sb.from("prontas").select("*").gte("criada_em", ini2).order("criada_em", { ascending: false });
@@ -18052,6 +18136,9 @@ Sair mesmo assim?`
     aceitarSolicitacao,
     pegarSolicitacao,
     cancelarSolicitacao,
+    aceitarEquipamento,
+    soltarEquipamento,
+    concluirEquipamento,
     aceitarBox,
     cancelarAceiteBox,
     abrirEscolhaVoosBox,
