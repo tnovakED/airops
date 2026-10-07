@@ -1834,9 +1834,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 07/10/2026, 08:27:56
+     Gerado em: 07/10/2026, 08:36:37
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 08:27";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 08:36";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -4905,6 +4905,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   function listaSolicitacoes(sols, mostraTudo, opcoes) {
     if (!sols.length) return `<div class="card note">Nenhuma solicita\xE7\xE3o hoje.</div>`;
     const semAtender = !!(opcoes == null ? void 0 : opcoes.semAtender);
+    const cancelarOnclick = (id) => (opcoes == null ? void 0 : opcoes.vooPopup) != null ? `cancelarEquipamentoDelta(${id},${opcoes.vooPopup})` : `mudarSol(${id},'cancelada')`;
     return sols.map((s) => {
       const v = s.voo_id ? voo(s.voo_id) : null;
       const vc = s.voo_origem_id ? voo(s.voo_origem_id) : null;
@@ -4921,7 +4922,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
         ${s.status === "solicitada" && podeAceitar ? `<button class="small ok" onclick="mudarSol(${s.id},'aceita')">Aceitar</button>` : ""}
         ${!semAtender && s.status === "aceita" && (minha || mostraTudo) ? `<button class="small" onclick="mudarSol(${s.id},'a_caminho')">A caminho</button>` : ""}
         ${!semAtender && (s.status === "aceita" || s.status === "a_caminho") && (minha || mostraTudo) ? `<button class="small ok" onclick="mudarSol(${s.id},'concluida')">Concluir</button>` : ""}
-        ${s.status !== "concluida" && s.status !== "cancelada" && (s.solicitante_id === S.me.id || mostraTudo) ? `<button class="small ghost" onclick="mudarSol(${s.id},'cancelada')">Cancelar</button>` : ""}
+        ${s.status !== "concluida" && s.status !== "cancelada" && (s.solicitante_id === S.me.id || mostraTudo) ? `<button class="small ghost" onclick="${cancelarOnclick(s.id)}">Cancelar</button>` : ""}
       </div>
     </div>`;
     }).join("");
@@ -6021,7 +6022,7 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
     <p class="note">Um toque pede um. Precisa de dois? Toque duas vezes.</p>
     <div class="equip-grid">${botoes}</div>
     <div class="board-title"><h2>J\xE1 pedido para este voo</h2></div>
-    ${doVoo.length ? listaSolicitacoes(doVoo, false, { semAtender: true }) : `<div class="card note">Nada pedido para este voo hoje.</div>`}
+    ${doVoo.length ? listaSolicitacoes(doVoo, false, { semAtender: true, vooPopup: vooId }) : `<div class="card note">Nada pedido para este voo hoje.</div>`}
     <div class="equip-pe"><button class="ghost" onclick="abrirPontoDelta(${vooId})">Voltar</button></div>`);
   }
   async function pedirEquipamentoDelta(vooId, tipo) {
@@ -6033,6 +6034,15 @@ O que j\xE1 foi pego por um operador n\xE3o \xE9 afetado.`);
       voo_id: vooId,
       descricao: `${rotulo2} \u2014 box ${v.box || "?"}`
     });
+    if (error) {
+      await erro(error);
+      return;
+    }
+    await bus.recarregar();
+    return abrirEquipamentosDelta(vooId);
+  }
+  async function cancelarEquipamentoDelta(id, vooId) {
+    const { error } = await mudarStatusSolicitacao(id, "cancelada");
     if (error) {
       await erro(error);
       return;
@@ -18127,6 +18137,7 @@ Sair mesmo assim?`
     aoContarDelta,
     abrirEquipamentosDelta,
     pedirEquipamentoDelta,
+    cancelarEquipamentoDelta,
     abrirAvisoPpDelta,
     marcarAvisoPp,
     abrirBagDeOutroVoo,
