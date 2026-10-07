@@ -1396,6 +1396,7 @@
   button.india-substituir{width:auto; padding:0 10px; flex:none}
   button.india-substituir{margin-bottom:8px}
   .india-rodape, .india-rodape-botao{margin-top:12px}
+  .india-rodape-botao{display:inline-flex;align-items:center;gap:6px}
   /* P R D: uma coluna por letra, cor por significado (nao por espaco) */
   .prd{display:flex; gap:8px; align-items:flex-end}
   .prd-col{text-align:center; line-height:1.15}
@@ -1827,9 +1828,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 05/10/2026, 10:55:13
+     Gerado em: 07/10/2026, 07:20:25
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="05/10 10:55";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 07:20";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2055,16 +2056,7 @@
         const via = d && d.entrega_via || "PP";
         return via === "PP" || via === "VOO";
       };
-      bagMisturada = (p) => {
-        if ((p == null ? void 0 : p.ponto_delta_id) == null) return false;
-        const pd = D.deltas.find((x) => mesmoId(x.id, p.ponto_delta_id));
-        if (!pd || pd.carreta_id == null) return false;
-        const irmas = D.deltas.filter((x) => mesmoId(x.carreta_id, pd.carreta_id));
-        if (irmas.length <= 1) return false;
-        const doLote = D.prontas.filter((x) => p.lote ? x.lote === p.lote : x.id === p.id);
-        const cobertas = new Set(doLote.map((x) => Number(x.ponto_delta_id)));
-        return irmas.some((x) => !cobertas.has(Number(x.id)));
-      };
+      bagMisturada = (p) => (p == null ? void 0 : p.misturada) === true;
       pode = (id) => S.ferramentas.some((f) => f.id === id);
     }
   });
@@ -4327,7 +4319,7 @@
   init_supabase();
   init_store();
   init_offline_sync();
-  async function sinalizarProntaDb(setor, vooId, box, pontoIndiaId, qtd) {
+  async function sinalizarProntaDb(setor, vooId, box, pontoIndiaId, qtd, misturada) {
     try {
       const res = await sb.from("prontas").insert({
         setor,
@@ -4336,13 +4328,15 @@
         criada_por: S.me.id,
         ponto_india_id: pontoIndiaId || null,
         // Nula quando quem sinalizou nao soube dizer (atualizacao_43.sql).
-        qtd: qtd != null ? qtd : null
+        qtd: qtd != null ? qtd : null,
+        // So o botao BAG MISTURADA marca (atualizacao_60.sql).
+        ...misturada ? { misturada: true } : {}
       });
       if ((res == null ? void 0 : res.error) && erroDeRede(res.error)) throw res.error;
       return res;
     } catch (e) {
       if (erroDeRede(e)) {
-        enfileirarAcao("sinalizar_pronta", { setor, vooId, box, pontoIndiaId, qtd });
+        enfileirarAcao("sinalizar_pronta", { setor, vooId, box, pontoIndiaId, qtd, misturada });
         return { error: null, fila: true };
       }
       throw e;
@@ -5737,12 +5731,12 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
     const v = voo(vooId) || {};
     const lista2 = voosParaBagDeOutro(vooId);
     if (!lista2.length) {
-      return abrirModal(`<h3>Bag de outro voo</h3>
+      return abrirModal(`<h3>Bag misturada</h3>
       <p class="note">Nenhum outro voo com sa\xEDda pela frente hoje.</p>
       <div style="margin-top:12px"><button class="ghost" onclick="abrirPontoIndiaOC(${vooId})">Voltar</button></div>`);
     }
     abrirModal(`
-    <h3>Bag de outro voo</h3>
+    <h3>Bag misturada</h3>
     <p class="note">Chegou no box ${esc(v.box || "?")} bagagem que \xE9 de outro voo.
       Avise, e ela vira um pedido para algu\xE9m buscar.</p>
     <label style="display:block;margin-top:10px">De qual voo \xE9 a bagagem?</label>
@@ -5778,7 +5772,7 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
     if (!destinoId) return;
     const v = voo(vooId) || {};
     try {
-      await sinalizarProntaDb("BOX", destinoId, v.box || null, null, qtd != null ? qtd : null);
+      await sinalizarProntaDb("BOX", destinoId, v.box || null, null, qtd != null ? qtd : null, true);
     } catch (e) {
       await erro(e);
       return;
@@ -6230,7 +6224,7 @@ Fica registrado quem confirmou e quando. O voo continua aparecendo na grade de b
     </details>` : "";
     const corpo = lista2.length ? acordeao("Conectando neste voo", normais) + acordeao("SIGA \u2014 segue na 2\xAA perna", sigaLista, "india-siga") : `<p class="note">Nada importado do \xCDndia pra esse voo.</p>`;
     const substituir = !pode("pontos_import") ? "" : `<button class="small ghost india-substituir" onclick="abrirSubstituirPonto('india',${vooId})">Substituir</button>`;
-    const bagDeOutro = pode("oc_pontos") ? `<button class="ghost india-rodape-botao" onclick="abrirBagDeOutroVoo(${vooId})">Bag de outro voo</button>` : "";
+    const bagDeOutro = pode("oc_pontos") ? `<button class="ghost india-rodape-botao" onclick="abrirBagDeOutroVoo(${vooId})">${ico("pacote", 18)} BAG MISTURADA</button>` : "";
     const carga = botaoCarga(vooId);
     const local = (botaoTriagemLocal(vooId) || tratorTlcDoVoo(vooId)) + chipTlcDoVoo(vooId);
     return `<div class="delta-popup india-popup"><div class="delta-cabeca">${substituir}
@@ -12071,7 +12065,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
   function carretasDoLugar(ps) {
     const porChave = /* @__PURE__ */ new Map();
     for (const p of ps) {
-      const chave = p.lote || "avulsas";
+      const chave = p.misturada ? `m${p.id}` : p.lote || "avulsas";
       if (!porChave.has(chave))
         porChave.set(chave, { chave, nome: p.carreta_nome || (p.lote ? "Carreta" : "Avulsas"), ps: [] });
       porChave.get(chave).ps.push(p);
@@ -12494,7 +12488,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
           <span class="grow">${rotuloDaPronta(p, v)}${qtdDaPronta(p)}</span>
           ${ehProntaDaBase(p) ? "" : timerAlerta(v)}
         </div>
-        <div class="bag-misturada" title="Esta bag foi chamada sozinha, mas est\xE1 no meio da carreta ${esc(c.nome)} \u2014 vai ter que separar">BAG MISTURADA</div>
+        <div class="bag-misturada" title="Chegou no box bag de outro voo \u2014 vai ter que separar">BAG MISTURADA</div>
         <button class="primary alerta-pegar" onclick="pegarDoAlerta('${tipo}',${boxArg},[${p.id}],[${p.id}])">PEGAR</button>`;
       }
       const aberta = a && a.lugar === s.lugar && a.chave === c.chave;
@@ -15343,7 +15337,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     if (v.onde.length) h.push(linha("Onde est\xE1 o que falta", esc(v.onde.join(", ")), fonte("bags_local \xB7 viagens")));
     h.push(vindoESaindo(c, k));
     const ped = c.pedidos.filter((p) => p.box === k);
-    if (ped.length) h.push(linha("Pedidos", ped.map((p) => `${esc((p.tipo === "Carreta" ? `Carreta${p.nome ? ` \u201C${p.nome}\u201D` : ""} \xB7 ${p.voos} voos` : p.tipo) + (p.desde != null ? ` \xB7 h\xE1 ${mins(n - p.desde)} min` : ""))} \xB7 <span class="ruim">sem ningu\xE9m</span>${p.misturada ? ` <span class="bag-misturada" title="Chamada sozinha, mas a bag est\xE1 no meio de uma carreta montada">BAG MISTURADA</span>` : ""}`).join("<br>"), fonte("solicitacoes \xB7 prontas")));
+    if (ped.length) h.push(linha("Pedidos", ped.map((p) => `${esc((p.tipo === "Carreta" ? `Carreta${p.nome ? ` \u201C${p.nome}\u201D` : ""} \xB7 ${p.voos} voos` : p.tipo) + (p.desde != null ? ` \xB7 h\xE1 ${mins(n - p.desde)} min` : ""))} \xB7 <span class="ruim">sem ningu\xE9m</span>${p.misturada ? ` <span class="bag-misturada" title="Bag de outro voo chegou no box">BAG MISTURADA</span>` : ""}`).join("<br>"), fonte("solicitacoes \xB7 prontas")));
     h.push(aquiAgora(c, k));
     return h.join("");
   }
@@ -16630,7 +16624,7 @@ Sair mesmo assim?`
       seletor: ".bag-misturada",
       grupo: "alerta",
       arquivo: "screens/telaOperador.js",
-      desc: '"BAG MISTURADA", em laranja: o l\xEDder chamou esse voo sozinho, mas a bag dele est\xE1 no meio de uma carreta montada \u2014 vai ter que separar. Aparece tamb\xE9m no painel de opera\xE7\xE3o.'
+      desc: '"BAG MISTURADA", em laranja: o l\xEDder avisou, pelo bot\xE3o BAG MISTURADA do Ponto \xCDndia, que chegou no box bag de outro voo \u2014 vai ter que separar. Aparece tamb\xE9m no painel de opera\xE7\xE3o.'
     },
     {
       nome: "selo-decola-ja",
@@ -17917,7 +17911,7 @@ Sair mesmo assim?`
     // Recusa DEVOLVIDA na reexecucao (RLS etc.) tem que subir: a fila so
     // mostra o erro de quem lanca, e sem isto o alerta era descartado calado.
     sinalizar_pronta: async (p) => {
-      const r = await sinalizarProntaDb(p.setor, p.vooId, p.box, p.pontoIndiaId, p.qtd);
+      const r = await sinalizarProntaDb(p.setor, p.vooId, p.box, p.pontoIndiaId, p.qtd, p.misturada);
       if (r == null ? void 0 : r.error) throw r.error;
     },
     sinalizar_carreta_tcx: async (p) => {
