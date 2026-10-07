@@ -10,7 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=SUSE+Mono:wght@300..700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; connect-src https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2" integrity="sha384-WgXwGL6fUsYJWNaKJgVbrJKGRQwc1vieh2oy4kw9nXqpNDz3tdSsqEYUgeHD/NuF" crossorigin="anonymous"></script>
 <style>
   /* Paleta clara, trocada em 30/08/2026 (decisao do Tiago — ver
      docs/decisoes.md e .claude/skills/tela-de-patio/SKILL.md, secao
@@ -1838,9 +1839,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 07/10/2026, 08:43:34
+     Gerado em: 07/10/2026, 19:44:19
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 08:43";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 19:44";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -1870,6 +1871,11 @@
       localStorage.setItem(CHAVE_MENU, aberto ? "1" : "0");
     } catch {
     }
+  }
+  function filaDoUsuario() {
+    var _a;
+    const uid = (_a = S.me) == null ? void 0 : _a.id;
+    return UI.filaOffline.filter((i) => !i.uid || i.uid === uid);
   }
   function limparEstado() {
     Object.keys(D).forEach((k) => {
@@ -2132,7 +2138,7 @@
     } catch (e) {
     }
   }
-  var $, esc, sig, hora;
+  var $, esc, ESC_JS, jsq, classeSegura, sig, hora;
   var init_dom = __esm({
     "src/utils/dom.js"() {
       $ = (id) => document.getElementById(id);
@@ -2140,6 +2146,9 @@
         /[&<>"']/g,
         (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
       );
+      ESC_JS = { "\\": "\\\\", "'": "\\x27", '"': "\\x22", "<": "\\x3c", ">": "\\x3e", "&": "\\x26", "\r": "\\r", "\n": "\\n", "\u2028": "\\u2028", "\u2029": "\\u2029" };
+      jsq = (s) => `'${String(s != null ? s : "").replace(/[\\'"<>&\r\n\u2028\u2029]/g, (c) => ESC_JS[c])}'`;
+      classeSegura = (s) => /^[a-z0-9_]{1,40}$/.test(String(s != null ? s : "")) ? String(s) : "desconhecido";
       sig = (texto, passa) => {
         const t = esc(texto);
         return ` title="${t}" data-sig="${t}"${passa ? " data-sig-passa" : ""}`;
@@ -2995,7 +3004,11 @@
       id: gerarId(),
       tipo,
       payload,
-      criadaEm: (/* @__PURE__ */ new Date()).toISOString()
+      criadaEm: (/* @__PURE__ */ new Date()).toISOString(),
+      // Dono da acao: o replay roda so para ele. Sem isto, no aparelho
+      // compartilhado, a acao do colega A era executada e atribuida ao B que
+      // entrasse depois (auditoria 07/10/2026).
+      uid: S.me ? S.me.id : null
     });
     gravar();
     bus.renderSeguro();
@@ -3008,28 +3021,36 @@
     if (rodando) return;
     rodando = true;
     try {
-      const tinhaAlgo = UI.filaOffline.length > 0;
-      while (UI.filaOffline.length) {
-        const item = UI.filaOffline[0];
+      let adotou = false;
+      for (const i of UI.filaOffline) if (!i.uid) {
+        i.uid = S.me.id;
+        adotou = true;
+      }
+      if (adotou) gravar();
+      const tinhaAlgo = filaDoUsuario().length > 0;
+      const tirar = (item) => {
+        const k = UI.filaOffline.indexOf(item);
+        if (k >= 0) UI.filaOffline.splice(k, 1);
+        gravar();
+      };
+      while (filaDoUsuario().length) {
+        const item = filaDoUsuario()[0];
         const executar = executores[item.tipo];
         if (!executar) {
-          UI.filaOffline.shift();
-          gravar();
+          tirar(item);
           continue;
         }
         try {
           await executar(item.payload);
-          UI.filaOffline.shift();
-          gravar();
+          tirar(item);
         } catch (e) {
           if (erroDeRede(e)) break;
-          UI.filaOffline.shift();
-          gravar();
+          tirar(item);
           erro(e);
         }
       }
       bus.renderSeguro();
-      if (tinhaAlgo && !UI.filaOffline.length) bus.recarregar({ completa: true });
+      if (tinhaAlgo && !filaDoUsuario().length) bus.recarregar({ completa: true });
     } finally {
       rodando = false;
     }
@@ -3042,7 +3063,7 @@
       });
     }
     setInterval(() => {
-      if (UI.filaOffline.length) processarFilaOffline();
+      if (filaDoUsuario().length) processarFilaOffline();
     }, 3e4);
   }
   var CHAVE2, PADROES_REDE, executores, rodando;
@@ -4272,7 +4293,7 @@
       const faltas = vs.map(minutosParaPousar).filter((m) => m != null);
       const timer2 = faltas.length ? Math.min(...faltas) : null;
       if (compacta) {
-        return `<div class="bxq-wrap" onclick="${fn}('${esc(b)}')">
+        return `<div class="bxq-wrap" onclick="${fn}(${jsq(b)})">
       <div class="bxq bxq-ic bx-${est} ${String(selecionado) === String(b) ? "sel" : ""}">
       ${vs.length > 1 ? `<span class="bxq-n"${sig(`${vs.length} voos disputando este box \u2014 toque no box para escolher`, true)}>${vs.length}</span>` : ""}
       <span class="bxq-num">${esc(b)}</span>
@@ -4282,7 +4303,7 @@
     </div>
     </div>`;
       }
-      return `<div class="voo-btn bx-${est} ${String(selecionado) === String(b) ? "sel" : ""}" onclick="${fn}('${esc(b)}')">
+      return `<div class="voo-btn bx-${est} ${String(selecionado) === String(b) ? "sel" : ""}" onclick="${fn}(${jsq(b)})">
       <div class="linha-c">${vs.map((v) => vooRotulo(v, "chegada")).join(" ")}</div>
       <div class="bx-estado"><span${sig("Hor\xE1rio de pouso previsto deste voo")}>${ico("pousando", 14)}</span> ${esc(vs[0].chegada || "")}${est === "ok" ? " \xB7 descarga OK" : est === "descarregando" ? " \xB7 descarregando" : est === "chegando" ? " \xB7 ainda vai pousar" : ""}${pend ? " \xB7 bag em curso" : ""}</div>
     </div>`;
@@ -4931,7 +4952,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
       return `<div class="card">
       <div class="list-line" style="border:none;padding:0">
         <b class="grow">${ROTULO[s.tipo]}${v ? ` \xB7 ${vooRotulo(v, "saida")}` : ""}${vc ? ` \xB7 bag de ${vooRotulo(vc, "chegada", { box: false })}` : ""}</b>
-        <span class="chip st-${s.status}">${ROTULO[s.status]}</span>
+        <span class="chip st-${classeSegura(s.status)}">${ROTULO[s.status]}</span>
       </div>
       ${s.descricao ? `<div class="note">${esc(s.descricao)}</div>` : ""}
       <div class="note">Pedido: ${esc(nomeDe(s.solicitante_id))} ${hora(s.criada_em)}${s.atendente_id ? ` \xB7 Atendendo: ${esc(nomeDe(s.atendente_id))}` : ""}</div>
@@ -5174,7 +5195,7 @@ Conex\xF5es: ${data.total}, Total Bags: ${totalBag}.
   function verLogPonto(vooId, tipo) {
     const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId === vooId && e.tipo === tipo);
     if (!entradas.length) return;
-    aviso(entradas.map((e) => e.texto).join("\n"), tipo === "delta" ? "Log do Ponto Delta" : "Log do Ponto \xCDndia");
+    aviso(entradas.map((e) => esc(e.texto)).join("\n"), tipo === "delta" ? "Log do Ponto Delta" : "Log do Ponto \xCDndia");
   }
   function blocoContingencia(tipo, numero, vooLinha, textos) {
     const nome = tipo === "delta" ? "DELTA" : "\xCDNDIA";
@@ -5235,7 +5256,7 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
   function verLogAnomalias() {
     const entradas = (UI.indiaEntradas || []).filter((e) => e.vooId == null);
     if (!entradas.length) return;
-    aviso(entradas.map((e) => e.texto).join("\n"), "Avisos da importa\xE7\xE3o");
+    aviso(entradas.map((e) => esc(e.texto)).join("\n"), "Avisos da importa\xE7\xE3o");
   }
   var proximoQuadro2 = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (cb) => setTimeout(cb, 0);
   async function importarPontos() {
@@ -5563,7 +5584,7 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
     return `<div class="balde-delta">
     <div class="balde-cor${aberto ? " aberto" : ""}" style="--matiz:${matiz}">
     <div class="list-line balde-cabeca">
-      <span class="balde-alterna" onclick="alternarBaldeDelta('${esc(balde.chave)}',${vooId})">
+      <span class="balde-alterna" onclick="alternarBaldeDelta(${jsq(balde.chave)},${vooId})">
         <span class="acordeon-seta">${ico("seta", 14)}</span>
         <b class="grow">${esc(balde.nome)}</b>
         <span class="note">${balde.itens.length}</span>
@@ -5872,7 +5893,7 @@ O sql/atualizacao_58.sql j\xE1 foi aplicado?`, "Conting\xEAncia");
     const jaChamadas = balde.base ? prontasDaBase(vooId).length : 0;
     const pergunta = balde.base ? jaChamadas ? `Chamar mais um operador para as bags da base?
 
-J\xE1 foram chamados ${jaChamadas}.` : "Chamar operador para as bags da base deste voo?" : `Chamar o operador DE NOVO para \u201C${balde.nome}\u201D \u2014 ${alvo2.destinos.length} voo${alvo2.destinos.length === 1 ? "" : "s"}?
+J\xE1 foram chamados ${jaChamadas}.` : "Chamar operador para as bags da base deste voo?" : `Chamar o operador DE NOVO para \u201C${esc(balde.nome)}\u201D \u2014 ${alvo2.destinos.length} voo${alvo2.destinos.length === 1 ? "" : "s"}?
 
 Use quando sobrou bag depois da primeira carreta. Vai gerar um chamado novo, al\xE9m dos que j\xE1 existem.`;
     const ok = await confirmar(pergunta);
@@ -5949,14 +5970,14 @@ Use quando sobrou bag depois da primeira carreta. Vai gerar um chamado novo, al\
       await aviso("Esse voo do Delta n\xE3o est\xE1 na malha de hoje \u2014 n\xE3o d\xE1 pra solicitar.");
       return;
     }
-    const rotulo2 = `${pd.destino || ""}-${pd.voo_saida_numero}`;
+    const rotulo2 = esc(`${pd.destino || ""}-${pd.voo_saida_numero}`);
     const ativa = prontaAtivaDaConexao(pd);
     if (ativa && ativa.status === "pronta") {
       await aviso(`${rotulo2} j\xE1 est\xE1 na tela de todos os operadores \u2014 ningu\xE9m pegou ainda.`);
       return;
     }
     if (ativa && ativa.status === "ciente") {
-      const quem = nomeDe(ativa.ciente_por);
+      const quem = esc(nomeDe(ativa.ciente_por));
       const quando = ativa.ciente_em ? ` \xE0s ${hora(ativa.ciente_em)}` : "";
       const ok2 = await confirmar(
         `${quem} aceitou ${rotulo2}${quando} e ainda n\xE3o pegou.
@@ -11221,8 +11242,8 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       const aberto = !carretaFechada(st, c.chave);
       return `<div class="balde-cor${aberto ? " aberto" : ""}" style="--matiz:${matiz}">
       <div class="list-line carreta-folha${todos2 ? " marcada" : ""}">
-        <span class="carreta-folha-check" onclick="event.stopPropagation();${pre}TodosDaCarreta('${esc(c.chave)}')">${ico(todos2 ? "quadradoMarcado" : "quadrado", 22)}</span>
-        <span class="grow carreta-folha-alterna" onclick="${pre}AlternarCarreta('${esc(c.chave)}')">
+        <span class="carreta-folha-check" onclick="event.stopPropagation();${pre}TodosDaCarreta(${jsq(c.chave)})">${ico(todos2 ? "quadradoMarcado" : "quadrado", 22)}</span>
+        <span class="grow carreta-folha-alterna" onclick="${pre}AlternarCarreta(${jsq(c.chave)})">
           <span class="acordeon-seta">${ico("seta", 14)}</span>
           <span class="carreta-folha-nome">${esc(c.nome)} \xB7 ${c.vs.length} voo${c.vs.length === 1 ? "" : "s"}${parcial}${fora}</span>
         </span>
@@ -11943,7 +11964,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
           para = `<b>${vooConfirma(v, "saida")}</b> \u2192 ${chegouNoVoo(d) ? `box ${esc(v.box || "?")}` : esc(d.entrega_via)}`;
         }
         const qtd = d.qtd_entregue ? ` \xB7 ${d.qtd_entregue} bag${d.qtd_entregue === 1 ? "" : "s"}` : "";
-        const quando = d.status === "entregue" && d.entregue_em ? `<span class="note">${hora(d.entregue_em)}</span>` : `<span class="chip st-${d.status}">${ROTULO[d.status] || d.status}</span>`;
+        const quando = d.status === "entregue" && d.entregue_em ? `<span class="note">${hora(d.entregue_em)}</span>` : `<span class="chip st-${classeSegura(d.status)}">${ROTULO[d.status] || esc(d.status)}</span>`;
         return `<div class="list-line" style="padding:4px 0">
         <span class="grow">${de}${para}${qtd}</span>${quando}
       </div>`;
@@ -11951,7 +11972,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       return `<div class="card">
       <div class="list-line" style="border:none;padding:0">
         <b class="grow">${oQue} \xB7 ${deOnde}</b>
-        <span class="chip st-${vg.status}">${ROTULO[vg.status]}</span>
+        <span class="chip st-${classeSegura(vg.status)}">${ROTULO[vg.status]}</span>
       </div>
       <div class="note">saiu ${hora(vg.saiu_em)}${fechou}</div>
       ${ds.map(perna).join("")}
@@ -12205,11 +12226,11 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       const marcados = c.ps.filter((p) => e.sel.includes(p.id)).length;
       const todos = marcados === c.ps.length;
       const aberto = e.abertas.includes(c.chave);
-      return `<div class="pt-linha" onclick="escolhaTogCarreta('${c.chave}')">
+      return `<div class="pt-linha" onclick="escolhaTogCarreta(${jsq(c.chave)})">
         ${ico(todos ? "quadradoMarcado" : "quadrado", 20)}
         <span class="grow">${esc(c.nome)} \xB7 ${c.ps.length} voo${c.ps.length === 1 ? "" : "s"}${marcados && !todos ? ` (${marcados} de ${c.ps.length})` : ""}</span>
       </div>
-      <div class="list-line" style="cursor:pointer;padding-left:28px" onclick="escolhaAbrirCarreta('${c.chave}')">
+      <div class="list-line" style="cursor:pointer;padding-left:28px" onclick="escolhaAbrirCarreta(${jsq(c.chave)})">
         <span class="note grow">${aberto ? "fechar" : "ver"} os voos</span>
       </div>
       ${aberto ? c.ps.map(linhaVoo3).join("") : ""}`;
@@ -12235,7 +12256,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     );
     const cartaoViaCarreta = (c, v) => {
       const ativa = c.ps.length > 0 && c.ps.every((p) => e.vias[p.id] === v.id);
-      return `<div class="voo-btn ${ativa ? "sel" : ""}" onclick="escolhaViaCarreta('${c.chave}','${v.id}')">
+      return `<div class="voo-btn ${ativa ? "sel" : ""}" onclick="escolhaViaCarreta(${jsq(c.chave)},'${v.id}')">
       <div class="linha-c"><span class="dcode">${v.id}</span></div>
       <div class="dhora">${esc(v.sub)}</div>
     </div>`;
@@ -12256,7 +12277,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       return `<div class="card" style="margin-bottom:12px">
       <p class="note" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.08em">${esc(c.nome)} \xB7 ${c.ps.length} voo${c.ps.length === 1 ? "" : "s"}</p>
       <div class="voo-grid">${VIAS.map((v) => cartaoViaCarreta(c, v)).join("")}</div>
-      <div class="list-line" style="cursor:pointer;margin-top:6px" onclick="escolhaAjuste('${c.chave}')">
+      <div class="list-line" style="cursor:pointer;margin-top:6px" onclick="escolhaAjuste(${jsq(c.chave)})">
         <span class="note grow">${ajusteAberto ? "fechar" : "ajustar"} voo a voo</span>
       </div>
       ${ajusteAberto ? c.ps.map(linhaVooVia).join("") : ""}
@@ -12443,7 +12464,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const v = voo(ps[0].voo_destino_id) || {};
     const urgentes = contarUrgentes(ps);
     const aberta = UI.alertaLoteAberto === lote;
-    return `<div class="list-line alerta-linha alerta-carreta-tcx" onclick="alternarLoteAlerta('${esc(lote)}')" style="cursor:pointer">
+    return `<div class="list-line alerta-linha alerta-carreta-tcx" onclick="alternarLoteAlerta(${jsq(lote)})" style="cursor:pointer">
     <span class="acordeon-seta">${ico("seta", 14)}</span>
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       ${vooRotulo(v, "saida", { aviao: true })}
@@ -12539,7 +12560,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const totalVoos = contarVoosUnicos(s.ps);
     const urgentes = contarUrgentes(s.ps);
     const idsCancelar = meusCientes.map((p) => p.id);
-    const olho = pendentes.length || meusCientes.length ? `<button class="alerta-acao ghost" onclick="alternarOlhoLugar('${esc(s.lugar)}')" aria-label="Ver carretas">${ico("olho", 20)}</button>` : "";
+    const olho = pendentes.length || meusCientes.length ? `<button class="alerta-acao ghost" onclick="alternarOlhoLugar(${jsq(s.lugar)})" aria-label="Ver carretas">${ico("olho", 20)}</button>` : "";
     const cancelar = meusCientes.length ? `<button class="alerta-acao ghost" onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
     const aberto = UI.olhoLugar === s.lugar;
     return `<div class="list-line alerta-linha${tipo === "BOX" && s.box ? " alerta-origem" : ""}">
@@ -12555,7 +12576,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const grupos2 = carretasDoLugar(s.ps);
     if (!grupos2.length) return "";
     const a = UI.alertaCarreta;
-    const boxArg = s.box ? `'${esc(s.box)}'` : "null";
+    const boxArg = s.box ? jsq(s.box) : "null";
     const destino = tipo === "BOX" ? " alerta-destino" : "";
     const linhaVoo3 = (p, sel) => {
       const v = voo(p.voo_destino_id) || {};
@@ -12579,7 +12600,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       }
       const aberta = a && a.lugar === s.lugar && a.chave === c.chave;
       const sel = aberta ? a.sel : [];
-      const abrir = `abrirCarretaAlerta('${esc(s.lugar)}','${esc(c.chave)}',[${c.ps.map((p) => p.id).join(",")}])`;
+      const abrir = `abrirCarretaAlerta(${jsq(s.lugar)},${jsq(c.chave)},[${c.ps.map((p) => p.id).join(",")}])`;
       const cabeca = `<div class="pt-linha carreta-alerta${aberta ? " aberta" : ""}" onclick="${abrir}">
         <span class="acordeon-seta">${ico("seta", 14)}</span>
         <span class="grow">${esc(c.nome)} \xB7 ${c.ps.length} voo${c.ps.length === 1 ? "" : "s"}</span>
@@ -13522,7 +13543,7 @@ ${e.message || e}` : e);
     await bus.recarregar();
     if (fila) await aviso("Sem sinal agora: o aviso ficou na fila e sai sozinho quando a rede voltar. N\xE3o precisa avisar de novo.");
     else if (plano.bloqueadas.length) await aviso("Um operador j\xE1 aceitou essa carreta: a linha que voc\xEA tirou n\xE3o saiu. Combine com ele.");
-    else if (falhasLocal.length) await aviso(`Os operadores foram avisados, mas o \xCDndia do l\xEDder pode n\xE3o mostrar "carreta da TCX" (falha ao gravar o local): ${falhasLocal[0]}`);
+    else if (falhasLocal.length) await aviso(`Os operadores foram avisados, mas o \xCDndia do l\xEDder pode n\xE3o mostrar "carreta da TCX" (falha ao gravar o local): ${esc(falhasLocal[0])}`);
   }
 
   // src/ui/screens/telaVoos.js
@@ -13603,7 +13624,7 @@ ${e.message || e}` : e);
   function verLogMalha(vooId) {
     const entradas = (UI.malhaEntradas || []).filter((e) => e.vooId === vooId);
     if (!entradas.length) return;
-    aviso(entradas.map((e) => e.texto).join("\n"), "Avisos da importa\xE7\xE3o da malha");
+    aviso(entradas.map((e) => esc(e.texto)).join("\n"), "Avisos da importa\xE7\xE3o da malha");
   }
   var temSaida = (v) => !!(v.saida || v.destino) || v.numero && v.numero !== v.voo_chegada;
   function soloMin(v) {
@@ -13693,7 +13714,7 @@ ${e.message || e}` : e);
       const linha1 = rotacaoTexto(eu.voo_chegada, eu.numero, alvo2);
       const linha2 = rotacaoTexto(o.voo_chegada, o.numero, eu.box);
       return `<button class="primary" style="margin-bottom:8px;text-align:left"
-      onclick="confirmarTrocaBox(${id},'${esc(alvo2)}',${o.id})">
+      onclick="confirmarTrocaBox(${id},${jsq(alvo2)},${o.id})">
       Trocar
       <span style="display:block;font-size:12px;opacity:.85;margin-top:4px">
         O voo ${linha1}</span>
@@ -13703,7 +13724,7 @@ ${e.message || e}` : e);
     const jaNoBox = D.voos.filter((v) => v.id !== id && String(v.box || "") === String(alvo2) && !jaDecolou(v)).map((v) => v.numero || v.voo_chegada || "?");
     const dica = jaNoBox.length ? `os voos ${esc(jaNoBox.join(", "))} v\xE3o sair no box ${esc(alvo2)} \u2014 use quando o voo de chegada mais tarde est\xE1 programado para esse box` : `use quando o voo de chegada mais tarde est\xE1 programado para o box ${esc(alvo2)}`;
     const manter = `<button style="margin-bottom:8px;text-align:left"
-    onclick="confirmarTrocaBox(${id},'${esc(alvo2)}',null)">
+    onclick="confirmarTrocaBox(${id},${jsq(alvo2)},null)">
     S\xF3 colocar ${esc(alvo2)} neste voo
     <span style="display:block;font-size:12px;opacity:.75;margin-top:4px">${dica}</span></button>`;
     abrirModal(`<h3>BOX ${esc(alvo2)} j\xE1 est\xE1 em uso</h3>
@@ -13938,16 +13959,24 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   function carregarLibImportacao() {
     if (window.XLSX && window.Papa) return Promise.resolve();
     if (_libImportPromise) return _libImportPromise;
-    const carregar = (src) => new Promise((resolve, reject) => {
+    const carregar = (src, integridade) => new Promise((resolve, reject) => {
       const s = document.createElement("script");
       s.src = src;
+      s.integrity = integridade;
+      s.crossOrigin = "anonymous";
       s.onload = resolve;
       s.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
       document.head.appendChild(s);
     });
     _libImportPromise = Promise.all([
-      carregar("https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"),
-      carregar("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js")
+      carregar(
+        "https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js",
+        "sha384-D/t0ZMqQW31H3az8ktEiNb39wyKnS82iFY52QPACM+IjKW3jDUhyIgh2PApRqJZs"
+      ),
+      carregar(
+        "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
+        "sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw"
+      )
     ]).catch((e) => {
       _libImportPromise = null;
       throw e;
@@ -14048,9 +14077,9 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   }
   function origemDe(d, vg) {
     const box = d.origem_box || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
-    if (!box) return vg.origem || "?";
+    if (!box) return esc(vg.origem || "?");
     const vo = voo(d.origem_voo_id || vg.voo_origem_id);
-    return (vo ? vooRotulo(vo, "chegada", { box: false }) + " \xB7 " : "") + `BOX ${box}`;
+    return (vo ? vooRotulo(vo, "chegada", { box: false }) + " \xB7 " : "") + `BOX ${esc(box)}`;
   }
   function origemCurta(d, vg) {
     const box = d.origem_box || (vg.origem === "BOX" || vg.origem === "BPP" ? vg.box_origem : null);
@@ -14096,7 +14125,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       const alvo2 = parou ? ` <span class="note">\u2192 ${esc(nomeVia(d.entrega_via))}</span>` : "";
       return `<div class="list-line">
         <span class="mono grow" style="${d.status === "entregue" ? "color:var(--muted)" : ""}">${origemDe(d, vg)} \xB7 ${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}${alvo2}</span>
-        <span class="chip st-${d.status === "entregue" && parou ? "aceita" : d.status}">${d.status === "entregue" && parou ? "na " + esc(nomeVia(d.entrega_via)) : ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
+        <span class="chip st-${d.status === "entregue" && parou ? "aceita" : classeSegura(d.status)}">${d.status === "entregue" && parou ? "na " + esc(nomeVia(d.entrega_via)) : ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
       </div>`;
     }).join("")}</div>`;
   }
@@ -14113,7 +14142,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
           <div>${vooRotulo(vo, "chegada")} <span class="note">esteira ${esc(vo.esteira || "?")}</span></div>
           <div class="note" style="margin-top:2px">${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}</div>
         </div>
-        <span class="chip st-${d.status}">${ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
+        <span class="chip st-${classeSegura(d.status)}">${ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
       </div></div>`;
     }).join("");
   }
@@ -14260,13 +14289,13 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       const origem = box ? `${vOrig ? vooRotulo(vOrig, "chegada", { box: false }) + " \xB7 " : ""}BOX ${esc(box)}` : esc(vg.origem || "?");
       return `<div class="list-line">
           <span class="mono grow">${origem} \xB7 ${esc(nomeDe(vg.operador_id))} \xB7 saiu ${hora(vg.saiu_em)}</span>
-          <span class="chip st-${d.status}">${ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
+          <span class="chip st-${classeSegura(d.status)}">${ROTULO[d.status]}${d.entregue_em ? " " + hora(d.entregue_em) : ""}</span>
         </div>`;
     }).join("") : `<p class="note" style="margin:8px 0">Nada saiu para este voo ainda.</p>`;
     const pedido = D.sols.find((s) => s.tipo === "BAG_TLC" && s.voo_id === v.id && ["solicitada", "aceita", "a_caminho"].includes(s.status));
     return `${linhas}
     <div style="margin-top:10px">
-      ${pedido ? `<span class="chip st-${pedido.status}">TLC avisada ${hora(pedido.criada_em)}</span>` : `<button class="primary" onclick="solicitarTLC(${v.id})">Solicitar TLC</button>`}
+      ${pedido ? `<span class="chip st-${classeSegura(pedido.status)}">TLC avisada ${hora(pedido.criada_em)}</span>` : `<button class="primary" onclick="solicitarTLC(${v.id})">Solicitar TLC</button>`}
     </div>`;
   }
   async function solicitarTLC(vooId, origem) {
@@ -14369,14 +14398,14 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     <div class="row" style="margin-top:8px">
       <button class="small ${emp ? "" : "primary"}" onclick="UI.acEmpresa='';render()">Todas</button>
       ${empresas.map((e) => `<button class="small ${emp === e ? "primary" : ""}"
-        onclick="UI.acEmpresa='${esc(e)}';render()">${esc(e)}</button>`).join("")}
+        onclick="UI.acEmpresa=${jsq(e)};render()">${esc(e)}</button>`).join("")}
     </div>
   </div>
 
   ${!busca && !emp ? `<div class="card note">Digite um nome ou escolha GOL / SWP para come\xE7ar.</div>` : !filtrados.length ? `<div class="card note">Ningu\xE9m encontrado.</div>` : filtrados.map((a) => `
         <div class="card" style="${a.usuario_id === UI.acPessoa ? "border-color:var(--amber)" : ""}">
           <div class="list-line" style="border:none;padding:0"
-               onclick="UI.acPessoa=${a.usuario_id === UI.acPessoa ? "null" : `'${esc(a.usuario_id)}'`};render()">
+               onclick="UI.acPessoa=${a.usuario_id === UI.acPessoa ? "null" : jsq(a.usuario_id)};render()">
             <b class="grow">${esc(a.nome)}</b>
             <span class="chip st-aceita">${esc(a.perfil_nome || a.perfil)}</span>
           </div>
@@ -14390,7 +14419,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       const ehPadrao = padrao.includes(f.id);
       const ehExtra = extras.includes(f.id);
       const classe = ehPadrao ? "chip-padrao" : ehExtra ? "chip-extra" : "chip-off";
-      const acao = ehPadrao ? "" : ` onclick="event.stopPropagation();alternarAcesso('${esc(a.usuario_id)}','${esc(f.id)}',${ehExtra})"`;
+      const acao = ehPadrao ? "" : ` onclick="event.stopPropagation();alternarAcesso(${jsq(a.usuario_id)},${jsq(f.id)},${ehExtra})"`;
       return `<button class="${classe}"${acao} title="${esc(f.descricao || "")}">${esc(f.nome)}</button>`;
     }).join("");
     return `<p class="note" style="margin:10px 0 6px">\xC2mbar = liberado \xB7 Escuro = sem acesso \xB7 toque para ligar ou desligar</p>
@@ -15337,7 +15366,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     const bt = (q, lista2, titulo) => {
       const nc = conta(lista2);
       return `<button class="patio-bt patio-ponto" aria-pressed="${aberto === q}" title="${titulo}"
-      onclick="patioPontos('${esc(k)}','${q}')"><b>${q}</b> <span>${lista2.length}</span>${nc ? ` <span class="patio-ponto-nc">${nc} n\xE3o conecta</span>` : ""}</button>`;
+      onclick="patioPontos(${jsq(k)},'${q}')"><b>${q}</b> <span>${lista2.length}</span>${nc ? ` <span class="patio-ponto-nc">${nc} n\xE3o conecta</span>` : ""}</button>`;
     };
     const corpo = aberto === "D" ? conexoesDoBox(c, v) : aberto === "I" ? recebeDoBox(c, v) : "";
     return `<div class="patio-linha lista"><span class="rot">Pontos${fonte("ponto_delta \xB7 ponto_india")}</span>
@@ -16129,7 +16158,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     aplicarHeader(`
       ${botaoAbrirMenu()}
       <h1>AIROPS-Modulo_Rampa</h1>
-      ${UI.filaOffline.length ? `<span class="fila-offline">Fila offline: ${UI.filaOffline.length} pendente${UI.filaOffline.length === 1 ? "" : "s"}</span>` : ""}
+      ${filaDoUsuario().length ? `<span class="fila-offline">Fila offline: ${filaDoUsuario().length} pendente${filaDoUsuario().length === 1 ? "" : "s"}</span>` : ""}
       <div class="who"><b>${esc(S.me.nome)}</b><span onclick="medidorToque()">${esc(S.me.perfil)} \xB7 v${esc(window.RAMPA_BUILD || "dev")}</span></div>
       <button class="small ghost" style="width:auto" onclick="sair()">Sair</button>`);
     aplicarNav(naOperador ? barraOperador() : naTriagemComJanela ? barraJanela() : "");
@@ -16479,8 +16508,8 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     boot();
   }
   async function sair() {
-    if (UI.filaOffline.length) {
-      const n = UI.filaOffline.length;
+    if (filaDoUsuario().length) {
+      const n = filaDoUsuario().length;
       const ok = await confirmar(
         `Voc\xEA tem ${n} a\xE7${n === 1 ? "\xE3o" : "\xF5es"} pendente${n === 1 ? "" : "s"} de sincronizar.
 
