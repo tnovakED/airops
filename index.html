@@ -405,6 +405,7 @@
      de selecionado do resto do app. */
   .alerta-voo{cursor:pointer; padding-left:16px; gap:8px; border-radius:10px}
   .alerta-voo.sel{background:var(--accent-light)}
+  .alerta-destino .voo{color:var(--green)}
   /* Botao largo e no fim da carreta aberta: e a acao que termina o
      passo, e alvo de dedo de luva (48px, acima do minimo).
      Ja foi sticky (bottom:0) pra nao cair fora da area que rola. Durou
@@ -1828,9 +1829,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 07/10/2026, 07:20:25
+     Gerado em: 07/10/2026, 08:26:10
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 07:20";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 08:26";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -12471,10 +12472,11 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     if (!grupos2.length) return "";
     const a = UI.alertaCarreta;
     const boxArg = s.box ? `'${esc(s.box)}'` : "null";
+    const destino = tipo === "BOX" ? " alerta-destino" : "";
     const linhaVoo3 = (p, sel) => {
       const v = voo(p.voo_destino_id) || {};
       const marcado = sel.includes(p.id);
-      return `<div class="pt-linha alerta-voo${marcado ? " sel" : ""}" onclick="togVooAlerta(${p.id})">
+      return `<div class="pt-linha alerta-voo${destino}${marcado ? " sel" : ""}" onclick="togVooAlerta(${p.id})">
       ${ico(marcado ? "quadradoMarcado" : "quadrado", 20)}
       <span class="grow">${rotuloDaPronta(p, v)}${qtdDaPronta(p)}</span>
       ${ehProntaDaBase(p) ? "" : timerAlerta(v)}
@@ -12484,7 +12486,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
       if (c.ps.length === 1 && bagMisturada(c.ps[0])) {
         const p = c.ps[0];
         const v = voo(p.voo_destino_id) || {};
-        return `<div class="pt-linha alerta-voo alerta-solto">
+        return `<div class="pt-linha alerta-voo alerta-solto${destino}">
           <span class="grow">${rotuloDaPronta(p, v)}${qtdDaPronta(p)}</span>
           ${ehProntaDaBase(p) ? "" : timerAlerta(v)}
         </div>
