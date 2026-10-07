@@ -405,7 +405,12 @@
      de selecionado do resto do app. */
   .alerta-voo{cursor:pointer; padding-left:16px; gap:8px; border-radius:10px}
   .alerta-voo.sel{background:var(--accent-light)}
-  .alerta-destino .voo{color:var(--green)}
+  /* Fundo da linha, nao a letra (Tiago, 07/10/2026): origem azul, destino
+     verde. rgba e nao color-mix: celular antigo. Faixa lateral a mais
+     porque o tom claro some sob sol. */
+  .alerta-origem{background:rgba(58,124,165,.18); border-left:5px solid var(--blue); padding-left:10px}
+  .alerta-destino{background:rgba(31,138,76,.18); border-left:5px solid var(--green)}
+  .alerta-destino.sel{background:var(--accent-light)}
   /* Botao largo e no fim da carreta aberta: e a acao que termina o
      passo, e alvo de dedo de luva (48px, acima do minimo).
      Ja foi sticky (bottom:0) pra nao cair fora da area que rola. Durou
@@ -1829,9 +1834,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 07/10/2026, 08:26:10
+     Gerado em: 07/10/2026, 08:27:56
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 08:26";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 08:27";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -12458,7 +12463,7 @@ N\xE3o precisa chamar outro operador.`, "J\xE1 est\xE1 a caminho");
     const olho = pendentes.length || meusCientes.length ? `<button class="alerta-acao ghost" onclick="alternarOlhoLugar('${esc(s.lugar)}')" aria-label="Ver carretas">${ico("olho", 20)}</button>` : "";
     const cancelar = meusCientes.length ? `<button class="alerta-acao ghost" onclick="cancelarAceiteBox([${idsCancelar.join(",")}])" aria-label="Cancelar aceite">${ico("cancelar", 20)}</button>` : "";
     const aberto = UI.olhoLugar === s.lugar;
-    return `<div class="list-line alerta-linha">
+    return `<div class="list-line alerta-linha${tipo === "BOX" && s.box ? " alerta-origem" : ""}">
     <span class="grow" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       ${s.box ? `Chamando no ${placaBox(s.box, "saida")}` : `<span${sig("Bags prontas para buscar neste lugar")}>${ico("pousando", 20)}</span>`}
       <span class="alerta-contagem">${totalVoos} voo${totalVoos === 1 ? "" : "s"}</span>
