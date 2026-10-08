@@ -1839,9 +1839,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 07/10/2026, 19:44:19
+     Gerado em: 08/10/2026, 13:53:50
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="07/10 19:44";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/10 13:53";</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2296,15 +2296,63 @@
     }
   });
 
+  // src/utils/linkAuth.js
+  function lerLinkAuth(hash) {
+    const h = String(hash || "").replace(/^#/, "");
+    if (!h) return { tipo: null, erro: null };
+    const p = {};
+    for (const par of h.split("&")) {
+      const i = par.indexOf("=");
+      if (i < 0) continue;
+      try {
+        p[par.slice(0, i)] = decodeURIComponent(par.slice(i + 1).replace(/\+/g, " "));
+      } catch {
+      }
+    }
+    if (p.error || p.error_code) {
+      const vencido = p.error_code === "otp_expired" || /expired|invalid/i.test(p.error_description || "");
+      return { tipo: null, erro: vencido ? "Este link venceu ou j\xE1 foi usado. Pe\xE7a um novo convite ao coordenador, ou use \u201CEsqueci minha senha\u201D abaixo." : "N\xE3o foi poss\xEDvel abrir o link do e-mail. Pe\xE7a um novo convite ao coordenador." };
+    }
+    const tipo = p.type === "invite" || p.type === "recovery" ? p.type : null;
+    return { tipo, erro: null };
+  }
+  function precisaDefinirSenha(user, tipoLink) {
+    if (tipoLink === "invite" || tipoLink === "recovery") return true;
+    if (!user) return false;
+    const convidada = !!user.invited_at;
+    const definiu = !!(user.user_metadata && user.user_metadata.senha_definida);
+    return convidada && !definiu;
+  }
+  function validarNovaSenha(a, b) {
+    const s = String(a != null ? a : "");
+    if (s.length < 8) return "A senha precisa ter pelo menos 8 caracteres.";
+    if (!/[A-Za-zÀ-ÿ]/.test(s) || !/[0-9]/.test(s)) return "Use letras e n\xFAmeros na senha.";
+    if (s !== String(b != null ? b : "")) return "As duas senhas n\xE3o s\xE3o iguais.";
+    return "";
+  }
+  function erroDeSenha(error) {
+    const m = String(error && error.message || "").toLowerCase();
+    if (m.includes("same password") || m.includes("different from the old")) return "Escolha uma senha diferente da anterior.";
+    if (m.includes("weak") || m.includes("at least") || m.includes("characters")) return "O Supabase achou essa senha fraca. Tente uma maior, com letras e n\xFAmeros.";
+    if (m.includes("session") || m.includes("jwt") || m.includes("not authenticated")) return "O link venceu. Pe\xE7a um novo convite ao coordenador.";
+    return "N\xE3o foi poss\xEDvel salvar a senha agora. Tente de novo.";
+  }
+  var init_linkAuth = __esm({
+    "src/utils/linkAuth.js"() {
+    }
+  });
+
   // src/config/supabase.js
-  var cfg, SUPABASE_URL, SUPABASE_ANON_KEY, configurado, sb;
+  var cfg, SUPABASE_URL, SUPABASE_ANON_KEY, configurado, linkAuth, sb;
   var init_supabase = __esm({
     "src/config/supabase.js"() {
       init_medidor();
+      init_linkAuth();
       cfg = typeof window !== "undefined" && window.RAMPA_CFG || {};
       SUPABASE_URL = cfg.url || "";
       SUPABASE_ANON_KEY = cfg.key || "";
       configurado = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+      linkAuth = lerLinkAuth(typeof location !== "undefined" ? location.hash : "");
       sb = configurado ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         global: { fetch: medirFetch((...a) => window.fetch(...a)) }
       }) : null;
@@ -16439,22 +16487,51 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
   }
 
   // src/ui/screens/telaLogin.js
-  function telaLogin() {
+  init_dom();
+  function telaLogin(aviso2) {
     return `<div class="login">
     <h1>AIROPS-Modulo_Rampa</h1><p class="sub">central de solicita\xE7\xF5es da rampa</p>
     <div class="card" style="margin-top:24px">
+      ${aviso2 ? `<p class="err" style="margin:0 0 10px">${esc(aviso2)}</p>` : ""}
       <label>E-mail</label><input id="lem" type="email" autocomplete="username">
-      <label>Senha</label><input id="lpw" type="password" autocomplete="current-password">
+      <label>Senha</label><input id="lpw" type="password" autocomplete="current-password"
+        onkeydown="event.key==='Enter'&&entrar()">
       <div class="err" id="lerr"></div>
+      <div class="note" id="lmsg"></div>
       <button class="primary" onclick="entrar()">Entrar</button>
-      <p class="note" style="margin-top:10px">Sem acesso? O coordenador cria seu usu\xE1rio.</p>
+      <p class="note" style="margin-top:10px">
+        <a href="#" onclick="esqueciSenha();return false">Esqueci minha senha</a>
+      </p>
+      <p class="note" style="margin-top:6px">Sem acesso? O coordenador convida voc\xEA por e-mail.</p>
+    </div></div>`;
+  }
+
+  // src/ui/screens/telaDefinirSenha.js
+  init_dom();
+  function telaDefinirSenha(email, tipo) {
+    const primeira = tipo !== "recovery";
+    return `<div class="login">
+    <h1>AIROPS-Modulo_Rampa</h1><p class="sub">${primeira ? "primeiro acesso" : "nova senha"}</p>
+    <div class="card" style="margin-top:24px">
+      <p>${primeira ? "Bem-vindo! Escolha a senha que voc\xEA vai usar para entrar." : "Escolha a sua nova senha."}</p>
+      ${email ? `<p class="note">Conta: <b>${esc(email)}</b></p>` : ""}
+      <label>Nova senha</label>
+      <input id="npw" type="password" autocomplete="new-password" minlength="8">
+      <label>Repita a senha</label>
+      <input id="npw2" type="password" autocomplete="new-password" minlength="8"
+             onkeydown="event.key==='Enter'&&definirSenha()">
+      <p class="note">Pelo menos 8 caracteres, com letras e n\xFAmeros.</p>
+      <div class="err" id="nerr"></div>
+      <button class="primary" onclick="definirSenha()">Salvar e entrar</button>
     </div></div>`;
   }
 
   // src/core/auth.js
+  init_linkAuth();
   init_bus();
   init_modal();
   var app2 = () => document.getElementById("app");
+  var senhaRecemDefinida = false;
   async function boot() {
     if (!configurado) {
       app2().innerHTML = `<div class="setup card">
@@ -16467,7 +16544,11 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
     }
     const { data: { session } } = await sb.auth.getSession();
     if (!session) {
-      app2().innerHTML = telaLogin();
+      app2().innerHTML = telaLogin(linkAuth.erro);
+      return;
+    }
+    if (!senhaRecemDefinida && precisaDefinirSenha(session.user, linkAuth.tipo)) {
+      app2().innerHTML = telaDefinirSenha(session.user.email, linkAuth.tipo);
       return;
     }
     app2().innerHTML = skeletonArranque();
@@ -16506,6 +16587,44 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       return;
     }
     boot();
+  }
+  async function definirSenha() {
+    const err = $("nerr");
+    if (err) err.textContent = "";
+    const a = $("npw").value, b = $("npw2").value;
+    const msg = validarNovaSenha(a, b);
+    if (msg) {
+      if (err) err.textContent = msg;
+      return;
+    }
+    const { error } = await sb.auth.updateUser({ password: a, data: { senha_definida: true } });
+    if (error) {
+      if (err) err.textContent = erroDeSenha(error);
+      return;
+    }
+    linkAuth.tipo = null;
+    senhaRecemDefinida = true;
+    try {
+      history.replaceState(null, "", location.pathname + location.search);
+    } catch {
+    }
+    boot();
+  }
+  async function esqueciSenha() {
+    const err = $("lerr"), msg = $("lmsg");
+    if (err) err.textContent = "";
+    if (msg) msg.textContent = "";
+    const email = $("lem").value.trim();
+    if (!email) {
+      if (err) err.textContent = "Digite seu e-mail no campo acima.";
+      return;
+    }
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    if (error && /rate|too many|seconds/i.test(error.message || "")) {
+      if (err) err.textContent = "Aguarde um minuto antes de pedir de novo.";
+      return;
+    }
+    if (msg) msg.textContent = "Se este e-mail tiver cadastro, enviamos um link para criar uma nova senha. Olhe tamb\xE9m o spam.";
   }
   async function sair() {
     if (filaDoUsuario().length) {
@@ -18078,6 +18197,8 @@ Sair mesmo assim?`
     recarregar: () => recarregar({ completa: true }),
     entrar,
     sair,
+    definirSenha,
+    esqueciSenha,
     toggleMenu,
     // utilitarios usados em oninput/onchange
     normHora,
