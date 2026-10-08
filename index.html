@@ -1839,9 +1839,9 @@
      GERADO AUTOMATICAMENTE — nao edite este arquivo na mao.
      O codigo de verdade esta na pasta src/, em modulos separados.
      Para mudar algo: edite o modulo e rode  node build.mjs
-     Gerado em: 08/10/2026, 13:53:50
+     Gerado em: 08/10/2026, 15:17:09
      ============================================================ -->
-<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/10 13:53";</script>
+<script>window.RAMPA_CFG={"url":"https://oxlwtrwtlwulocmdduvg.supabase.co","key":"sb_publishable_1_I6p0aA0N7MjZbF2UcbQA_9ZIPgpTe"};window.RAMPA_BUILD="08/10 15:17";window.RAMPA_VERSAO={"frentes":[{"id":"operadores","nome":"Operadores","n":70},{"id":"tcx","nome":"TCX","n":21},{"id":"tlc","nome":"TLC","n":21},{"id":"painel","nome":"Painel Operacional","n":13}]};</script>
 <script>
 (() => {
   var __defProp = Object.defineProperty;
@@ -2317,10 +2317,11 @@
     return { tipo, erro: null };
   }
   function precisaDefinirSenha(user, tipoLink) {
+    var _a;
     if (tipoLink === "invite" || tipoLink === "recovery") return true;
     if (!user) return false;
     const convidada = !!user.invited_at;
-    const definiu = !!(user.user_metadata && user.user_metadata.senha_definida);
+    const definiu = !!((_a = user.user_metadata) == null ? void 0 : _a.senha_definida);
     return convidada && !definiu;
   }
   function validarNovaSenha(a, b) {
@@ -2331,7 +2332,7 @@
     return "";
   }
   function erroDeSenha(error) {
-    const m = String(error && error.message || "").toLowerCase();
+    const m = String((error == null ? void 0 : error.message) || "").toLowerCase();
     if (m.includes("same password") || m.includes("different from the old")) return "Escolha uma senha diferente da anterior.";
     if (m.includes("weak") || m.includes("at least") || m.includes("characters")) return "O Supabase achou essa senha fraca. Tente uma maior, com letras e n\xFAmeros.";
     if (m.includes("session") || m.includes("jwt") || m.includes("not authenticated")) return "O link venceu. Pe\xE7a um novo convite ao coordenador.";
@@ -3760,6 +3761,13 @@
   // src/core/render.js
   init_store();
   init_dom();
+
+  // src/utils/versao.js
+  function versaoTexto(v) {
+    const f = v == null ? void 0 : v.frentes;
+    if (!Array.isArray(f) || !f.length) return "dev";
+    return `${f.length}.${f.map((x) => Number(x.n) || 0).join(".")}`;
+  }
 
   // src/ui/ferramentas.js
   var FERRAMENTA_ABA = {
@@ -16207,7 +16215,7 @@ Voos j\xE1 usados em viagens, ou com Ponto \xCDndice/Delta j\xE1 importado, fica
       ${botaoAbrirMenu()}
       <h1>AIROPS-Modulo_Rampa</h1>
       ${filaDoUsuario().length ? `<span class="fila-offline">Fila offline: ${filaDoUsuario().length} pendente${filaDoUsuario().length === 1 ? "" : "s"}</span>` : ""}
-      <div class="who"><b>${esc(S.me.nome)}</b><span onclick="medidorToque()">${esc(S.me.perfil)} \xB7 v${esc(window.RAMPA_BUILD || "dev")}</span></div>
+      <div class="who"><b>${esc(S.me.nome)}</b><span>${esc(S.me.perfil)} \xB7 <span onclick="verVersao()">v${esc(versaoTexto(window.RAMPA_VERSAO))}</span> <small onclick="medidorToque()" style="opacity:.6">${esc(window.RAMPA_BUILD || "dev")}</small></span></div>
       <button class="small ghost" style="width:auto" onclick="sair()">Sair</button>`);
     aplicarNav(naOperador ? barraOperador() : naTriagemComJanela ? barraJanela() : "");
     document.getElementById("main").classList.toggle("largo", UI.tab === "patio");
